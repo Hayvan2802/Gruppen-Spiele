@@ -1,0 +1,168 @@
+/* ============================================
+   GRUPPEN-SPIELE – Global Styles
+   Version: 1.0.0
+   ============================================ */
+
+/* --- Reset --- */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* --- Design Tokens --- */
+:root {
+  --color-bg-1:       #0f0c1a;
+  --color-bg-2:       #1a0f2e;
+  --color-bg-3:       #0c1a2e;
+  --color-primary:    #7c3aed;
+  --color-primary-2:  #4f46e5;
+  --color-accent:     #38bdf8;
+  --color-text:       #f0eaf8;
+  --color-text-muted: #7c6f9f;
+  --color-purple:     #a78bfa;
+  --color-green:      #16a34a;
+  --color-red:        #dc2626;
+  --color-card-bg:    rgba(255,255,255,0.05);
+  --color-card-border:rgba(168,139,250,0.2);
+  --radius-card:      20px;
+  --radius-btn:       14px;
+  --radius-input:     12px;
+  --radius-sm:        10px;
+}
+
+/* --- Base --- */
+body {
+  min-height: 100vh;
+  background: linear-gradient(135deg, var(--color-bg-1) 0%, var(--color-bg-2) 50%, var(--color-bg-3) 100%);
+  color: var(--color-text);
+  font-family: -apple-system, 'Inter', 'Segoe UI', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 16px 60px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- Header --- */
+.app-header {
+  text-align: center;
+  padding: 36px 0 24px;
+}
+
+.app-logo {
+  font-size: 36px;
+  font-weight: 900;
+  letter-spacing: -1px;
+  background: linear-gradient(90deg, #c084fc, #818cf8, #38bdf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 4px;
+}
+
+.app-tagline {
+  color: var(--color-purple);
+  font-size: 11px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* --- Card --- */
+.card {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  padding: 28px 22px;
+  width: 100%;
+  max-width: 420px;
+  backdrop-filter: blur(12px);
+}
+
+/* --- Buttons --- */
+.btn {
+  width: 100%;
+  padding: 15px;
+  border-radius: var(--radius-btn);
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: #fff;
+  margin-top: 8px;
+  display: block;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn:active { transform: scale(0.98); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.btn-primary  { background: linear-gradient(135deg, var(--color-primary), var(--color-primary-2)); }
+.btn-ghost    { background: rgba(255,255,255,0.08); }
+.btn-danger   { background: linear-gradient(135deg, var(--color-red), #b91c1c); }
+.btn-success  { background: linear-gradient(135deg, var(--color-green), #15803d); }
+
+/* --- Input --- */
+.input {
+  width: 100%;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(168,139,250,0.3);
+  border-radius: var(--radius-input);
+  padding: 14px 16px;
+  color: var(--color-text);
+  font-size: 16px;
+  outline: none;
+  margin-bottom: 10px;
+}
+.input::placeholder { color: var(--color-text-muted); }
+
+/* --- Misc --- */
+.divider {
+  height: 1px;
+  background: rgba(168,139,250,0.15);
+  margin: 16px 0;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 6px;
+}
+
+.label-small {
+  font-size: 11px;
+  color: var(--color-purple);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.pill {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.pill-red    { background: rgba(220,38,38,0.75); }
+.pill-green  { background: rgba(16,163,74,0.75); }
+.pill-purple { background: rgba(124,58,237,0.6); }
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 999px;
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.center { text-align: center; }
