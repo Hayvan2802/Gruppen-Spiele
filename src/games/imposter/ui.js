@@ -1,25 +1,61 @@
 /* ============================================
    IMPOSTER – UI / Rendering
-   Version: 1.0.0
-   Rendert alle Spielphasen ins #app Element.
+   Version: 1.1.0
+   Neu: Timer-Screen zwischen Pass & Voting
    ============================================ */
 
 function renderImposter(state, handlers) {
   const app = document.getElementById('app');
   const { phase } = state;
 
-  if (phase === 'setup')   app.innerHTML = renderSetup(state);
-  if (phase === 'pass')    app.innerHTML = renderPass(state);
-  if (phase === 'voting')  app.innerHTML = renderVoting(state);
-  if (phase === 'result')  app.innerHTML = renderResult(state);
+  if (phase === 'setup')  { app.innerHTML = renderSetup(state); }
+  if (phase === 'pass')   { app.innerHTML = renderPass(state); }
+  if (phase === 'timer')  { app.innerHTML = renderTimerScreen(state); }
+  if (phase === 'voting') { app.innerHTML = renderVoting(state); }
+  if (phase === 'result') { app.innerHTML = renderResult(state); }
 
-  // Event listeners nach jedem Render neu binden
   bindEvents(state, handlers);
+}
+
+/* ---- Globale Timer-Update Funktion (ohne komplettes Re-Render) ---- */
+function renderTimer() {
+  const s = window._imposterState || state;
+  const sek = s.timerSekunden;
+  const total = 45;
+  const radius = 38;
+  const circ = 2 * Math.PI * radius;
+  const offset = circ * (1 - sek / total);
+
+  const numEl  = document.getElementById('timer-num');
+  const fillEl = document.getElementById('timer-fill');
+  const ringEl = document.getElementById('timer-ring');
+
+  if (!numEl) return;
+
+  numEl.textContent = sek;
+
+  // Farbe je nach Zeit
+  let color = '#a78bfa';
+  if (sek <= 10) color = '#ef4444';
+  else if (sek <= 20) color = '#f59e0b';
+
+  if (fillEl) {
+    fillEl.style.strokeDasharray  = circ;
+    fillEl.style.strokeDashoffset = offset;
+    fillEl.style.stroke = color;
+  }
+  if (numEl) numEl.style.color = color;
+
+  // Puls-Animation wenn Zeit knapp
+  if (ringEl && sek <= 10) {
+    ringEl.style.transform = 'scale(1.05)';
+    setTimeout(() => { if(ringEl) ringEl.style.transform = 'scale(1)'; }, 200);
+  }
 }
 
 /* ---- Setup ---- */
 function renderSetup(state) {
-  const { namen, eingabe, imposterAnzahl } = state;
+  const { namen, imposterAnzahl } = state;
 
   const spielerListe = namen.map((n, i) => `
     <div class="player-tag">
@@ -31,29 +67,16 @@ function renderSetup(state) {
   return `
     <div class="card">
       <h2 style="font-size:19px;font-weight:700;margin-bottom:18px;color:#e2d9f3">👥 Spieler hinzufügen</h2>
-
       <div id="spieler-liste">${spielerListe}</div>
-
-      <input
-        id="name-input"
-        class="input"
-        type="text"
-        placeholder="Name eingeben..."
-        value="${eingabe}"
-        autocomplete="off"
-      />
+      <input id="name-input" class="input" type="text" placeholder="Name eingeben..." autocomplete="off" />
       <button class="btn btn-ghost" id="btn-add">+ Spieler hinzufügen</button>
-
       <div class="divider"></div>
-
       <div class="label-small">🕵️ Anzahl Imposter: ${imposterAnzahl}</div>
       <div class="imposter-count">
         <button class="count-btn ${imposterAnzahl === 1 ? 'active' : ''}" data-imposter="1">1</button>
         <button class="count-btn ${imposterAnzahl === 2 ? 'active' : ''}" data-imposter="2">2</button>
       </div>
-
-      <button class="btn btn-primary" id="btn-start" style="margin-top:20px"
-        ${namen.length < 3 ? 'disabled' : ''}>
+      <button class="btn btn-primary" id="btn-start" style="margin-top:20px" ${namen.length < 3 ? 'disabled' : ''}>
         🎮 Spiel starten
       </button>
       ${namen.length < 3 ? '<div class="hint">Mindestens 3 Spieler benötigt</div>' : ''}
@@ -61,7 +84,7 @@ function renderSetup(state) {
   `;
 }
 
-/* ---- Pass (Karte zeigen) ---- */
+/* ---- Pass ---- */
 function renderPass(state) {
   const { rollen, aktIdx, gezeigt } = state;
   const sp    = rollen[aktIdx];
@@ -71,27 +94,22 @@ function renderPass(state) {
 
   return `
     <div class="card center">
-      <div class="progress-bar">
-        <div class="progress-fill" style="width:${pct}%"></div>
-      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
       <div class="hint" style="margin-bottom:8px">${aktIdx + 1} von ${total}</div>
-      <div style="font-size:56px;margin:12px 0">📱</div>
+      <div style="font-size:54px;margin:10px 0">📱</div>
       <div class="pass-name">${sp.name}</div>
       <div class="pass-hint">
         Gib das Handy an <strong style="color:#c4b5fd">${sp.name}</strong> weiter.<br>
         Alle anderen wegschauen! 👀
       </div>
-
       ${!gezeigt ? `
         <button class="btn btn-primary" id="btn-show">👁 Karte aufdecken</button>
       ` : `
         <div class="card-reveal ${sp.istImposter ? 'card-reveal--imposter' : 'card-reveal--normal'}">
           ${sp.istImposter ? `
-            <div style="font-size:46px;margin-bottom:8px">🕵️</div>
+            <div style="font-size:44px;margin-bottom:8px">🕵️</div>
             <span class="pill pill-red">DU BIST DER IMPOSTER!</span>
-            <div class="card-reveal__sub--red">
-              Du kennst das Wort nicht.<br>Tu so als ob – lass dich nicht erwischen!
-            </div>
+            <div class="card-reveal__sub--red">Du kennst das Wort nicht.<br>Tu so als ob – lass dich nicht erwischen!</div>
           ` : `
             <div class="label-small">Dein Wort</div>
             <div class="card-reveal__word">${sp.wort}</div>
@@ -100,9 +118,46 @@ function renderPass(state) {
         </div>
         <button class="btn btn-ghost" id="btn-hide">🙈 Karte verstecken</button>
         <button class="btn btn-primary" id="btn-next">
-          ${isLast ? '🗳 Abstimmung starten' : '➡ Weiter'}
+          ${isLast ? '▶ Diskussion starten' : '➡ Weiter'}
         </button>
       `}
+    </div>
+  `;
+}
+
+/* ---- Timer Screen ---- */
+function renderTimerScreen(state) {
+  const sek    = state.timerSekunden;
+  const total  = 45;
+  const radius = 38;
+  const circ   = 2 * Math.PI * radius;
+  const offset = circ * (1 - sek / total);
+
+  return `
+    <div class="card center">
+      <div style="font-size:17px;font-weight:700;color:#e2d9f3;margin-bottom:6px">💬 Diskutiert!</div>
+      <div style="color:#7c6f9f;font-size:13px;margin-bottom:4px">
+        Wer verhält sich verdächtig?<br>Redet über das Wort – ohne es zu sagen!
+      </div>
+
+      <div class="timer-ring" id="timer-ring" style="transition:transform 0.2s">
+        <svg width="90" height="90" viewBox="0 0 90 90">
+          <circle class="timer-ring__track" cx="45" cy="45" r="${radius}"/>
+          <circle id="timer-fill" class="timer-ring__fill"
+            cx="45" cy="45" r="${radius}"
+            stroke="#a78bfa"
+            stroke-dasharray="${circ}"
+            stroke-dashoffset="${offset}"
+          />
+        </svg>
+        <span class="timer-ring__text" id="timer-num">${sek}</span>
+      </div>
+
+      <div style="color:#7c6f9f;font-size:12px;margin-bottom:18px">Sekunden</div>
+
+      <button class="btn btn-ghost" id="btn-skip-timer" style="font-size:14px;padding:12px">
+        Abstimmung jetzt starten →
+      </button>
     </div>
   `;
 }
@@ -120,11 +175,9 @@ function renderVoting(state) {
 
   return `
     <div class="card">
-      <div class="progress-bar">
-        <div class="progress-fill" style="width:${pct}%"></div>
-      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
       <div class="center" style="margin-bottom:20px">
-        <div style="font-size:36px;margin-bottom:8px">🗳</div>
+        <div style="font-size:34px;margin-bottom:8px">🗳</div>
         <div style="font-size:19px;font-weight:700;margin-bottom:4px;color:#e2d9f3">Wer ist der Imposter?</div>
         <div style="color:#a78bfa;font-weight:700;font-size:16px">${abstimmender.name} stimmt ab</div>
         <div class="hint">${stimmIdx + 1} von ${rollen.length}</div>
@@ -151,14 +204,13 @@ function renderResult(state) {
 
   return `
     <div class="card center">
-      <div style="font-size:56px;margin-bottom:12px">${imposterErwischt ? '🎉' : '🕵️'}</div>
+      <div style="font-size:54px;margin-bottom:12px">${imposterErwischt ? '🎉' : '🕵️'}</div>
       <div style="font-size:22px;font-weight:900;margin-bottom:4px">
         ${imposterErwischt ? 'Imposter erwischt!' : 'Imposter gewinnt!'}
       </div>
       <div style="color:#a78bfa;font-size:14px;margin-bottom:20px">
         ${imposterErwischt ? 'Die Gruppe hat gewonnen 🥳' : 'Der Imposter hat alle getäuscht 😈'}
       </div>
-
       <div class="result-box">
         <div class="label-small" style="margin-bottom:10px">Auflösung</div>
         <div style="margin-bottom:8px">
@@ -173,7 +225,6 @@ function renderResult(state) {
         <div class="label-small" style="margin-bottom:8px">Stimmen</div>
         ${stimmenRows}
       </div>
-
       <button class="btn btn-primary" id="btn-restart">🔄 Neues Spiel</button>
     </div>
   `;
@@ -192,7 +243,6 @@ function bindEvents(state, handlers) {
   }
   $('btn-add')?.addEventListener('click', handlers.hinzufuegen);
   $('btn-start')?.addEventListener('click', handlers.starten);
-
   document.querySelectorAll('[data-remove]').forEach(btn =>
     btn.addEventListener('click', () => handlers.entfernen(+btn.dataset.remove))
   );
@@ -204,6 +254,9 @@ function bindEvents(state, handlers) {
   $('btn-show')?.addEventListener('click', handlers.zeigen);
   $('btn-hide')?.addEventListener('click', handlers.verstecken);
   $('btn-next')?.addEventListener('click', handlers.weiter);
+
+  // Timer
+  $('btn-skip-timer')?.addEventListener('click', handlers.timerAbbrechen);
 
   // Voting
   document.querySelectorAll('[data-vote]').forEach(btn =>
