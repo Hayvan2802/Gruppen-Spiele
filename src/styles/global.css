@@ -1,6 +1,6 @@
 /* ============================================
    GRUPPEN-SPIELE – Global Styles
-   Version: 1.0.0
+   Version: 1.1.0
    ============================================ */
 
 /* --- Reset --- */
@@ -12,46 +12,62 @@
 
 /* --- Design Tokens --- */
 :root {
-  --color-bg-1:       #0f0c1a;
-  --color-bg-2:       #1a0f2e;
-  --color-bg-3:       #0c1a2e;
-  --color-primary:    #7c3aed;
-  --color-primary-2:  #4f46e5;
-  --color-accent:     #38bdf8;
-  --color-text:       #f0eaf8;
-  --color-text-muted: #7c6f9f;
-  --color-purple:     #a78bfa;
-  --color-green:      #16a34a;
-  --color-red:        #dc2626;
-  --color-card-bg:    rgba(255,255,255,0.05);
-  --color-card-border:rgba(168,139,250,0.2);
-  --radius-card:      20px;
-  --radius-btn:       14px;
-  --radius-input:     12px;
-  --radius-sm:        10px;
+  --color-bg-1:        #0f0c1a;
+  --color-bg-2:        #1a0f2e;
+  --color-bg-3:        #0c1a2e;
+  --color-primary:     #7c3aed;
+  --color-primary-2:   #4f46e5;
+  --color-accent:      #38bdf8;
+  --color-text:        #f0eaf8;
+  --color-text-muted:  #7c6f9f;
+  --color-purple:      #a78bfa;
+  --color-green:       #16a34a;
+  --color-red:         #dc2626;
+  --color-card-bg:     rgba(255,255,255,0.05);
+  --color-card-border: rgba(168,139,250,0.2);
+  --radius-card:       20px;
+  --radius-btn:        14px;
+  --radius-input:      12px;
+  --radius-sm:         10px;
 }
 
 /* --- Base --- */
+html {
+  background: #0f0c1a;
+  min-height: 100%;
+}
+
 body {
   min-height: 100vh;
-  background: linear-gradient(135deg, var(--color-bg-1) 0%, var(--color-bg-2) 50%, var(--color-bg-3) 100%);
+  min-height: 100dvh;
+  background: linear-gradient(160deg, #0f0c1a 0%, #1a0f2e 45%, #0c1a2e 100%);
+  background-attachment: fixed;
   color: var(--color-text);
   font-family: -apple-system, 'Inter', 'Segoe UI', sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 16px 60px;
+  padding: 0 16px 80px;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Fixes weißer Rand oben/unten auf iOS Safari */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(160deg, #0f0c1a 0%, #1a0f2e 45%, #0c1a2e 100%);
+  z-index: -1;
 }
 
 /* --- Header --- */
 .app-header {
   text-align: center;
-  padding: 36px 0 24px;
+  padding: 52px 0 24px;
 }
 
 .app-logo {
-  font-size: 36px;
+  font-size: 34px;
   font-weight: 900;
   letter-spacing: -1px;
   background: linear-gradient(90deg, #c084fc, #818cf8, #38bdf8);
@@ -78,6 +94,7 @@ body {
   width: 100%;
   max-width: 420px;
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 /* --- Buttons --- */
@@ -94,14 +111,15 @@ body {
   margin-top: 8px;
   display: block;
   transition: opacity 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
 }
-.btn:active { transform: scale(0.98); }
+.btn:active  { transform: scale(0.97); opacity: 0.9; }
 .btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
-.btn-primary  { background: linear-gradient(135deg, var(--color-primary), var(--color-primary-2)); }
-.btn-ghost    { background: rgba(255,255,255,0.08); }
-.btn-danger   { background: linear-gradient(135deg, var(--color-red), #b91c1c); }
-.btn-success  { background: linear-gradient(135deg, var(--color-green), #15803d); }
+.btn-primary { background: linear-gradient(135deg, var(--color-primary), var(--color-primary-2)); }
+.btn-ghost   { background: rgba(255,255,255,0.08); }
+.btn-danger  { background: linear-gradient(135deg, var(--color-red), #b91c1c); }
+.btn-success { background: linear-gradient(135deg, var(--color-green), #15803d); }
 
 /* --- Input --- */
 .input {
@@ -114,8 +132,10 @@ body {
   font-size: 16px;
   outline: none;
   margin-bottom: 10px;
+  -webkit-appearance: none;
 }
 .input::placeholder { color: var(--color-text-muted); }
+.input:focus { border-color: rgba(168,139,250,0.6); }
 
 /* --- Misc --- */
 .divider {
@@ -166,3 +186,35 @@ body {
 }
 
 .center { text-align: center; }
+
+/* --- Timer --- */
+.timer-ring {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 14px auto 18px;
+  position: relative;
+  width: 90px;
+  height: 90px;
+}
+.timer-ring svg {
+  transform: rotate(-90deg);
+  position: absolute;
+}
+.timer-ring__track {
+  fill: none;
+  stroke: rgba(255,255,255,0.08);
+  stroke-width: 5;
+}
+.timer-ring__fill {
+  fill: none;
+  stroke-width: 5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear, stroke 0.5s;
+}
+.timer-ring__text {
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--color-text);
+  z-index: 1;
+}
