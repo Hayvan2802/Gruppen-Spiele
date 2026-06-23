@@ -1,11 +1,13 @@
 /* ============================================
    GRUPPEN-SPIELE – App Controller
-   Version: 1.0.0
-   Zentraler State & Handler für alle Spiele.
+   Version: 1.1.0
+   Neu: Timer (45 Sekunden Diskussionsrunde)
    ============================================ */
 
+const TIMER_SEKUNDEN = 45;
+
 const state = {
-  phase:          'setup',  // setup | pass | voting | result
+  phase:          'setup',
   namen:          [],
   eingabe:        '',
   imposterAnzahl: 1,
@@ -14,6 +16,10 @@ const state = {
   gezeigt:        false,
   stimmen:        {},
   stimmIdx:       0,
+  // Timer
+  timerAktiv:     false,
+  timerSekunden:  TIMER_SEKUNDEN,
+  timerInterval:  null,
 };
 
 const handlers = {
@@ -39,26 +45,60 @@ const handlers = {
 
   starten() {
     if (state.namen.length < 3) return;
-    state.rollen   = createRoles(state.namen, state.imposterAnzahl);
-    state.aktIdx   = 0;
-    state.gezeigt  = false;
-    state.stimmen  = {};
-    state.stimmIdx = 0;
-    state.phase    = 'pass';
+    state.rollen          = createRoles(state.namen, state.imposterAnzahl);
+    state.aktIdx          = 0;
+    state.gezeigt         = false;
+    state.stimmen         = {};
+    state.stimmIdx        = 0;
+    state.timerAktiv      = false;
+    state.timerSekunden   = TIMER_SEKUNDEN;
+    state.phase           = 'pass';
+    clearInterval(state.timerInterval);
     render();
   },
 
-  zeigen()    { state.gezeigt = true;  render(); },
-  verstecken(){ state.gezeigt = false; render(); },
+  zeigen()     { state.gezeigt = true;  render(); },
+  verstecken() { state.gezeigt = false; render(); },
 
   weiter() {
+    clearInterval(state.timerInterval);
     if (state.aktIdx + 1 >= state.rollen.length) {
-      state.phase    = 'voting';
-      state.stimmIdx = 0;
+      // Alle haben ihre Karte gesehen → Timer-Screen vor Abstimmung
+      state.phase         = 'timer';
+      state.timerSekunden = TIMER_SEKUNDEN;
+      state.timerAktiv    = true;
+      render();
+      handlers.timerStarten();
     } else {
       state.aktIdx++;
       state.gezeigt = false;
+      render();
     }
+  },
+
+  timerStarten() {
+    clearInterval(state.timerInterval);
+    state.timerInterval = setInterval(() => {
+      state.timerSekunden--;
+      renderTimer();
+      if (state.timerSekunden <= 0) {
+        clearInterval(state.timerInterval);
+        state.timerAktiv = false;
+        // Automatisch zur Abstimmung
+        setTimeout(() => {
+          state.phase    = 'voting';
+          state.stimmIdx = 0;
+          render();
+        }, 600);
+      }
+    }, 1000);
+  },
+
+  timerAbbrechen() {
+    clearInterval(state.timerInterval);
+    state.timerAktiv = false;
+    state.phase      = 'voting';
+    state.stimmIdx   = 0;
     render();
   },
 
@@ -74,12 +114,15 @@ const handlers = {
   },
 
   neustart() {
-    state.phase    = 'setup';
-    state.rollen   = [];
-    state.aktIdx   = 0;
-    state.gezeigt  = false;
-    state.stimmen  = {};
-    state.stimmIdx = 0;
+    clearInterval(state.timerInterval);
+    state.phase         = 'setup';
+    state.rollen        = [];
+    state.aktIdx        = 0;
+    state.gezeigt       = false;
+    state.stimmen       = {};
+    state.stimmIdx      = 0;
+    state.timerAktiv    = false;
+    state.timerSekunden = TIMER_SEKUNDEN;
     render();
   },
 
