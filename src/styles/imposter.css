@@ -1,0 +1,144 @@
+/* ============================================
+   IMPOSTER – Game Styles
+   Version: 1.0.0
+   ============================================ */
+
+/* --- Setup Screen --- */
+.player-tag {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(124,58,237,0.15);
+  border: 1px solid rgba(124,58,237,0.3);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.player-tag__name { font-weight: 600; }
+
+.player-tag__delete {
+  background: none;
+  border: none;
+  color: var(--color-red);
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.imposter-count {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.count-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 15px;
+  color: #fff;
+  background: rgba(255,255,255,0.08);
+  transition: background 0.15s;
+}
+.count-btn.active {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-2));
+}
+
+/* --- Pass Screen --- */
+.pass-name {
+  font-size: 24px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.pass-hint {
+  color: var(--color-text-muted);
+  font-size: 14px;
+  margin-bottom: 22px;
+  line-height: 1.5;
+}
+
+.card-reveal {
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.card-reveal--normal {
+  background: rgba(16,163,74,0.12);
+  border: 1px solid rgba(16,163,74,0.35);
+}
+
+.card-reveal--imposter {
+  background: rgba(220,38,38,0.12);
+  border: 1px solid rgba(220,38,38,0.35);
+}
+
+.card-reveal__word {
+  font-size: 36px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -0.5px;
+  margin: 10px 0 6px;
+}
+
+.card-reveal__sub {
+  font-size: 13px;
+  color: #6ee7b7;
+  margin-top: 6px;
+}
+
+.card-reveal__sub--red {
+  font-size: 13px;
+  color: #fca5a5;
+  margin-top: 10px;
+  line-height: 1.5;
+}
+
+/* --- Voting Screen --- */
+.vote-btn {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--radius-input);
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 8px;
+  text-align: left;
+  transition: background 0.12s;
+}
+.vote-btn:hover, .vote-btn:active {
+  background: rgba(124,58,237,0.2);
+}
+
+/* --- Result Screen --- */
+.result-box {
+  background: rgba(255,255,255,0.04);
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 18px;
+  text-align: left;
+}
+
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.result-row__votes {
+  color: var(--color-purple);
+  font-weight: 700;
+}
