@@ -1,30 +1,27 @@
-// Gruppen-Spiele Service Worker v0.22
-const CACHE = 'gruppen-spiele-v0.22';
+// Gruppen-Spiele Service Worker v0.23
+// Kein self.skipWaiting() im install — Nutzer entscheidet per Banner.
+const CACHE = 'gruppen-spiele-v0.23';
 const ASSETS = [
   './index.html', './css/styles.css',
-  './js/app.js', './js/config.js', './js/storage.js', // buildinfo.js bewusst NICHT gecacht
+  './js/app.js', './js/buildinfo.js', './js/config.js', './js/storage.js',
   './js/coop.js', './js/firebase.js', './js/debuglog.js',
   './js/i18n/index.js', './js/i18n/de.js', './js/i18n/en.js',
   './js/i18n/tr.js', './js/i18n/fr.js', './js/i18n/es.js',
   './js/i18n/it.js', './js/i18n/pl.js', './js/i18n/ru.js', './js/i18n/ar.js',
+  './manifest.json', './icons/icon-192.png', './icons/icon-512.png',
   './js/vendor/firebase/firebase-app.js',
   './js/vendor/firebase/firebase-auth.js',
   './js/vendor/firebase/firebase-database.js',
-  './manifest.json', './icons/icon-192.png', './icons/icon-512.png',
 ];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).catch(() => {}));
-  // Kein skipWaiting — Nutzer entscheidet per Banner
+  // Bewusst KEIN self.skipWaiting() — Nutzer entscheidet per Banner.
 });
 
+// Nutzer hat "Aktualisieren" getippt
 self.addEventListener('message', e => {
   if (e.data && e.data.type === 'skipWaiting') self.skipWaiting();
-  // Version zurückmelden damit der Banner die richtige Versionsnummer zeigt
-  if (e.data && e.data.type === 'getVersion') {
-    const version = CACHE.replace('gruppen-spiele-v', '');
-    e.ports[0]?.postMessage({ version });
-  }
 });
 
 self.addEventListener('activate', e => {
@@ -35,21 +32,10 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Icons: Cache-first
   if (e.request.url.includes('/icons/')) {
     e.respondWith(caches.match(e.request).then(c => c || fetch(e.request)));
     return;
   }
-  // buildinfo.js: IMMER direkt vom Server, NIEMALS cachen
-  if (e.request.url.includes('buildinfo.js')) {
-    e.respondWith(
-      fetch(e.request, { cache: 'no-store' }).catch(() =>
-        new Response('export const BUILD="?";export const CHANGELOG=[];', { headers: {'Content-Type':'application/javascript'} })
-      )
-    );
-    return;
-  }
-  // Alles andere: Network-first mit Cache-Fallback
   e.respondWith(
     fetch(e.request).then(res => {
       const clone = res.clone();
