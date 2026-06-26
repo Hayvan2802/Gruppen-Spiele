@@ -270,7 +270,17 @@ body.light .glog{background:var(--sur);}
 .surv-item:last-child{border-bottom:none;}
 
 /* TOAST */
-.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(4rem);background:var(--bg2);border:1px solid var(--gold);border-radius:8px;padding:.56rem 1.05rem;font-family:'system-ui',serif;font-size:.74rem;color:var(--gold);z-index:300;transition:transform .3s;white-space:nowrap;pointer-events:none;}
+.toast{
+  position:fixed;bottom:2.5rem;left:50%;
+  transform:translateX(-50%) translateY(6rem);
+  background:var(--bg2);border:1px solid var(--gold);
+  border-radius:10px;padding:.6rem 1.2rem;
+  font-family:-apple-system,'Inter',sans-serif;
+  font-size:.82rem;font-weight:600;color:var(--gold);
+  z-index:9999;transition:transform .3s ease;
+  white-space:nowrap;pointer-events:none;
+  box-shadow:0 4px 20px rgba(0,0,0,.25);
+}
 .toast.show{transform:translateX(-50%) translateY(0);}
 
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(192,132,252,.25);border-radius:2px;}
