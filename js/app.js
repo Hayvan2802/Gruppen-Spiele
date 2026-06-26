@@ -75,6 +75,7 @@ const state = reactive({
   historyDetail: null,
   historyList: false,
   updateReady: false,
+  updateVersion: '', // Version des wartenden SW
   showSettingsModal: false,
   gameMenu: { active: false },
   gamePaused: false,
@@ -148,6 +149,16 @@ function registerSW() {
         // Nur als Update werten wenn bereits ein SW aktiv ist (nicht Erst-Installation)
         if (w.state === 'installed' && navigator.serviceWorker.controller) {
           waitingWorker = w;
+          // Version aus SW-Cache-Name lesen via MessageChannel
+          try {
+            const mc = new MessageChannel();
+            mc.port1.onmessage = (e) => {
+              if (e.data && e.data.version) state.updateVersion = e.data.version;
+            };
+            w.postMessage({ type: 'getVersion' }, [mc.port2]);
+          } catch(e) {}
+          // Fallback: aktuelle BUILD-Version
+          if (!state.updateVersion) state.updateVersion = BUILD;
           state.updateReady = true;
           log('sw', 'Update verfügbar — zeige Banner');
         }
@@ -597,8 +608,8 @@ const App = {
       <div class="update-sheet">
         <div class="sheet-handle"></div>
         <span class="uc-badge" style="margin-bottom:.8rem">✦ UPDATE VERFÜGBAR</span>
-        <div class="uc-title" style="font-size:1.1rem;margin-bottom:.4rem">v{{ CHANGELOG[0]?.version }} ist bereit!</div>
-        <div class="uc-desc" style="font-size:.82rem;margin-bottom:1rem">{{ CHANGELOG[0]?.changes?.[0] }}</div>
+        <div class="uc-title" style="font-size:1.1rem;margin-bottom:.4rem">v{{ state.updateVersion || BUILD }} ist bereit!</div>
+        <div class="uc-desc" style="font-size:.82rem;margin-bottom:1rem">Neue Version verfügbar — jetzt installieren</div>
         <button class="uc-btn-primary" @click="applyUpdate">⬆ Aktualisieren & neu starten</button>
         <button class="uc-btn-later" @click="state.updateReady=false">Später</button>
       </div>
