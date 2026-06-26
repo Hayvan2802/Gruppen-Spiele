@@ -1,10 +1,19 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.21';
-export const BUILD_HASH = 'update-banner-fixes';
+export const BUILD      = '0.22';
+export const BUILD_HASH = 'sw-no-cache-buildinfo-modal';
 
 export const CHANGELOG = [
   {
-    version: '0.21',
+    version: '0.22',
+    date: '26.06.2026',
+    changes: [
+      'buildinfo.js komplett ungecacht — Version stimmt immer',
+      'Update-Banner: zentriertes Modal statt Bottom-Sheet',
+      'Whats-New: fadeIn Animation beim Aufploppen',
+    ],
+  },
+  {
+    version: '0.22',
     date: '26.06.2026',
     changes: [
       'Update-Polling: 60s → 30s',
@@ -14,7 +23,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.21',
+    version: '0.22',
     date: '26.06.2026',
     changes: [
       'Phase 1: 13 Kategorien mit 300+ Wörtern — ein-/ausklappbar',
@@ -26,7 +35,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.21',
+    version: '0.22',
     date: '26.06.2026',
     changes: [
       'buildinfo.js wird nie gecacht — Version stimmt immer nach Update',
@@ -34,7 +43,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.21',
+    version: '0.22',
     date: '26.06.2026',
     changes: [
       'Update-Banner zeigt korrekte Version des neuen SW',
@@ -42,7 +51,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.21',
+    version: '0.22',
     date: '26.06.2026',
     changes: [
       'Multiplayer Host: Zufallscode entfernt — Code selbst eintippen',
@@ -51,7 +60,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.21',
+    version: '0.22',
     date: '26.06.2026',
     changes: [
       'Toast-Nachricht korrekt sichtbar — z-index erhöht, über allen Ebenen',
@@ -59,7 +68,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.21',
+    version: '0.22',
     date: '26.06.2026',
     changes: [
       'Versionsnummern korrigiert — Format 0.X statt 0.0.X',
