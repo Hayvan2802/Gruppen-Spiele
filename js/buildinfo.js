@@ -1,10 +1,20 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.0.11';
-export const BUILD_HASH = 'ui-overhaul';
+export const BUILD      = '0.0.12';
+export const BUILD_HASH = 'update-poll-menu-fixes';
 
 export const CHANGELOG = [
   {
-    version: '0.0.11',
+    version: '0.0.12',
+    date: '26.06.2026',
+    changes: [
+      'Update-Banner erscheint automatisch ohne Neustart (alle 30s Polling)',
+      'Spielmenü: Timer pausiert sofort beim Öffnen',
+      'Spielmenü: kein extra Pausieren-Button, stattdessen Einstellungen',
+      'Imposter-Warnung: Text korrigiert',
+    ],
+  },
+  {
+    version: '0.0.12',
     date: '26.06.2026',
     changes: [
       'Karte antippen zum Aufdecken jetzt klickbar',
@@ -16,7 +26,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.11',
+    version: '0.0.12',
     date: '26.06.2026',
     changes: [
       'Cache-Fix: SW lädt sofort ohne Warte-Banner',
@@ -24,7 +34,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.11',
+    version: '0.0.12',
     date: '26.06.2026',
     changes: [
       '29 automatische Tests — alle grün',
@@ -32,7 +42,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.11',
+    version: '0.0.12',
     date: '26.06.2026',
     changes: [
       'Crash behoben: state vor Initialisierung zugegriffen',
@@ -40,7 +50,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.11',
+    version: '0.0.12',
     date: '26.06.2026',
     changes: [
       'Fehler TIMER_SECONDS behoben — App startet wieder',
@@ -49,7 +59,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.11',
+    version: '0.0.12',
     date: '26.06.2026',
     changes: [
       'Timer pausiert jetzt korrekt bei Pause',
