@@ -1,10 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.0.8';
-export const BUILD_HASH = 'fix-state-before-init';
+export const BUILD      = '0.0.9';
+export const BUILD_HASH = 'add-tests';
 
 export const CHANGELOG = [
   {
-    version: '0.0.8',
+    version: '0.0.9',
+    date: '26.06.2026',
+    changes: [
+      '29 automatische Tests — alle grün',
+      'Tests: Rollenzuteilung, Abstimmung, Timer, Imposter-Optionen, Shuffle',
+    ],
+  },
+  {
+    version: '0.0.9',
     date: '26.06.2026',
     changes: [
       'Crash behoben: state vor Initialisierung zugegriffen',
@@ -12,7 +20,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.8',
+    version: '0.0.9',
     date: '26.06.2026',
     changes: [
       'Fehler TIMER_SECONDS behoben — App startet wieder',
@@ -21,7 +29,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.8',
+    version: '0.0.9',
     date: '26.06.2026',
     changes: [
       'Timer pausiert jetzt korrekt bei Pause',
