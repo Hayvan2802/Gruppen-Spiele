@@ -118,6 +118,22 @@ function applyUpdate() {
   waitingWorker.postMessage({ type: 'skipWaiting' });
 }
 
+async function checkForUpdate() {
+  if (window._swReg) {
+    showToast('Suche nach Updates…');
+    try {
+      await window._swReg.update();
+      await new Promise(r => setTimeout(r, 2000));
+    } catch(e) {}
+  }
+  if (state.updateReady || waitingWorker) {
+    state.updateReady = true;
+    render();
+  } else {
+    showToast('Keine Updates verfügbar ✓');
+  }
+}
+
 // ── Game Logic ────────────────────────────────────────────────────────────────
 function startGame() {
   const names = state.playerNames.slice(0, state.playerCount).map((n,i) => n.trim() || `Spieler ${i+1}`);
@@ -596,6 +612,13 @@ function renderSettingsDrawer() {
             <div><div class="slabel">Versionshistorie</div></div>
             <button class="ver-hist-btn" id="btn-show-history">Anzeigen</button>
           </div>
+          <div class="srow">
+            <div>
+              <div class="slabel">Auf Update prüfen</div>
+              <div class="ssub">Sucht nach einer neuen Version</div>
+            </div>
+            <button class="ver-hist-btn" id="btn-check-update" style="white-space:nowrap">🔄 Prüfen</button>
+          </div>
           ${state.updateReady ? `
             <div class="srow">
               <div><div class="slabel">Update verfügbar</div></div>
@@ -739,6 +762,7 @@ function bindEvents() {
   // Settings
   on('settings-overlay', () => { state.showSettingsDrawer = false; render(); });
   on('btn-close-settings', () => { state.showSettingsDrawer = false; render(); });
+  on('btn-check-update', checkForUpdate);
   on('btn-show-history', () => {
     state.showHistory = true;
     state.historyDetail = CHANGELOG[0];
