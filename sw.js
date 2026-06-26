@@ -1,8 +1,8 @@
-// Gruppen-Spiele Service Worker v0.21
-const CACHE = 'gruppen-spiele-v0.21';
+// Gruppen-Spiele Service Worker v0.22
+const CACHE = 'gruppen-spiele-v0.22';
 const ASSETS = [
   './index.html', './css/styles.css',
-  './js/app.js', './js/buildinfo.js', './js/config.js', './js/storage.js',
+  './js/app.js', './js/config.js', './js/storage.js', // buildinfo.js bewusst NICHT gecacht
   './js/coop.js', './js/firebase.js', './js/debuglog.js',
   './js/i18n/index.js', './js/i18n/de.js', './js/i18n/en.js',
   './js/i18n/tr.js', './js/i18n/fr.js', './js/i18n/es.js',
@@ -40,14 +40,12 @@ self.addEventListener('fetch', e => {
     e.respondWith(caches.match(e.request).then(c => c || fetch(e.request)));
     return;
   }
-  // buildinfo.js: immer Network-first, nie aus Cache — damit Version immer stimmt
+  // buildinfo.js: IMMER direkt vom Server, NIEMALS cachen
   if (e.request.url.includes('buildinfo.js')) {
     e.respondWith(
-      fetch(e.request).then(res => {
-        const clone = res.clone();
-        caches.open(CACHE).then(cache => cache.put(e.request, clone));
-        return res;
-      }).catch(() => caches.match(e.request))
+      fetch(e.request, { cache: 'no-store' }).catch(() =>
+        new Response('export const BUILD="?";export const CHANGELOG=[];', { headers: {'Content-Type':'application/javascript'} })
+      )
     );
     return;
   }
