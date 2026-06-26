@@ -684,7 +684,7 @@ const App = {
       // Wer bin ich
       wbiState, WBI_KATEGORIEN, WBI_DEFAULT_KATEGORIEN,
       wbiStartLocal, wbiShowCard, wbiHideCard, wbiMarkGuessed, wbiMarkNotGuessed,
-      wbiToggleDiscussCard, wbiStartResolve,
+      wbiMarkSkipped, wbiNextCard, wbiToggleDiscussCard, wbiStartResolve,
       wbiRestart, wbiSelectMode, wbiShowHostSetup, wbiCreateRoom,
       wbiShowJoinSetup, wbiJoinRoom, wbiStartCoopGame, wbiCancelCoop,
       wbiShareLink, wbiSendGuess, wbiCurrentCard, wbiRemainingCount, wbiGuessedCount,
