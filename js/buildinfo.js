@@ -1,10 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.15';
-export const BUILD_HASH = 'version-rename';
+export const BUILD      = '0.16';
+export const BUILD_HASH = 'toast-fix';
 
 export const CHANGELOG = [
   {
-    version: '0.15',
+    version: '0.16',
+    date: '26.06.2026',
+    changes: [
+      'Toast-Nachricht korrekt sichtbar — z-index erhöht, über allen Ebenen',
+      'Toast-Design verbessert',
+    ],
+  },
+  {
+    version: '0.16',
     date: '26.06.2026',
     changes: [
       'Versionsnummern korrigiert — Format 0.X statt 0.0.X',
