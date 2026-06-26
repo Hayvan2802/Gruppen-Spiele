@@ -1,24 +1,31 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.31';
-export const BUILD_HASH = 'force-cache-clear';
+export const BUILD      = '0.32';
+export const BUILD_HASH = 'wbi-import-fix';
 
 export const CHANGELOG = [
   {
-    version: '0.31',
+    version: '0.32',
+    date: '26.06.2026',
+    changes: [
+      'Crash behoben: wbiMarkSkipped → wbiMarkNotGuessed im Import',
+    ],
+  },
+  {
+    version: '0.32',
     date: '26.06.2026',
     changes: [
       'Cache-Reset: SW erzwingt sofortiges Update ohne Warte-Banner',
     ],
   },
   {
-    version: '0.31',
+    version: '0.32',
     date: '26.06.2026',
     changes: [
       'Crash behoben: doppelter Export wbiMarkNotGuessed entfernt',
     ],
   },
   {
-    version: '0.31',
+    version: '0.32',
     date: '26.06.2026',
     changes: [
       'WBI: 3-Phasen-Flow — Verteilen, Diskutieren, Auflösung',
@@ -29,7 +36,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.31',
+    version: '0.32',
     date: '26.06.2026',
     changes: [
       'Neues Spiel: 🤔 Wer bin ich? — sauber getrennt von Imposter',
@@ -43,7 +50,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.31',
+    version: '0.32',
     date: '26.06.2026',
     changes: [
       'UI-Audit: alle fehlenden CSS-Klassen ergänzt',
@@ -54,7 +61,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.31',
+    version: '0.32',
     date: '26.06.2026',
     changes: [
       'Phase 3b: Lobby-History — alle Runden der Session einsehbar',
@@ -64,7 +71,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.31',
+    version: '0.32',
     date: '26.06.2026',
     changes: [
       'Phase 3a: Coop-Abstimmung — jeder stimmt auf eigenem Handy ab',
@@ -75,7 +82,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.31',
+    version: '0.32',
     date: '26.06.2026',
     changes: [
       'Multiplayer Beitreten: Button jetzt groß und auffällig wie beim Host',
@@ -84,7 +91,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.31',
+    version: '0.32',
     date: '26.06.2026',
     changes: [
       'SW 1:1 wie Werwolf — keine Extras, kein getVersion MessageChannel',
@@ -93,7 +100,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.31',
+    version: '0.32',
     date: '26.06.2026',
     changes: [
       'buildinfo.js komplett ungecacht — Version stimmt immer',
@@ -102,7 +109,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.31',
+    version: '0.32',
     date: '26.06.2026',
     changes: [
       'Update-Polling: 60s → 30s',
@@ -112,7 +119,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.31',
+    version: '0.32',
     date: '26.06.2026',
     changes: [
       'Phase 1: 13 Kategorien mit 300+ Wörtern — ein-/ausklappbar',
@@ -124,7 +131,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.31',
+    version: '0.32',
     date: '26.06.2026',
     changes: [
       'buildinfo.js wird nie gecacht — Version stimmt immer nach Update',
@@ -132,7 +139,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.31',
+    version: '0.32',
     date: '26.06.2026',
     changes: [
       'Update-Banner zeigt korrekte Version des neuen SW',
@@ -140,7 +147,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.31',
+    version: '0.32',
     date: '26.06.2026',
     changes: [
       'Multiplayer Host: Zufallscode entfernt — Code selbst eintippen',
@@ -149,7 +156,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.31',
+    version: '0.32',
     date: '26.06.2026',
     changes: [
       'Toast-Nachricht korrekt sichtbar — z-index erhöht, über allen Ebenen',
@@ -157,7 +164,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.31',
+    version: '0.32',
     date: '26.06.2026',
     changes: [
       'Versionsnummern korrigiert — Format 0.X statt 0.0.X',
