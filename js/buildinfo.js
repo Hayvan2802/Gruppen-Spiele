@@ -1,10 +1,21 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.24';
-export const BUILD_HASH = 'join-button-ui';
+export const BUILD      = '0.25';
+export const BUILD_HASH = 'coop-voting';
 
 export const CHANGELOG = [
   {
-    version: '0.24',
+    version: '0.25',
+    date: '26.06.2026',
+    changes: [
+      'Phase 3a: Coop-Abstimmung — jeder stimmt auf eigenem Handy ab',
+      'Host sendet VOTE_START → alle sehen Abstimmungs-Screen',
+      'Stimmen per Firebase gesammelt → Host berechnet Ergebnis',
+      'VOTE_RESULT an alle gesendet → Ergebnis-Screen auf allen Geräten',
+      'Gäste sehen Wartescreen bis Host Abstimmung startet',
+    ],
+  },
+  {
+    version: '0.25',
     date: '26.06.2026',
     changes: [
       'Multiplayer Beitreten: Button jetzt groß und auffällig wie beim Host',
@@ -13,7 +24,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.24',
+    version: '0.25',
     date: '26.06.2026',
     changes: [
       'SW 1:1 wie Werwolf — keine Extras, kein getVersion MessageChannel',
@@ -22,7 +33,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.24',
+    version: '0.25',
     date: '26.06.2026',
     changes: [
       'buildinfo.js komplett ungecacht — Version stimmt immer',
@@ -31,7 +42,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.24',
+    version: '0.25',
     date: '26.06.2026',
     changes: [
       'Update-Polling: 60s → 30s',
@@ -41,7 +52,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.24',
+    version: '0.25',
     date: '26.06.2026',
     changes: [
       'Phase 1: 13 Kategorien mit 300+ Wörtern — ein-/ausklappbar',
@@ -53,7 +64,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.24',
+    version: '0.25',
     date: '26.06.2026',
     changes: [
       'buildinfo.js wird nie gecacht — Version stimmt immer nach Update',
@@ -61,7 +72,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.24',
+    version: '0.25',
     date: '26.06.2026',
     changes: [
       'Update-Banner zeigt korrekte Version des neuen SW',
@@ -69,7 +80,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.24',
+    version: '0.25',
     date: '26.06.2026',
     changes: [
       'Multiplayer Host: Zufallscode entfernt — Code selbst eintippen',
@@ -78,7 +89,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.24',
+    version: '0.25',
     date: '26.06.2026',
     changes: [
       'Toast-Nachricht korrekt sichtbar — z-index erhöht, über allen Ebenen',
@@ -86,7 +97,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.24',
+    version: '0.25',
     date: '26.06.2026',
     changes: [
       'Versionsnummern korrigiert — Format 0.X statt 0.0.X',
