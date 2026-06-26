@@ -708,7 +708,7 @@ const App = {
       <div class="modal" style="max-height:85vh;overflow-y:auto">
         <!-- Imposter Anleitung -->
         <template v-if="state.showRulesGame==='imposter'">
-          <div style="font-size:2rem;text-align:center;margin-bottom:.5rem">🕵️</div>
+          <img src='./icons/games/imposter.png' style='width:72px;height:72px;display:block;margin:0 auto .5rem;border-radius:16px'/>
           <h3 style="text-align:center;margin-bottom:1rem">Imposter — Anleitung</h3>
           <div class="rules-section">
             <div class="rules-step">1️⃣ <strong>Karten verteilen</strong><br>Jeder schaut heimlich auf sein Handy und sieht ein geheimes Wort — außer dem Imposter!</div>
@@ -719,7 +719,7 @@ const App = {
         </template>
         <!-- Wer bin ich Anleitung -->
         <template v-if="state.showRulesGame==='wbi'">
-          <div style="font-size:2rem;text-align:center;margin-bottom:.5rem">🤔</div>
+          <img src='./icons/games/wbi.png' style='width:72px;height:72px;display:block;margin:0 auto .5rem;border-radius:16px'/>
           <h3 style="text-align:center;margin-bottom:1rem">Wer bin ich? — Anleitung</h3>
           <div class="rules-section">
             <div class="rules-step">1️⃣ <strong>Karten verteilen</strong><br>Jeder hält das Handy mit dem Bildschirm zur Gruppe — alle anderen sehen den Begriff, nur der Spieler selbst nicht!</div>
@@ -1487,7 +1487,7 @@ const App = {
           <!-- Imposter -->
           <div class="game-select-card" :class="{active: state.screen==='setup'}"
             @click="state.screen='setup'">
-            <div class="game-select-icon">🕵️</div>
+            <img src="./icons/games/imposter.png" class="game-select-img" alt="Imposter"/>
             <div class="game-select-name">Imposter</div>
             <div class="game-select-desc">Finde den Verräter — 3 bis 16 Spieler</div>
             <div class="game-select-hint-btn" @click.stop="state.showRulesGame='imposter'">❓ Anleitung</div>
@@ -1495,7 +1495,7 @@ const App = {
           <!-- Wer bin ich -->
           <div class="game-select-card" :class="{active: state.screen==='wbi'}"
             @click="state.screen='wbi'">
-            <div class="game-select-icon">🤔</div>
+            <img src="./icons/games/wbi.png" class="game-select-img" alt="Wer bin ich?"/>
             <div class="game-select-name">Wer bin ich?</div>
             <div class="game-select-desc">Errate deinen Begriff — 2 bis 16 Spieler</div>
             <div class="game-select-hint-btn" @click.stop="state.showRulesGame='wbi'">❓ Anleitung</div>
