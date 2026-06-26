@@ -1,10 +1,19 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.16';
-export const BUILD_HASH = 'toast-fix';
+export const BUILD      = '0.17';
+export const BUILD_HASH = 'coop-host-ui';
 
 export const CHANGELOG = [
   {
-    version: '0.16',
+    version: '0.17',
+    date: '26.06.2026',
+    changes: [
+      'Multiplayer Host: Zufallscode entfernt — Code selbst eintippen',
+      'Raum erstellen Button groß und auffällig',
+      'Button deaktiviert bis Name und 6-stelliger Code eingegeben',
+    ],
+  },
+  {
+    version: '0.17',
     date: '26.06.2026',
     changes: [
       'Toast-Nachricht korrekt sichtbar — z-index erhöht, über allen Ebenen',
@@ -12,7 +21,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.16',
+    version: '0.17',
     date: '26.06.2026',
     changes: [
       'Versionsnummern korrigiert — Format 0.X statt 0.0.X',
