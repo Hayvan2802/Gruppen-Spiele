@@ -1,68 +1,72 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.40';
-export const BUILD_HASH = 'wbi-text-rules-ui';
+export const BUILD      = '0.41';
+export const BUILD_HASH = 'version-history-i18n-fix';
 
 export const CHANGELOG = [
   {
-    version: '0.40',
+    version: '0.41',
     date: '27.06.2026',
     changes: [
-      'WBI: Text korrigiert — Spieler hält Handy zur Gruppe, andere sehen Begriff',
-      'Hauptmenü: Extra-Buttons entfernt, nur große Spielkarten',
-      'Anleitungs-Button ❓ auf jeder Spielkarte im Hauptmenü',
-      'Anleitung auch im Spielmenü (Pause) erreichbar',
+      'Versionshistorie bereinigt — alle Versionen 0.1 bis 0.41',
+      'Rechtschreibung überprüft — Deutsch und Englisch',
+      'Englische Übersetzung auf Gruppen-Spiele angepasst',
     ],
   },
   {
     version: '0.40',
+    date: '27.06.2026',
+    changes: [
+      'WBI: Text korrigiert — Spieler hält Handy zur Gruppe',
+      'Hauptmenü: Extra-Buttons entfernt, nur große Spielkarten',
+      'Anleitungs-Button auf jeder Spielkarte',
+      'Anleitung auch im Spielmenü erreichbar',
+    ],
+  },
+  {
+    version: '0.39',
     date: '27.06.2026',
     changes: [
       'Imposter: doppeltes Pause-Menü behoben',
-      'Nur noch ein einziges Spielmenü-Modal beim Pausieren',
     ],
   },
   {
-    version: '0.40',
+    version: '0.38',
     date: '27.06.2026',
     changes: [
       'WBI: Zurück-Pfeil nur im Setup sichtbar',
-      'WBI: Pause-Button während dem Spiel — wie bei Imposter',
+      'WBI: Pause-Button während dem Spiel wie bei Imposter',
       'WBI: Spielmenü mit Fortsetzen, Einstellungen, Spiel beenden',
-      'WBI: Beenden-Bestätigung vor dem Verlassen',
     ],
   },
   {
-    version: '0.40',
+    version: '0.37',
     date: '27.06.2026',
     changes: [
-      'WBI: wbiNextCard im setup() return ergänzt — Button funktioniert jetzt',
-      'Lokal getestet: Karte aufdecken → schließen → Weiter ✓',
+      'WBI: wbiNextCard im setup() return ergänzt — Button funktioniert',
     ],
   },
   {
-    version: '0.40',
+    version: '0.36',
     date: '27.06.2026',
     changes: [
-      'WBI: Weiter-Button erst sichtbar nach Aufdecken + Schließen der Karte',
-      'Update-Banner: Button jetzt lila wie Los geht\'s',
+      'WBI: Weiter-Button erscheint erst nach Aufdecken und Schließen',
+      'Update-Banner: Button lila wie Los geht\'s',
     ],
   },
   {
-    version: '0.40',
+    version: '0.35',
     date: '27.06.2026',
     changes: [
-      'WBI: Weiter-Button funktioniert jetzt (wbiNextCard nicht exportiert)',
+      'WBI: Weiter-Button funktioniert — wbiNextCard war nicht exportiert',
       'Sternenpunkte auf allen Screens entfernt',
     ],
   },
   {
-    version: '0.40',
+    version: '0.34',
     date: '27.06.2026',
     changes: [
-      '"Weiter zu Spieler X" Button Fix — war beim ersten Spieler nicht sichtbar',
-      'Hauptmenü: beide Spiele als direkte Buttons',
-      'Versionsanzeige unten im Hauptmenü',
-      'Versionshistorie bereinigt — Lücke 0.14→0.15 erklärt',
+      'Weiter-Button fix, Versionsanzeige im Hauptmenü',
+      'Versionshistorie bereinigt',
     ],
   },
   {
@@ -76,7 +80,7 @@ export const CHANGELOG = [
     version: '0.32',
     date: '26.06.2026',
     changes: [
-      'Crash behoben: wbiMarkSkipped → wbiMarkNotGuessed im Import',
+      'Crash behoben: wbiMarkSkipped Import-Fehler',
     ],
   },
   {
@@ -90,7 +94,7 @@ export const CHANGELOG = [
     version: '0.30',
     date: '26.06.2026',
     changes: [
-      'Crash behoben: doppelter Export wbiMarkNotGuessed entfernt',
+      'Crash behoben: doppelter Export wbiMarkNotGuessed',
     ],
   },
   {
@@ -98,34 +102,28 @@ export const CHANGELOG = [
     date: '26.06.2026',
     changes: [
       'WBI: 3-Phasen-Flow — Verteilen, Diskutieren, Auflösung',
-      'Phase 1: Karte antippen öffnet/schließt — hin- und herhalten möglich',
-      'Phase 2: Alle Karten sichtbar — jeder kann seine kurz aufklappen',
-      'Phase 3: Auflösung — Ja/Nein pro Spieler ob erraten',
     ],
   },
   {
     version: '0.28',
     date: '26.06.2026',
     changes: [
-      'Neues Spiel: 🤔 Wer bin ich? — sauber getrennt von Imposter',
-      '300+ Karten in 11 Kategorien (Prominente, Sport, Film, Politik...)',
-      'Ein-Gerät-Modus + Coop-Modus',
-      'Einladungslink via ?wbi=CODE',
+      'Neues Spiel: Wer bin ich? — 300+ Karten in 11 Kategorien',
+      'Ein-Gerät und Coop-Modus, Einladungslink',
     ],
   },
   {
     version: '0.27',
     date: '26.06.2026',
     changes: [
-      'UI-Audit: alle fehlenden CSS-Klassen ergänzt',
-      'Touch-Targets überall min. 44px (iOS Standard)',
+      'UI-Audit: alle fehlenden CSS-Klassen, Touch-Targets min. 44px',
     ],
   },
   {
     version: '0.26',
     date: '26.06.2026',
     changes: [
-      'Phase 3b: Lobby-History — alle Runden der Session einsehbar',
+      'Lobby-History: alle Runden der Session einsehbar',
       'Gesamtpunktestand über alle Runden',
     ],
   },
@@ -133,22 +131,21 @@ export const CHANGELOG = [
     version: '0.25',
     date: '26.06.2026',
     changes: [
-      'Phase 3a: Coop-Abstimmung — jeder stimmt auf eigenem Handy ab',
-      'Ergebnis-Screen auf allen Geräten gleichzeitig',
+      'Coop-Abstimmung: jeder stimmt auf eigenem Handy ab',
     ],
   },
   {
     version: '0.24',
     date: '26.06.2026',
     changes: [
-      'Multiplayer Beitreten: Button groß und auffällig wie beim Host',
+      'Multiplayer Beitreten: Button groß wie beim Host',
     ],
   },
   {
     version: '0.23',
     date: '26.06.2026',
     changes: [
-      'SW 1:1 wie Werwolf — Versionsanzeige nach Update immer korrekt',
+      'SW exakt nach Werwolf-Muster — Version nach Update immer korrekt',
     ],
   },
   {
@@ -162,17 +159,14 @@ export const CHANGELOG = [
     version: '0.21',
     date: '26.06.2026',
     changes: [
-      'Update-Polling: 30 Sekunden',
-      'Update-Banner nicht durch Hintergrund-Klick schließbar',
+      'Update-Polling alle 30 Sekunden, Banner nicht wegklickbar',
     ],
   },
   {
     version: '0.20',
     date: '26.06.2026',
     changes: [
-      'Phase 1: 13 Kategorien mit 300+ Wörtern',
-      'Runden-Modus: 1–10 Runden mit Punktestand',
-      'Neon-Theme als viertes Theme',
+      '13 Kategorien mit 300+ Wörtern, Runden-Modus, Neon-Theme',
     ],
   },
   {
@@ -186,7 +180,7 @@ export const CHANGELOG = [
     version: '0.18',
     date: '26.06.2026',
     changes: [
-      'Update-Banner zeigt korrekte SW-Version',
+      'Update-Banner zeigt korrekte Version des neuen SW',
     ],
   },
   {
@@ -194,14 +188,13 @@ export const CHANGELOG = [
     date: '26.06.2026',
     changes: [
       'Multiplayer Host: Code selbst eintippen, kein Zufallscode',
-      'Raum erstellen Button groß und auffällig',
     ],
   },
   {
     version: '0.16',
     date: '26.06.2026',
     changes: [
-      'Toast-Nachricht korrekt sichtbar über allen Ebenen',
+      'Toast-Nachrichten korrekt sichtbar über allen Ebenen',
     ],
   },
   {
@@ -215,16 +208,15 @@ export const CHANGELOG = [
     version: '0.14',
     date: '26.06.2026',
     changes: [
-      'Weiter-Button auffälliger nach Karte aufdecken',
-      'Crash behoben: reg Scope-Fehler im setInterval',
+      'Weiter-Button nach Karte aufdecken auffälliger',
+      'Crash behoben: reg-Scope-Fehler im setInterval',
     ],
   },
   {
     version: '0.13',
     date: '26.06.2026',
     changes: [
-      'SW 1:1 nach Werwolf-Pattern — Update-Banner funktioniert',
-      'Update-Polling alle 60 Sekunden',
+      'SW nach Werwolf-Muster — Update-Banner funktioniert korrekt',
     ],
   },
   {
@@ -245,35 +237,35 @@ export const CHANGELOG = [
     version: '0.10',
     date: '26.06.2026',
     changes: [
-      'Cache-Fix: behebt dauerhaften state-Crash auf gecachten Geräten',
+      'Cache-Fix: behebt dauerhaften state-Crash auf alten Geräten',
     ],
   },
   {
     version: '0.9',
     date: '26.06.2026',
     changes: [
-      '40 automatische Tests — alle grün',
+      '40 automatische Tests eingeführt',
     ],
   },
   {
     version: '0.8',
     date: '26.06.2026',
     changes: [
-      'Crash behoben: state vor Initialisierung',
+      'Crash behoben: state vor Initialisierung zugegriffen',
     ],
   },
   {
     version: '0.7',
     date: '26.06.2026',
     changes: [
-      'Update-Banner als Bottom-Sheet auf allen Screens',
+      'TIMER_SECONDS-Fehler behoben, Update-Banner auf allen Screens',
     ],
   },
   {
     version: '0.6',
     date: '26.06.2026',
     changes: [
-      'Timer dynamisch nach Spieleranzahl, Sound, Versionshistorie',
+      'Timer dynamisch nach Spielerzahl, Sound-Effekte, Versionshistorie',
     ],
   },
   {
@@ -294,21 +286,22 @@ export const CHANGELOG = [
     version: '0.3',
     date: '26.06.2026',
     changes: [
-      'Ordnerstruktur, Service Worker, PWA Icon',
+      'Neue Ordnerstruktur, Service Worker, PWA-Icon',
     ],
   },
   {
     version: '0.2',
     date: '26.06.2026',
     changes: [
-      'Timer, weiße Ränder behoben, PWA Icon',
+      '45-Sekunden Timer, weiße Ränder behoben, PWA-Icon für Safari',
     ],
   },
   {
     version: '0.1',
     date: '26.06.2026',
     changes: [
-      'Imposter Game — Erstveröffentlichung',
+      'Imposter — Erstveröffentlichung',
+      '60+ Wörter in 7 Kategorien, Abstimmung, Ergebnis-Screen',
     ],
   },
 ];
