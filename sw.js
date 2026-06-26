@@ -1,5 +1,5 @@
-// Gruppen-Spiele Service Worker v0.18
-const CACHE = 'gruppen-spiele-v0.18';
+// Gruppen-Spiele Service Worker v0.19
+const CACHE = 'gruppen-spiele-v0.19';
 const ASSETS = [
   './index.html', './css/styles.css',
   './js/app.js', './js/buildinfo.js', './js/config.js', './js/storage.js',
@@ -35,10 +35,23 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Icons: Cache-first
   if (e.request.url.includes('/icons/')) {
     e.respondWith(caches.match(e.request).then(c => c || fetch(e.request)));
     return;
   }
+  // buildinfo.js: immer Network-first, nie aus Cache — damit Version immer stimmt
+  if (e.request.url.includes('buildinfo.js')) {
+    e.respondWith(
+      fetch(e.request).then(res => {
+        const clone = res.clone();
+        caches.open(CACHE).then(cache => cache.put(e.request, clone));
+        return res;
+      }).catch(() => caches.match(e.request))
+    );
+    return;
+  }
+  // Alles andere: Network-first mit Cache-Fallback
   e.respondWith(
     fetch(e.request).then(res => {
       const clone = res.clone();
