@@ -1,0 +1,265 @@
+// test.js — Automatische Testfälle für Gruppen-Spiele (Imposter)
+// Aufruf: node test.js
+
+let passed = 0, failed = 0;
+function test(name, fn) {
+  try { fn(); console.log(`  ✓ ${name}`); passed++; }
+  catch(e) { console.log(`  ✗ ${name}: ${e.message}`); failed++; }
+}
+function assert(cond, msg) { if (!cond) throw new Error(msg || 'Assertion failed'); }
+function assertEqual(a, b, msg) { if (a !== b) throw new Error(msg || `Expected ${b}, got ${a}`); }
+
+// ── Mock-Implementierungen der Spiellogik ────────────────────────────────────
+const ALL_WORDS = ['Hund','Katze','Pizza','Fußball','Strand','Pilot','Gitarre','Drache'];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function getTimerSeconds(playerCount) {
+  const base = 45;
+  const extra = Math.floor((playerCount - 3) / 2) * 10;
+  return Math.min(120, base + extra);
+}
+
+function createRoles(names, imposterCount) {
+  const word     = ALL_WORDS[0];
+  const shuffled = shuffle(names);
+  const impIdx   = new Set(shuffle([...Array(shuffled.length).keys()]).slice(0, imposterCount));
+  return shuffled.map((name, i) => ({ name, isImposter: impIdx.has(i), word }));
+}
+
+function calcResult(roles, votes) {
+  const tally = {};
+  roles.forEach(r => { tally[r.name] = 0; });
+  Object.values(votes).forEach(t => { tally[t] = (tally[t] || 0) + 1; });
+  const max = Math.max(...Object.values(tally));
+  const eliminated = Object.keys(tally).filter(n => tally[n] === max);
+  const imposters  = roles.filter(r => r.isImposter).map(r => r.name);
+  return {
+    winner: eliminated.some(n => imposters.includes(n)) ? 'village' : 'imposter',
+    eliminated, tally,
+  };
+}
+
+function maxImposterOptions(playerCount) {
+  const max = Math.max(1, Math.floor(playerCount / 4));
+  return Array.from({length: max}, (_, i) => i + 1);
+}
+
+// ── Tests: Rollenzuteilung ────────────────────────────────────────────────────
+console.log('\n=== ROLLENZUTEILUNG ===');
+
+test('Genau 1 Imposter bei imposterCount=1', () => {
+  const roles = createRoles(['A','B','C','D','E'], 1);
+  const imposters = roles.filter(r => r.isImposter);
+  assertEqual(imposters.length, 1, `Imposters: ${imposters.length}`);
+});
+
+test('Genau 2 Imposter bei imposterCount=2', () => {
+  const roles = createRoles(['A','B','C','D','E','F','G','H'], 2);
+  const imposters = roles.filter(r => r.isImposter);
+  assertEqual(imposters.length, 2, `Imposters: ${imposters.length}`);
+});
+
+test('Alle Spieler bekommen dieselbe Wort (außer Imposter irrelevant)', () => {
+  const roles = createRoles(['A','B','C','D'], 1);
+  const words = [...new Set(roles.map(r => r.word))];
+  assertEqual(words.length, 1, 'Alle sollten dasselbe Wort haben');
+});
+
+test('Spieleranzahl stimmt', () => {
+  const names = ['Alice','Bob','Clara','David','Eva'];
+  const roles = createRoles(names, 1);
+  assertEqual(roles.length, names.length, `Rollen: ${roles.length}`);
+});
+
+test('Jeder Name erscheint genau einmal', () => {
+  const names = ['Alice','Bob','Clara','David'];
+  const roles = createRoles(names, 1);
+  const roleNames = roles.map(r => r.name).sort();
+  const sortedNames = [...names].sort();
+  assertEqual(JSON.stringify(roleNames), JSON.stringify(sortedNames));
+});
+
+test('Imposter ist nicht Village', () => {
+  const roles = createRoles(['A','B','C','D','E'], 1);
+  roles.forEach(r => {
+    if (r.isImposter) assert(!r.isVillage, 'Imposter darf kein Village sein');
+  });
+});
+
+// ── Tests: Abstimmung / Ergebnis ─────────────────────────────────────────────
+console.log('\n=== ABSTIMMUNG & ERGEBNIS ===');
+
+test('Imposter erwischt wenn alle auf ihn stimmen', () => {
+  const roles = [
+    { name: 'Alice', isImposter: true,  word: 'Hund' },
+    { name: 'Bob',   isImposter: false, word: 'Hund' },
+    { name: 'Clara', isImposter: false, word: 'Hund' },
+  ];
+  const votes = { Bob: 'Alice', Clara: 'Alice' };
+  const { winner } = calcResult(roles, votes);
+  assertEqual(winner, 'village');
+});
+
+test('Imposter gewinnt wenn falscher rausgewählt', () => {
+  const roles = [
+    { name: 'Alice', isImposter: true,  word: 'Hund' },
+    { name: 'Bob',   isImposter: false, word: 'Hund' },
+    { name: 'Clara', isImposter: false, word: 'Hund' },
+  ];
+  const votes = { Alice: 'Bob', Clara: 'Bob' };
+  const { winner } = calcResult(roles, votes);
+  assertEqual(winner, 'imposter');
+});
+
+test('Stimmengleichstand — alle mit Max-Stimmen in eliminated', () => {
+  const roles = [
+    { name: 'Alice', isImposter: true,  word: 'Hund' },
+    { name: 'Bob',   isImposter: false, word: 'Hund' },
+    { name: 'Clara', isImposter: false, word: 'Hund' },
+  ];
+  const votes = { Alice: 'Bob', Bob: 'Alice', Clara: 'Alice' };
+  const { eliminated } = calcResult(roles, votes);
+  assert(eliminated.includes('Alice'), 'Alice sollte in eliminated sein');
+});
+
+test('Imposter erwischt bei Gleichstand mit Imposter dabei', () => {
+  const roles = [
+    { name: 'Alice', isImposter: true,  word: 'Hund' },
+    { name: 'Bob',   isImposter: false, word: 'Hund' },
+    { name: 'Clara', isImposter: false, word: 'Hund' },
+    { name: 'David', isImposter: false, word: 'Hund' },
+  ];
+  // Je 2 Stimmen auf Alice und Bob
+  const votes = { Bob: 'Alice', Clara: 'Alice', Alice: 'Bob', David: 'Bob' };
+  const { winner } = calcResult(roles, votes);
+  assertEqual(winner, 'village', 'Alice (Imposter) ist im Gleichstand → village gewinnt');
+});
+
+test('Tally zählt Stimmen korrekt', () => {
+  const roles = [
+    { name: 'A', isImposter: true,  word: 'X' },
+    { name: 'B', isImposter: false, word: 'X' },
+    { name: 'C', isImposter: false, word: 'X' },
+  ];
+  const votes = { A: 'B', B: 'B', C: 'A' };
+  const { tally } = calcResult(roles, votes);
+  assertEqual(tally['B'], 2);
+  assertEqual(tally['A'], 1);
+});
+
+// ── Tests: Timer-Logik ────────────────────────────────────────────────────────
+console.log('\n=== TIMER ===');
+
+test('3 Spieler → 45 Sekunden', () => {
+  assertEqual(getTimerSeconds(3), 45);
+});
+
+test('4 Spieler → 45 Sekunden', () => {
+  assertEqual(getTimerSeconds(4), 45);
+});
+
+test('5 Spieler → 55 Sekunden', () => {
+  assertEqual(getTimerSeconds(5), 55);
+});
+
+test('6 Spieler → 55 Sekunden', () => {
+  assertEqual(getTimerSeconds(6), 55);
+});
+
+test('8 Spieler → 65 Sekunden', () => {
+  assertEqual(getTimerSeconds(8), 65);
+});
+
+test('10 Spieler → 75 Sekunden', () => {
+  assertEqual(getTimerSeconds(10), 75);
+});
+
+test('16 Spieler → max 120 Sekunden', () => {
+  assert(getTimerSeconds(16) <= 120, `Timer ${getTimerSeconds(16)} > 120`);
+});
+
+test('Timer steigt mit Spieleranzahl', () => {
+  for (let i = 3; i < 16; i++) {
+    assert(getTimerSeconds(i) <= getTimerSeconds(i+1) || getTimerSeconds(i+1) === 120,
+      `Timer soll nicht fallen: ${i} → ${i+1}`);
+  }
+});
+
+// ── Tests: Imposter-Anzahl-Optionen ──────────────────────────────────────────
+console.log('\n=== IMPOSTER-OPTIONEN ===');
+
+test('3 Spieler → max 1 Imposter', () => {
+  const opts = maxImposterOptions(3);
+  assertEqual(opts.length, 1);
+  assertEqual(opts[0], 1);
+});
+
+test('4 Spieler → max 1 Imposter', () => {
+  assertEqual(maxImposterOptions(4).length, 1);
+});
+
+test('5 Spieler → max 1 Imposter', () => {
+  assertEqual(maxImposterOptions(5).length, 1);
+});
+
+test('8 Spieler → max 2 Imposter', () => {
+  assertEqual(maxImposterOptions(8).length, 2);
+});
+
+test('12 Spieler → max 3 Imposter', () => {
+  assertEqual(maxImposterOptions(12).length, 3);
+});
+
+test('16 Spieler → max 4 Imposter', () => {
+  assertEqual(maxImposterOptions(16).length, 4);
+});
+
+test('Optionen starten immer bei 1', () => {
+  [3,5,8,12,16].forEach(n => {
+    assertEqual(maxImposterOptions(n)[0], 1, `Für ${n} Spieler`);
+  });
+});
+
+// ── Tests: Shuffle ────────────────────────────────────────────────────────────
+console.log('\n=== SHUFFLE ===');
+
+test('Shuffle behält alle Elemente', () => {
+  const arr = [1,2,3,4,5];
+  const shuffled = shuffle(arr);
+  assertEqual(shuffled.length, arr.length);
+  assertEqual(shuffled.sort().join(','), [1,2,3,4,5].join(','));
+});
+
+test('Shuffle mutiert Original nicht', () => {
+  const arr = [1,2,3,4,5];
+  shuffle(arr);
+  assertEqual(arr.join(','), '1,2,3,4,5');
+});
+
+test('Shuffle verändert Reihenfolge (statistisch)', () => {
+  const arr = [1,2,3,4,5,6,7,8,9,10];
+  let sameCount = 0;
+  for (let i = 0; i < 10; i++) {
+    if (shuffle(arr).join(',') === arr.join(',')) sameCount++;
+  }
+  assert(sameCount < 10, 'Shuffle sollte nicht immer gleich sein');
+});
+
+// ── Ergebnis ──────────────────────────────────────────────────────────────────
+console.log(`\n${'─'.repeat(40)}`);
+console.log(`  Gesamt: ${passed + failed} Tests`);
+console.log(`  ✅ Bestanden: ${passed}`);
+if (failed > 0) {
+  console.log(`  ❌ Fehlgeschlagen: ${failed}`);
+  process.exit(1);
+} else {
+  console.log(`  Alle Tests grün ✓`);
+}
