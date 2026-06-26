@@ -1,10 +1,19 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.0.6';
-export const BUILD_HASH = 'timer-imposter-history-fixes';
+export const BUILD      = '0.0.7';
+export const BUILD_HASH = 'sw-update-timer-fix';
 
 export const CHANGELOG = [
   {
-    version: '0.0.6',
+    version: '0.0.7',
+    date: '26.06.2026',
+    changes: [
+      'Fehler TIMER_SECONDS behoben — App startet wieder',
+      'Update-Banner als Bottom-Sheet — erscheint auf allen Screens',
+      'SW-Registrierung nach State-Init — Banner reagiert sofort',
+    ],
+  },
+  {
+    version: '0.0.7',
     date: '26.06.2026',
     changes: [
       'Timer pausiert jetzt korrekt bei Pause',
