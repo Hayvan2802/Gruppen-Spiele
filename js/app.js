@@ -123,31 +123,45 @@ const state = reactive({
   tally: {},
 });
 
-// ── Service Worker — nach state-Init damit updateReady reaktiv ist ────────────
+// ── SERVICE WORKER — exakt nach Werwolf-Pattern ──────────────────────────────
+// Kein auto-skipWaiting. Nutzer entscheidet per Banner wann er aktualisiert.
 let waitingWorker = null;
+let reloadingAfterUpdate = false;
+
 function registerSW() {
   if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.register('./sw.js').then(reg => {
-    window._swReg = reg;
-    if (reg.waiting) {
-      waitingWorker = reg.waiting;
-      state.updateReady = true;
-    }
-    reg.addEventListener('updatefound', () => {
-      const nw = reg.installing;
-      nw.addEventListener('statechange', () => {
-        if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-          waitingWorker = nw;
-          state.updateReady = true;
-        }
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      window._swReg = reg;
+      log('sw', 'Service Worker registriert');
+
+      // Wenn neuer SW übernimmt → Seite neu laden
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (reloadingAfterUpdate) return;
+        reloadingAfterUpdate = true;
+        log('sw', 'Neuer SW aktiv — lade neu');
+        window.location.reload();
       });
-    });
-  }).catch(e => log('sw', 'Registrierung fehlgeschlagen', e));
-  navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
-  // Alle 30 Sekunden auf Update prüfen solange Seite offen ist
-  setInterval(() => {
-    reg.update().catch(() => {});
-  }, 30000);
+
+      const promote = (w) => {
+        if (!w) return;
+        // Nur als Update werten wenn bereits ein SW aktiv ist (nicht Erst-Installation)
+        if (w.state === 'installed' && navigator.serviceWorker.controller) {
+          waitingWorker = w;
+          state.updateReady = true;
+          log('sw', 'Update verfügbar — zeige Banner');
+        }
+      };
+      promote(reg.waiting);
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing; if (!nw) return;
+        nw.addEventListener('statechange', () => promote(nw));
+      });
+      // Alle 60 Sek auf Updates prüfen (wie Werwolf)
+      setInterval(() => reg.update(), 60000);
+
+    }).catch(e => log('sw', 'SW-Registrierung fehlgeschlagen', e));
+  });
 }
 
 // ── Theme / Locale ────────────────────────────────────────────────────────────
@@ -459,7 +473,6 @@ function handleCoopMessage(msg) {
 function init() {
   applyTheme(); applyLocale(); maybeShowWhatsNew();
   if (state.lastSavedNames.length > 0) state.showSavedNamesHint = true;
-  registerSW(); // SW nach state-Init registrieren, damit updateReady reaktiv ist
 
   // Einladungslink: ?code=XXXXXX → direkt in Coop-Join-Ansicht
   const params = new URLSearchParams(window.location.search);
@@ -1106,4 +1119,5 @@ const App = {
 };
 
 createApp(App).mount('#app');
+registerSW(); // Direkt aufrufen — intern wrapped in window.load
 init();
