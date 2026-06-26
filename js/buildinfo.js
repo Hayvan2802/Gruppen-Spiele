@@ -1,10 +1,20 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.20';
-export const BUILD_HASH = 'phase1-features';
+export const BUILD      = '0.21';
+export const BUILD_HASH = 'update-banner-fixes';
 
 export const CHANGELOG = [
   {
-    version: '0.20',
+    version: '0.21',
+    date: '26.06.2026',
+    changes: [
+      'Update-Polling: 60s → 30s',
+      'Update-Banner nicht mehr durch Hintergrund-Klick schließbar',
+      'Update-Banner: Protokoll-Export Button hinzugefügt',
+      'Nur Später-Button schließt den Banner',
+    ],
+  },
+  {
+    version: '0.21',
     date: '26.06.2026',
     changes: [
       'Phase 1: 13 Kategorien mit 300+ Wörtern — ein-/ausklappbar',
@@ -16,7 +26,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.20',
+    version: '0.21',
     date: '26.06.2026',
     changes: [
       'buildinfo.js wird nie gecacht — Version stimmt immer nach Update',
@@ -24,7 +34,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.20',
+    version: '0.21',
     date: '26.06.2026',
     changes: [
       'Update-Banner zeigt korrekte Version des neuen SW',
@@ -32,7 +42,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.20',
+    version: '0.21',
     date: '26.06.2026',
     changes: [
       'Multiplayer Host: Zufallscode entfernt — Code selbst eintippen',
@@ -41,7 +51,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.20',
+    version: '0.21',
     date: '26.06.2026',
     changes: [
       'Toast-Nachricht korrekt sichtbar — z-index erhöht, über allen Ebenen',
@@ -49,7 +59,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.20',
+    version: '0.21',
     date: '26.06.2026',
     changes: [
       'Versionsnummern korrigiert — Format 0.X statt 0.0.X',
