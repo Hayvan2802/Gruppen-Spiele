@@ -21,7 +21,7 @@ body.light {
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;overscroll-behavior:none;overflow-x:hidden;}
 body{background:var(--bg);color:var(--txt);font-family:'system-ui',Georgia,serif;min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s;}
-body:not(.light)::before{content:'';position:fixed;inset:0;background-image:radial-gradient(1px 1px at 12% 15%,rgba(255,255,255,.55) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 52% 22%,rgba(255,255,255,.65) 0%,transparent 100%),radial-gradient(1px 1px at 72% 9%,rgba(255,255,255,.45) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 6% 62%,rgba(255,255,255,.55) 0%,transparent 100%),radial-gradient(1px 1px at 76% 67%,rgba(255,255,255,.45) 0%,transparent 100%),radial-gradient(1.5px 1.5px at 36% 91%,rgba(255,255,255,.45) 0%,transparent 100%);pointer-events:none;z-index:0;}
+/* Sternenpunkte entfernt */
 #rotate-fix{position:relative;min-height:100vh;}
 .app{position:relative;z-index:1;min-height:100vh;}
 .screen{min-height:100vh;}
@@ -582,14 +582,7 @@ body.neon {
   --green:#00ff88; --red:#ff0055; --red2:#ff2266;
   --blue:#00f5ff; --blue2:#80ffff;
 }
-body.neon::before {
-  background-image:
-    radial-gradient(1.5px 1.5px at 15% 20%,rgba(180,0,255,.8) 0%,transparent 100%),
-    radial-gradient(1px 1px at 55% 10%,rgba(0,245,255,.7) 0%,transparent 100%),
-    radial-gradient(2px 2px at 75% 65%,rgba(255,0,170,.6) 0%,transparent 100%),
-    radial-gradient(1px 1px at 8% 80%,rgba(180,0,255,.5) 0%,transparent 100%),
-    radial-gradient(1.5px 1.5px at 90% 30%,rgba(0,245,255,.5) 0%,transparent 100%);
-}
+/* Neon-Sternenpunkte entfernt */
 body.neon .logo h1 {
   background: linear-gradient(90deg, #ff00aa, #b400ff, #00f5ff);
   -webkit-background-clip: text; background-clip: text;
