@@ -1,10 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.0.13';
-export const BUILD_HASH = 'sw-werwolf-pattern';
+export const BUILD      = '0.0.14';
+export const BUILD_HASH = 'reg-scope-fix';
 
 export const CHANGELOG = [
   {
-    version: '0.0.13',
+    version: '0.0.14',
+    date: '26.06.2026',
+    changes: [
+      'Crash behoben: reg nicht gefunden im setInterval',
+      'Weiter-Button jetzt groß und deutlich sichtbar',
+    ],
+  },
+  {
+    version: '0.0.14',
     date: '26.06.2026',
     changes: [
       'SW-Registrierung 1:1 nach Werwolf-Pattern — Update-Banner funktioniert jetzt korrekt',
@@ -14,7 +22,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.13',
+    version: '0.0.14',
     date: '26.06.2026',
     changes: [
       'Update-Banner erscheint automatisch ohne Neustart (alle 30s Polling)',
@@ -24,7 +32,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.13',
+    version: '0.0.14',
     date: '26.06.2026',
     changes: [
       'Karte antippen zum Aufdecken jetzt klickbar',
@@ -36,7 +44,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.13',
+    version: '0.0.14',
     date: '26.06.2026',
     changes: [
       'Cache-Fix: SW lädt sofort ohne Warte-Banner',
@@ -44,7 +52,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.13',
+    version: '0.0.14',
     date: '26.06.2026',
     changes: [
       '29 automatische Tests — alle grün',
@@ -52,7 +60,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.13',
+    version: '0.0.14',
     date: '26.06.2026',
     changes: [
       'Crash behoben: state vor Initialisierung zugegriffen',
@@ -60,7 +68,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.13',
+    version: '0.0.14',
     date: '26.06.2026',
     changes: [
       'Fehler TIMER_SECONDS behoben — App startet wieder',
@@ -69,7 +77,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.13',
+    version: '0.0.14',
     date: '26.06.2026',
     changes: [
       'Timer pausiert jetzt korrekt bei Pause',
