@@ -521,3 +521,24 @@ body.light .glog{background:var(--sur);}
   opacity: .35; cursor: not-allowed;
   background: var(--sur); color: var(--txt3); border: 1px solid var(--bdr2);
 }
+
+/* ── Reveal: Weiter-Button ───────────────────────────────────────────────── */
+.btn-next-reveal {
+  display: block;
+  width: 100%;
+  max-width: 340px;
+  margin: 1rem auto 0;
+  padding: 1rem 2rem;
+  background: linear-gradient(135deg, var(--pri), var(--pri2));
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: .03em;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(124,58,237,.4);
+  transition: all .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn-next-reveal:active { transform: scale(.97); opacity: .9; }
