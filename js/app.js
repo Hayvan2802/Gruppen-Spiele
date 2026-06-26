@@ -2,7 +2,7 @@
 // Portiert vom Werwolf-Projekt — nur Imposter-Spiellogik
 import { createApp, reactive, computed } from './vue.esm-browser.prod.js';
 import { BUILD, CHANGELOG } from './buildinfo.js';
-import { ALL_WORDS, DONATE_URL, COOP_MAX_PLAYERS } from './config.js';
+import { ALL_WORDS, KATEGORIEN, DEFAULT_KATEGORIEN, DONATE_URL, COOP_MAX_PLAYERS } from './config.js';
 import * as Coop from './coop.js';
 import { log, exportLogToFile } from './debuglog.js';
 import {
@@ -49,7 +49,14 @@ function shuffle(arr) {
   }
   return a;
 }
-function rndWord() { return ALL_WORDS[Math.floor(Math.random() * ALL_WORDS.length)]; }
+function rndWord() {
+  // Wörter aus gewählten Kategorien + eigene Wörter
+  let pool = [];
+  state.selectedKats.forEach(k => { if (KATEGORIEN[k]) pool.push(...KATEGORIEN[k]); });
+  pool.push(...state.customWords);
+  if (!pool.length) pool = ALL_WORDS;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
 function genId()   { return Math.random().toString(36).slice(2, 10); }
 function haptic(style = 'light') {
   try {
@@ -69,6 +76,17 @@ function showToast(msg) {
 // ── State ─────────────────────────────────────────────────────────────────────
 const state = reactive({
   screen: 'home',
+  // Kategorien
+  selectedKats: [...DEFAULT_KATEGORIEN],
+  showKats: false,
+  customWords: [],       // eigene Wörter
+  customWordDraft: '',
+  // Runden
+  roundsTotal: 1,
+  roundsCurrent: 1,
+  scores: {},            // { name: punkte }
+  // Theme
+  activeTheme: 'dark',  // 'dark'|'light'|'auto'|'neon'
   settings: loadSettings(),
   showWhatsNew: false,
   showHistory:  false,
@@ -178,7 +196,9 @@ function registerSW() {
 // ── Theme / Locale ────────────────────────────────────────────────────────────
 function applyTheme() {
   const theme = state.settings.theme;
-  let isLight = theme === 'auto'
+  document.body.classList.remove('light','neon');
+  if (theme === 'neon') { document.body.classList.add('neon'); return; }
+  const isLight = theme === 'auto'
     ? window.matchMedia('(prefers-color-scheme: light)').matches
     : theme === 'light';
   document.body.classList.toggle('light', isLight);
@@ -298,6 +318,9 @@ function startLocalGame() {
   state.winner       = null;
   state.eliminatedNames = [];
   state.tally        = {};
+  state.scores       = {};
+  state.roundsCurrent = 1;
+  state.voteSelection = null;
   state.timerSeconds = getTimerSeconds(state.playerCount);
   clearInterval(state.timerInterval);
   state.screen = 'reveal';
@@ -368,11 +391,44 @@ function calcResult() {
   state.winner          = eliminated.some(n => imposters.includes(n)) ? 'village' : 'imposter';
   state.eliminatedNames = eliminated;
   state.tally           = tally;
-  state.screen          = 'result';
+  // Punkte vergeben
+  if (state.winner === 'village') {
+    // Dorfbewohner bekommen 1 Punkt, Imposter 0
+    state.roles.filter(r => !r.isImposter).forEach(r => {
+      state.scores[r.name] = (state.scores[r.name] || 0) + 1;
+    });
+  } else {
+    // Imposter gewinnt: Imposter bekommt 2 Punkte
+    state.roles.filter(r => r.isImposter).forEach(r => {
+      state.scores[r.name] = (state.scores[r.name] || 0) + 2;
+    });
+  }
+  state.screen = 'result';
   haptic(state.winner === 'village' ? 'success' : 'error');
 }
 
 function newGame() { state.screen = 'home'; }
+function nextRound() {
+  // Nächste Runde — Namen bleiben, Punkte bleiben
+  state.roundsCurrent++;
+  state.revealIdx = 0; state.revealFlipped = false;
+  state.votes = {}; state.stimmIdx = 0;
+  state.winner = null; state.eliminatedNames = []; state.tally = {};
+  state.voteSelection = null;
+  state.timerSeconds = getTimerSeconds(state.playerCount);
+  clearInterval(state.timerInterval);
+  const names = state.playerNames.slice(0, state.playerCount).map((n,i) => n.trim() || `Spieler ${i+1}`);
+  const word = rndWord();
+  const shuffled = shuffle(names);
+  const impIdx = new Set(shuffle([...Array(shuffled.length).keys()]).slice(0, state.imposterCount));
+  state.roles = shuffled.map((name,i) => ({ name, isImposter: impIdx.has(i), word }));
+  state.screen = 'reveal';
+  haptic('success');
+}
+function resetGame() {
+  state.roundsCurrent = 1; state.scores = {};
+  state.screen = 'home';
+}
 
 // ── Coop ─────────────────────────────────────────────────────────────────────
 function selectMode(mode) { state.gameMode = mode; }
@@ -522,7 +578,8 @@ const App = {
       loadLastNamesIntoSetup, dismissNamesHint,
       saveCurrentConfig, loadConfig, removeConfig,
       openGameMenu, closeGameMenu, pauseGame, resumeGame, confirmEndGame,
-      startLocalGame, revealCard, nextReveal, skipTimer, selectVote, confirmVote, newGame,
+      startLocalGame, revealCard, nextReveal, skipTimer, selectVote, confirmVote, newGame, nextRound, resetGame,
+      KATEGORIEN, DEFAULT_KATEGORIEN,
       showHostSetup, createRoom, startCoopGame,
       showJoinSetup, joinRoom, toggleReady, cancelCoop,
       getInviteLink, shareInviteLink,
@@ -881,6 +938,79 @@ const App = {
             </div>
           </div>
 
+          <!-- Kategorien -->
+          <div class="sec">
+            <h2 style="cursor:pointer" @click="state.showKats=!state.showKats">
+              🗂 Kategorien
+              <span style="font-size:.75rem;color:var(--txt3);font-weight:500;letter-spacing:0;text-transform:none;margin-left:.4rem">
+                {{ state.selectedKats.length }} / {{ Object.keys(KATEGORIEN).length }} ausgewählt
+              </span>
+              <span style="margin-left:auto;font-size:.9rem;color:var(--txt3)">{{ state.showKats ? '▲' : '▼' }}</span>
+            </h2>
+            <div v-if="state.showKats">
+              <!-- Alle / Keine -->
+              <div style="display:flex;gap:.5rem;margin-bottom:.7rem">
+                <button class="btn-sec btn-sm" style="flex:1"
+                  @click="state.selectedKats = Object.keys(KATEGORIEN)">✓ Alle</button>
+                <button class="btn-sec btn-sm" style="flex:1"
+                  @click="state.selectedKats = []">✗ Keine</button>
+              </div>
+              <!-- Kategorie-Buttons -->
+              <div class="kat-grid">
+                <button v-for="(words, kat) in KATEGORIEN" :key="kat"
+                  class="kat-btn"
+                  :class="{ 'kat-btn-active': state.selectedKats.includes(kat) }"
+                  @click="state.selectedKats.includes(kat)
+                    ? state.selectedKats = state.selectedKats.filter(k=>k!==kat)
+                    : state.selectedKats.push(kat)">
+                  <span class="kat-label">{{ kat }}</span>
+                  <span class="kat-count">{{ words.length }} Wörter</span>
+                </button>
+              </div>
+              <!-- Eigene Wörter -->
+              <div style="margin-top:1rem">
+                <div style="font-size:.72rem;color:var(--txt3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">➕ Eigene Wörter</div>
+                <div style="display:flex;gap:.5rem">
+                  <input class="ninput" v-model="state.customWordDraft"
+                    placeholder="Wort eingeben..." style="flex:1;margin:0;padding:.5rem .7rem"
+                    @keydown.enter="state.customWordDraft.trim() && !state.customWords.includes(state.customWordDraft.trim()) && state.customWords.push(state.customWordDraft.trim()) && (state.customWordDraft='')" />
+                  <button class="btn-sec btn-sm" style="flex-shrink:0"
+                    @click="state.customWordDraft.trim() && !state.customWords.includes(state.customWordDraft.trim()) ? (state.customWords.push(state.customWordDraft.trim()), state.customWordDraft='') : null">
+                    + Hinzufügen
+                  </button>
+                </div>
+                <div v-if="state.customWords.length" style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.6rem">
+                  <span v-for="w in state.customWords" :key="w" class="custom-word-tag">
+                    {{ w }}
+                    <button @click="state.customWords = state.customWords.filter(x=>x!==w)"
+                      style="background:none;border:none;color:var(--txt3);cursor:pointer;margin-left:.2rem;font-size:.9rem">×</button>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div v-else style="display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.4rem">
+              <span v-for="kat in state.selectedKats.slice(0,4)" :key="kat"
+                style="font-size:.7rem;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);border-radius:20px;padding:2px 8px;color:var(--gold)">
+                {{ kat.split(' ').slice(1).join(' ') }}
+              </span>
+              <span v-if="state.selectedKats.length > 4"
+                style="font-size:.7rem;color:var(--txt3)">+{{ state.selectedKats.length - 4 }}</span>
+            </div>
+          </div>
+
+          <!-- Runden -->
+          <div class="sec">
+            <h2>🔄 Runden</h2>
+            <div class="pc-row">
+              <button class="cnt-btn" @click="state.roundsTotal = Math.max(1, state.roundsTotal - 1)">−</button>
+              <div class="pc-stepper">
+                <div class="pc-num">{{ state.roundsTotal }}</div>
+                <div class="cnt-lbl">{{ state.roundsTotal === 1 ? 'Runde' : 'Runden' }}</div>
+              </div>
+              <button class="cnt-btn" @click="state.roundsTotal = Math.min(10, state.roundsTotal + 1)">+</button>
+            </div>
+          </div>
+
           <div class="sec">
             <h2>💾 Konfiguration</h2>
             <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
@@ -1091,8 +1221,30 @@ const App = {
           </div>
         </div>
 
-        <button class="btn-start" @click="startLocalGame">🔄 {{ t('result.newGame') }}</button>
-        <button class="btn-sec" style="margin-top:.5rem" @click="newGame">{{ t('result.backHome') }}</button>
+        <!-- Punkte wenn Mehrrundenspiel -->
+        <div v-if="state.roundsTotal > 1" class="scores-box">
+          <div style="font-size:.68rem;letter-spacing:.15em;color:var(--gold);text-transform:uppercase;margin-bottom:.6rem">
+            🏆 Punktestand — Runde {{ state.roundsCurrent }} / {{ state.roundsTotal }}
+          </div>
+          <div v-for="r in state.roles.slice().sort((a,b)=>(state.scores[b.name]||0)-(state.scores[a.name]||0))"
+            :key="r.name" class="score-row">
+            <span>{{ r.name }}{{ r.isImposter ? ' 🕵️' : '' }}</span>
+            <span class="score-val">{{ state.scores[r.name] || 0 }} Pkt</span>
+          </div>
+        </div>
+
+        <!-- Nächste Runde oder Neues Spiel -->
+        <template v-if="state.roundsTotal > 1 && state.roundsCurrent < state.roundsTotal">
+          <button class="btn-start" @click="nextRound">▶ Runde {{ state.roundsCurrent + 1 }} starten</button>
+          <button class="btn-sec" style="margin-top:.5rem" @click="resetGame">🏠 Abbrechen</button>
+        </template>
+        <template v-else>
+          <div v-if="state.roundsTotal > 1" style="font-size:.85rem;color:var(--gold);text-align:center;margin-bottom:.8rem;font-weight:700">
+            🎉 Alle {{ state.roundsTotal }} Runden gespielt!
+          </div>
+          <button class="btn-start" @click="startLocalGame">🔄 {{ t('result.newGame') }}</button>
+          <button class="btn-sec" style="margin-top:.5rem" @click="newGame">{{ t('result.backHome') }}</button>
+        </template>
       </div>
     </template>
 
