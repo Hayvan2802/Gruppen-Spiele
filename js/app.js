@@ -39,29 +39,6 @@ function playBeep(freq = 880, duration = 0.15, gain = 0.3) {
 const splashVersion = document.getElementById('splash-version');
 if (splashVersion) splashVersion.textContent = `v${BUILD}`;
 
-// ── Service Worker — wird nach state-Init registriert ─────────────────────────
-let waitingWorker = null;
-function registerSW() {
-  if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.register('./sw.js').then(reg => {
-    window._swReg = reg;
-    if (reg.waiting) {
-      waitingWorker = reg.waiting;
-      state.updateReady = true;
-    }
-    reg.addEventListener('updatefound', () => {
-      const nw = reg.installing;
-      nw.addEventListener('statechange', () => {
-        if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-          waitingWorker = nw;
-          state.updateReady = true; // Vue reactive → Banner erscheint automatisch
-        }
-      });
-    });
-  }).catch(e => log('sw', 'Registrierung fehlgeschlagen', e));
-  // Nach skipWaiting → neuer SW übernimmt → reload
-  navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
-}
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
 function shuffle(arr) {
@@ -144,6 +121,29 @@ const state = reactive({
   eliminatedNames: [],
   tally: {},
 });
+
+// ── Service Worker — nach state-Init damit updateReady reaktiv ist ────────────
+let waitingWorker = null;
+function registerSW() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    window._swReg = reg;
+    if (reg.waiting) {
+      waitingWorker = reg.waiting;
+      state.updateReady = true;
+    }
+    reg.addEventListener('updatefound', () => {
+      const nw = reg.installing;
+      nw.addEventListener('statechange', () => {
+        if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+          waitingWorker = nw;
+          state.updateReady = true;
+        }
+      });
+    });
+  }).catch(e => log('sw', 'Registrierung fehlgeschlagen', e));
+  navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
+}
 
 // ── Theme / Locale ────────────────────────────────────────────────────────────
 function applyTheme() {
