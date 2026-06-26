@@ -5,10 +5,10 @@ import { BUILD, CHANGELOG } from './buildinfo.js';
 import {
   wbiState, WBI_KATEGORIEN, WBI_DEFAULT_KATEGORIEN,
   wbiStartLocal, wbiShowCard, wbiHideCard, wbiMarkGuessed, wbiMarkNotGuessed,
+  wbiMarkSkipped, wbiToggleDiscussCard, wbiStartResolve,
   wbiRestart, wbiSelectMode, wbiShowHostSetup, wbiCreateRoom,
   wbiShowJoinSetup, wbiJoinRoom, wbiStartCoopGame, wbiCancelCoop,
   wbiShareLink, wbiSendGuess, wbiCurrentCard, wbiRemainingCount, wbiGuessedCount,
-  wbiMarkNotGuessed, wbiToggleDiscussCard, wbiStartResolve,
 } from './games/werbinich.js';
 import { ALL_WORDS, KATEGORIEN, DEFAULT_KATEGORIEN, DONATE_URL, COOP_MAX_PLAYERS } from './config.js';
 import * as Coop from './coop.js';
@@ -684,7 +684,7 @@ const App = {
       // Wer bin ich
       wbiState, WBI_KATEGORIEN, WBI_DEFAULT_KATEGORIEN,
       wbiStartLocal, wbiShowCard, wbiHideCard, wbiMarkGuessed, wbiMarkNotGuessed,
-      wbiMarkNotGuessed, wbiToggleDiscussCard, wbiStartResolve,
+      wbiToggleDiscussCard, wbiStartResolve,
       wbiRestart, wbiSelectMode, wbiShowHostSetup, wbiCreateRoom,
       wbiShowJoinSetup, wbiJoinRoom, wbiStartCoopGame, wbiCancelCoop,
       wbiShareLink, wbiSendGuess, wbiCurrentCard, wbiRemainingCount, wbiGuessedCount,
