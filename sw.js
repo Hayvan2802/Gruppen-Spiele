@@ -1,7 +1,5 @@
-// Gruppen-Spiele Service Worker v0.0.10
-// EINMALIG: skipWaiting im install um alten gecachten kaputten State zu überwinden.
-// Ab v0.0.11 wieder normales Verhalten (Banner).
-const CACHE = 'gruppen-spiele-v0.0.10';
+// Gruppen-Spiele Service Worker v0.0.11
+const CACHE = 'gruppen-spiele-v0.0.11';
 const ASSETS = [
   './index.html', './css/styles.css',
   './js/app.js', './js/buildinfo.js', './js/config.js', './js/storage.js',
@@ -17,8 +15,7 @@ const ASSETS = [
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).catch(() => {}));
-  // EINMALIG skipWaiting um kaputten Cache zu überwinden
-  self.skipWaiting();
+  // Kein skipWaiting — Nutzer entscheidet per Banner
 });
 
 self.addEventListener('message', e => {
