@@ -115,7 +115,6 @@ export function wbiStartLocal() {
 
 export function wbiShowCard()  { wbiState.showCard = true; haptic('medium'); }
 export function wbiHideCard()  { wbiState.showCard = false; }
-export { wbiMarkNotGuessed, wbiToggleDiscussCard, wbiStartResolve };
 
 export function wbiMarkGuessed(idx) {
   wbiState.localCards[idx].guessed = true;
