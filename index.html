@@ -2,29 +2,57 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <meta name="description" content="Gruppen-Spiele – kostenlose Party Games ohne Werbung" />
-  <meta name="theme-color" content="#0f0c1a" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Gruppen-Spiele" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
-  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png" />
-  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#0d0a14" />
+  <meta name="description" content="Gruppen-Spiele — Kostenlose Party Games ohne Werbung" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./css/styles.css" />
   <title>Gruppen-Spiele</title>
-  <link rel="stylesheet" href="src/styles/global.css" />
-  <link rel="stylesheet" href="src/styles/imposter.css" />
+  <style>
+    #splash {
+      position: fixed; inset: 0; background: #0d0a14;
+      display: flex; align-items: center; justify-content: center; z-index: 99997;
+      transition: opacity .45s ease;
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+    #splash.fade-out { opacity: 0; pointer-events: none; }
+    #splash-inner { text-align: center; }
+    #splash-logo { width: 96px; height: 96px; border-radius: 22px; margin: 0 auto; display: block; box-shadow: 0 0 48px rgba(124,58,237,.4); }
+    #splash-title { font-family: system-ui, sans-serif; font-size: 1.5rem; font-weight: 900; color: #e8dfc8; margin-top: 16px; letter-spacing: 2px; }
+    #splash-sub   { font-family: system-ui, sans-serif; font-size: .78rem; color: #5d4a6a; margin-top: 4px; }
+    #splash-version { font-family: system-ui, sans-serif; font-size: .7rem; color: #3a2a4a; margin-top: 10px; }
+  </style>
 </head>
 <body>
-  <header class="app-header">
-    <div class="app-logo">GRUPPEN-SPIELE</div>
-    <div class="app-tagline">Party Games · Kostenlos · Werbefrei</div>
-  </header>
-  <main id="app"></main>
-  <script src="src/games/imposter/words.js"></script>
-  <script src="src/games/imposter/game.js"></script>
-  <script src="src/games/imposter/ui.js"></script>
-  <script src="src/main.js"></script>
+  <div id="rotate-fix">
+    <div id="splash">
+      <div id="splash-inner">
+        <img id="splash-logo" src="./icons/icon-192.png" alt="" />
+        <div id="splash-title">🕵️ GRUPPEN-SPIELE</div>
+        <div id="splash-sub">Party Games · Kostenlos · Werbefrei</div>
+        <div id="splash-version"></div>
+      </div>
+    </div>
+    <div id="app"></div>
+    <div id="err" style="display:none;position:fixed;inset:0;background:#1a0011;color:#ff6b6b;padding:20px;font-family:monospace;font-size:13px;z-index:99999;overflow:auto;white-space:pre-wrap"></div>
+  </div>
+  <script>
+    window.onerror = function(msg, src, line, col, err) {
+      var d = document.getElementById('err');
+      d.style.display = 'block';
+      d.textContent = 'ERROR:\n' + msg + '\n\nFile: ' + src + '\nLine: ' + line + '\n\n' + (err && err.stack ? err.stack : '');
+    };
+    window.addEventListener('unhandledrejection', function(e) {
+      var d = document.getElementById('err');
+      d.style.display = 'block';
+      d.textContent += '\nPromise Error:\n' + (e.reason && e.reason.stack ? e.reason.stack : String(e.reason));
+    });
+  </script>
+  <script type="module" src="./js/app.js"></script>
 </body>
 </html>
