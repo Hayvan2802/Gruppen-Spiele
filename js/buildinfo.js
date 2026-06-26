@@ -1,10 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.18';
-export const BUILD_HASH = 'update-banner-version-fix';
+export const BUILD      = '0.19';
+export const BUILD_HASH = 'buildinfo-no-cache';
 
 export const CHANGELOG = [
   {
-    version: '0.18',
+    version: '0.19',
+    date: '26.06.2026',
+    changes: [
+      'buildinfo.js wird nie gecacht — Version stimmt immer nach Update',
+      'Whats-New zeigt korrekte neue Version nach Aktualisierung',
+    ],
+  },
+  {
+    version: '0.19',
     date: '26.06.2026',
     changes: [
       'Update-Banner zeigt korrekte Version des neuen SW',
@@ -12,7 +20,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.18',
+    version: '0.19',
     date: '26.06.2026',
     changes: [
       'Multiplayer Host: Zufallscode entfernt — Code selbst eintippen',
@@ -21,7 +29,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.18',
+    version: '0.19',
     date: '26.06.2026',
     changes: [
       'Toast-Nachricht korrekt sichtbar — z-index erhöht, über allen Ebenen',
@@ -29,7 +37,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.18',
+    version: '0.19',
     date: '26.06.2026',
     changes: [
       'Versionsnummern korrigiert — Format 0.X statt 0.0.X',
