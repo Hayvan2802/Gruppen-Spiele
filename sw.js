@@ -1,7 +1,7 @@
 // Gruppen-Spiele Service Worker v1.0.0
 // Kein self.skipWaiting() im install — neuer SW wartet bis Nutzer
 // aktiv auf "Aktualisieren & neu starten" tippt (exakt wie Werwolf-App).
-const CACHE = 'gruppen-spiele-v1.0.0';
+const CACHE = 'gruppen-spiele-v1.0.1';
 const ASSETS = [
   './index.html',
   './css/styles.css',
