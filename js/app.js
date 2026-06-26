@@ -297,21 +297,19 @@ function openGameMenu()  {
   // Timer sofort pausieren wenn Menü geöffnet wird
   if (state.screen === 'timer') {
     clearInterval(state.timerInterval);
-    state.gamePaused = true;
   }
 }
 function closeGameMenu() {
   state.gameMenu.active = false;
-  // Timer fortsetzen wenn er pausiert wurde
-  if (state.screen === 'timer' && state.gamePaused) resumeGame();
+  // Timer fortsetzen wenn Menü geschlossen
+  if (state.screen === 'timer' && state.timerSeconds > 0) startTimer();
 }
 function pauseGame()     { state.gamePaused = true; state.gameMenu.active = false; clearInterval(state.timerInterval); }
 function resumeGame() {
-  state.gamePaused = false;
   if (state.screen === 'timer' && state.timerSeconds > 0) startTimer();
 }
 function confirmEndGame() {
-  state.gameEndConfirm = false; state.gamePaused = false; state.gameMenu.active = false;
+  state.gameEndConfirm = false; state.gameMenu.active = false;
   clearInterval(state.timerInterval);
   state.screen = 'home';
 }
@@ -701,17 +699,7 @@ const App = {
   template: `
   <div class="app" :class="{ rtl: i18nState.rtl }">
 
-    <!-- ── PAUSE OVERLAY ── -->
-    <div v-if="state.gamePaused" class="modal-bg" style="z-index:500">
-      <div class="modal" style="text-align:center">
-        <div style="font-size:3rem;margin-bottom:.8rem">🕵️</div>
-        <h3 style="color:var(--gold);margin-bottom:.5rem">PAUSIERT</h3>
-        <p class="confirm-msg">Das Spiel ist pausiert. Tippe Fortsetzen wenn alle bereit sind.</p>
-        <button class="btn btn-primary" @click="resumeGame">▶ Fortsetzen</button>
-        <button class="btn btn-ghost btn-sm" style="margin-bottom:.4rem" @click="state.showSettingsModal=true;state.gamePaused=false">⚙️ Einstellungen</button>
-        <button class="btn btn-ghost btn-sm" @click="state.gamePaused=false;state.gameEndConfirm=true">Spiel beenden</button>
-      </div>
-    </div>
+    <!-- Pause-Overlay entfernt — nur gameMenu Modal wird verwendet -->
 
     <!-- ── SPIELMENÜ ── -->
     <div v-if="state.gameMenu.active" class="modal-bg" @click.self="closeGameMenu">
@@ -720,7 +708,7 @@ const App = {
           <span style="font-size:.9rem;letter-spacing:.15em;color:var(--gold);font-weight:700">SPIELMENÜ</span>
           <button class="icon-btn" @click="closeGameMenu">✕</button>
         </div>
-        <button class="btn btn-primary" style="margin-bottom:.6rem" @click="resumeGame;closeGameMenu()">▶ Fortsetzen</button>
+        <button class="btn btn-primary" style="margin-bottom:.6rem" @click="closeGameMenu()">▶ Fortsetzen</button>
         <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="state.showSettingsModal=true;state.gameMenu.active=false">⚙️ Einstellungen</button>
         <div style="height:1px;background:var(--bdr);margin:.4rem 0 .9rem"></div>
         <button class="btn btn-ghost" style="color:#e07070;border-color:#e07070" @click="state.gameEndConfirm=true;state.gameMenu.active=false">
