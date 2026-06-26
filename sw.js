@@ -1,5 +1,5 @@
-// Gruppen-Spiele Service Worker v0.15
-const CACHE = 'gruppen-spiele-v0.15';
+// Gruppen-Spiele Service Worker v0.16
+const CACHE = 'gruppen-spiele-v0.16';
 const ASSETS = [
   './index.html', './css/styles.css',
   './js/app.js', './js/buildinfo.js', './js/config.js', './js/storage.js',
