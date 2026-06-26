@@ -568,3 +568,74 @@ body.light .glog{background:var(--sur);}
   opacity: .35; cursor: not-allowed; box-shadow: none;
   background: var(--sur); color: var(--txt3); border: 1px solid var(--bdr2);
 }
+
+/* ── Neon Theme ──────────────────────────────────────────────────────────── */
+body.neon {
+  --bg:#08001a; --bg2:#0d0025; --bg3:#120030;
+  --sur:rgba(180,0,255,.07); --sur2:rgba(180,0,255,.13);
+  --bdr:rgba(180,0,255,.2); --bdr2:rgba(180,0,255,.35);
+  --txt:#f0e8ff; --txt2:#c084fc; --txt3:#7c3aed;
+  --pri:#b400ff; --pri2:#7c00dd; --acc:#00f5ff;
+  --gold:#ff00aa; --gold2:#cc0088;
+  --green:#00ff88; --red:#ff0055; --red2:#ff2266;
+  --blue:#00f5ff; --blue2:#80ffff;
+}
+body.neon::before {
+  background-image:
+    radial-gradient(1.5px 1.5px at 15% 20%,rgba(180,0,255,.8) 0%,transparent 100%),
+    radial-gradient(1px 1px at 55% 10%,rgba(0,245,255,.7) 0%,transparent 100%),
+    radial-gradient(2px 2px at 75% 65%,rgba(255,0,170,.6) 0%,transparent 100%),
+    radial-gradient(1px 1px at 8% 80%,rgba(180,0,255,.5) 0%,transparent 100%),
+    radial-gradient(1.5px 1.5px at 90% 30%,rgba(0,245,255,.5) 0%,transparent 100%);
+}
+body.neon .logo h1 {
+  background: linear-gradient(90deg, #ff00aa, #b400ff, #00f5ff);
+  -webkit-background-clip: text; background-clip: text;
+}
+body.neon .btn-start {
+  background: linear-gradient(135deg, #b400ff, #7c00dd);
+  box-shadow: 0 0 30px rgba(180,0,255,.5);
+}
+
+/* ── Kategorie-Grid ──────────────────────────────────────────────────────── */
+.kat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px,1fr));
+  gap: .45rem;
+}
+.kat-btn {
+  display: flex; flex-direction: column; align-items: flex-start;
+  padding: .6rem .75rem; border-radius: 10px;
+  border: 1.5px solid var(--bdr); background: var(--sur);
+  cursor: pointer; transition: all .15s; text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+.kat-btn:active { transform: scale(.97); }
+.kat-btn-active {
+  border-color: var(--gold);
+  background: rgba(124,58,237,.15);
+}
+.kat-label { font-size: .8rem; font-weight: 600; color: var(--txt); line-height: 1.3; }
+.kat-count { font-size: .65rem; color: var(--txt3); margin-top: .15rem; }
+.kat-btn-active .kat-label { color: var(--gold); }
+
+/* ── Eigene Wörter Tags ──────────────────────────────────────────────────── */
+.custom-word-tag {
+  display: inline-flex; align-items: center;
+  background: rgba(124,58,237,.2); border: 1px solid rgba(124,58,237,.4);
+  border-radius: 20px; padding: .2rem .65rem;
+  font-size: .78rem; color: var(--gold); font-weight: 600;
+}
+
+/* ── Scores ──────────────────────────────────────────────────────────────── */
+.scores-box {
+  background: var(--sur); border: 1px solid var(--bdr);
+  border-radius: 14px; padding: 1rem; width: 100%;
+  margin-bottom: 1rem; text-align: left;
+}
+.score-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .35rem 0; border-bottom: 1px solid var(--bdr); font-size: .88rem;
+}
+.score-row:last-child { border-bottom: none; }
+.score-val { font-weight: 700; color: var(--gold); }
