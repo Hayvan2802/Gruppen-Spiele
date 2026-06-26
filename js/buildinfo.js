@@ -1,8 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.43';
-export const BUILD_HASH = 'changelog-fix';
+export const BUILD      = '0.44';
+export const BUILD_HASH = 'sw-fix-clean';
 
 export const CHANGELOG = [
+  {
+    version: '0.44',
+    date: '27.06.2026',
+    changes: [
+      'SW-Fix: MessageChannel entfernt — Banner erscheint jetzt korrekt',
+      'registerSW() bereinigt — exakt nach Werwolf-Muster',
+      'iOS Cache-Reset erzwungen',
+    ],
+  },
   {
     version: '0.43',
     date: '27.06.2026',
