@@ -96,6 +96,7 @@ const state = reactive({
   lobbyHistory: [],      // [{ round, word, winner, imposters, eliminated, tally, roles }]
   wbiMenu: false,
   wbiEndConfirm: false,
+  showRulesGame: null, // 'imposter' | 'wbi' | null
   // Theme
   activeTheme: 'dark',  // 'dark'|'light'|'auto'|'neon'
   settings: loadSettings(),
@@ -701,6 +702,36 @@ const App = {
 
     <!-- Pause-Overlay entfernt — nur gameMenu Modal wird verwendet -->
 
+
+    <!-- ── ANLEITUNGS-MODAL ── -->
+    <div v-if="state.showRulesGame" class="modal-bg" @click.self="state.showRulesGame=null">
+      <div class="modal" style="max-height:85vh;overflow-y:auto">
+        <!-- Imposter Anleitung -->
+        <template v-if="state.showRulesGame==='imposter'">
+          <div style="font-size:2rem;text-align:center;margin-bottom:.5rem">🕵️</div>
+          <h3 style="text-align:center;margin-bottom:1rem">Imposter — Anleitung</h3>
+          <div class="rules-section">
+            <div class="rules-step">1️⃣ <strong>Karten verteilen</strong><br>Jeder schaut heimlich auf sein Handy und sieht ein geheimes Wort — außer dem Imposter!</div>
+            <div class="rules-step">2️⃣ <strong>Diskutieren</strong><br>Alle beschreiben das Wort abwechselnd, ohne es direkt zu sagen. Der Imposter muss so tun als ob er es kennt.</div>
+            <div class="rules-step">3️⃣ <strong>Abstimmen</strong><br>Jeder stimmt ab, wer der Imposter ist. Wer die meisten Stimmen bekommt fliegt raus.</div>
+            <div class="rules-step">🏆 <strong>Wer gewinnt?</strong><br>Das Dorf gewinnt wenn der Imposter erwischt wird. Der Imposter gewinnt wenn er nicht enttarnt wird.</div>
+          </div>
+        </template>
+        <!-- Wer bin ich Anleitung -->
+        <template v-if="state.showRulesGame==='wbi'">
+          <div style="font-size:2rem;text-align:center;margin-bottom:.5rem">🤔</div>
+          <h3 style="text-align:center;margin-bottom:1rem">Wer bin ich? — Anleitung</h3>
+          <div class="rules-section">
+            <div class="rules-step">1️⃣ <strong>Karten verteilen</strong><br>Jeder hält das Handy mit dem Bildschirm zur Gruppe — alle anderen sehen den Begriff, nur der Spieler selbst nicht!</div>
+            <div class="rules-step">2️⃣ <strong>Fragen stellen</strong><br>Jeder Spieler stellt reihum Ja/Nein-Fragen über sich selbst. z.B. „Bin ich ein Mensch?" „Bin ich berühmt?"</div>
+            <div class="rules-step">3️⃣ <strong>Erraten</strong><br>Wer glaubt zu wissen wer er ist, tippt auf ✓ Erraten. Wer es noch nicht weiß stellt weiter Fragen.</div>
+            <div class="rules-step">🏆 <strong>Wer gewinnt?</strong><br>Wer seinen Begriff als erstes errät gewinnt die Runde. Alle können weiterspielen bis alle fertig sind.</div>
+          </div>
+        </template>
+        <button class="btn-start" style="margin-top:1rem" @click="state.showRulesGame=null">Verstanden ✓</button>
+      </div>
+    </div>
+
     <!-- ── SPIELMENÜ ── -->
     <div v-if="state.gameMenu.active" class="modal-bg" @click.self="closeGameMenu">
       <div class="modal" style="animation:fadeIn .2s ease">
@@ -710,6 +741,7 @@ const App = {
         </div>
         <button class="btn btn-primary" style="margin-bottom:.6rem" @click="closeGameMenu()">▶ Fortsetzen</button>
         <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="state.showSettingsModal=true;state.gameMenu.active=false">⚙️ Einstellungen</button>
+        <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="state.showRulesGame='imposter';state.gameMenu.active=false">❓ Anleitung</button>
         <div style="height:1px;background:var(--bdr);margin:.4rem 0 .9rem"></div>
         <button class="btn btn-ghost" style="color:#e07070;border-color:#e07070" @click="state.gameEndConfirm=true;state.gameMenu.active=false">
           🚪 Spiel beenden
@@ -1063,6 +1095,7 @@ const App = {
           </div>
           <button class="btn btn-primary" style="margin-bottom:.6rem" @click="state.wbiMenu=false">▶ Fortsetzen</button>
           <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="state.showSettingsModal=true;state.wbiMenu=false">⚙️ Einstellungen</button>
+          <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="state.showRulesGame='wbi';state.wbiMenu=false">❓ Anleitung</button>
           <div style="height:1px;background:var(--bdr);margin:.4rem 0 .9rem"></div>
           <button class="btn btn-ghost" style="color:#e07070;border-color:#e07070"
             @click="state.wbiEndConfirm=true;state.wbiMenu=false">
@@ -1259,11 +1292,11 @@ const App = {
             <div class="wbi-for-label">Karte für</div>
             <div class="wbi-player-name">{{ wbiState.localCards[wbiState.currentIdx]?.playerName }}</div>
             <div class="wbi-hint" v-if="!wbiState.showCard">
-              📱 Gib das Handy an <strong>{{ wbiState.localCards[wbiState.currentIdx]?.playerName }}</strong>.<br>
-              Alle anderen schauen weg! Dann Antippen zum Aufdecken.
+              📱 <strong>{{ wbiState.localCards[wbiState.currentIdx]?.playerName }}</strong> hält das Handy mit dem Bildschirm zur Gruppe.<br>
+              Alle außer {{ wbiState.localCards[wbiState.currentIdx]?.playerName }} schauen drauf!
             </div>
             <div class="wbi-hint" v-else style="color:var(--gold)">
-              👀 Merke dir den Begriff! Tippt nochmals um die Karte zu schließen.
+              👥 Alle anderen sehen jetzt den Begriff! {{ wbiState.localCards[wbiState.currentIdx]?.playerName }} schaut weg. Nochmals antippen zum Schließen.
             </div>
 
             <!-- Karte: Antippen öffnet/schließt -->
@@ -1282,7 +1315,7 @@ const App = {
                 </div>
                 <div class="wbi-word">{{ wbiState.localCards[wbiState.currentIdx]?.word }}</div>
                 <div style="font-size:.8rem;color:var(--txt3);margin-top:.8rem">
-                  Nochmals antippen zum Schließen 👆
+                  {{ wbiState.localCards[wbiState.currentIdx]?.playerName }} schaut weg! Nochmals antippen zum Schließen 👆
                 </div>
               </div>
             </div>
@@ -1457,6 +1490,7 @@ const App = {
             <div class="game-select-icon">🕵️</div>
             <div class="game-select-name">Imposter</div>
             <div class="game-select-desc">Finde den Verräter — 3 bis 16 Spieler</div>
+            <div class="game-select-hint-btn" @click.stop="state.showRulesGame='imposter'">❓ Anleitung</div>
           </div>
           <!-- Wer bin ich -->
           <div class="game-select-card" :class="{active: state.screen==='wbi'}"
@@ -1464,12 +1498,11 @@ const App = {
             <div class="game-select-icon">🤔</div>
             <div class="game-select-name">Wer bin ich?</div>
             <div class="game-select-desc">Errate deinen Begriff — 2 bis 16 Spieler</div>
+            <div class="game-select-hint-btn" @click.stop="state.showRulesGame='wbi'">❓ Anleitung</div>
           </div>
         </div>
 
-        <button class="btn-start" @click="state.screen='setup'">🕵️ Imposter
-          </button>
-          <button class="btn-start" style="margin-top:.5rem;background:linear-gradient(135deg,#0ea5e9,#0284c7)" @click="state.screen='wbi'">🤔 Wer bin ich?</button>
+
       <div style="text-align:center;padding:1.5rem 0 .5rem;font-size:.72rem;color:var(--txt3);letter-spacing:.08em">
           v{{ BUILD }}
         </div>
