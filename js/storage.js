@@ -18,16 +18,16 @@ function save(key, val) {
   catch (e) { log('storage', `Speichern "${key}" fehlgeschlagen`, e); }
 }
 
-export function loadSettings()       { return { ...DEFAULT_SETTINGS, ...load(K.SETTINGS, {}) }; }
-export function saveSettings(s)      { save(K.SETTINGS, s); }
-export function loadSeenVersion()    { return load(K.SEEN_VERSION, null); }
-export function saveSeenVersion(v)   { save(K.SEEN_VERSION, v); }
-export function loadLastNames()      { return load(K.LAST_NAMES, []); }
-export function saveLastNames(n)     { save(K.LAST_NAMES, n.slice(0, 40)); }
-export function loadConfigs()        { return load(K.CONFIGS, []); }
+export function loadSettings()      { return { ...DEFAULT_SETTINGS, ...load(K.SETTINGS, {}) }; }
+export function saveSettings(s)     { save(K.SETTINGS, s); }
+export function loadSeenVersion()   { return load(K.SEEN_VERSION, null); }
+export function saveSeenVersion(v)  { save(K.SEEN_VERSION, v); }
+export function loadLastNames()     { return load(K.LAST_NAMES, []); }
+export function saveLastNames(n)    { save(K.LAST_NAMES, n.slice(0, 40)); }
+export function loadConfigs()       { return load(K.CONFIGS, []); }
 export function saveConfig(cfg) {
   const list = loadConfigs().filter(c => c.id !== cfg.id);
   list.unshift(cfg);
   save(K.CONFIGS, list.slice(0, 8));
 }
-export function deleteConfig(id)     { save(K.CONFIGS, loadConfigs().filter(c => c.id !== id)); }
+export function deleteConfig(id)    { save(K.CONFIGS, loadConfigs().filter(c => c.id !== id)); }
