@@ -39,21 +39,27 @@ function playBeep(freq = 880, duration = 0.15, gain = 0.3) {
 const splashVersion = document.getElementById('splash-version');
 if (splashVersion) splashVersion.textContent = `v${BUILD}`;
 
-// ── Service Worker ────────────────────────────────────────────────────────────
+// ── Service Worker — wird nach state-Init registriert ─────────────────────────
 let waitingWorker = null;
-if ('serviceWorker' in navigator) {
+function registerSW() {
+  if (!('serviceWorker' in navigator)) return;
   navigator.serviceWorker.register('./sw.js').then(reg => {
     window._swReg = reg;
-    if (reg.waiting) { waitingWorker = reg.waiting; state.updateReady = true; }
+    if (reg.waiting) {
+      waitingWorker = reg.waiting;
+      state.updateReady = true;
+    }
     reg.addEventListener('updatefound', () => {
       const nw = reg.installing;
       nw.addEventListener('statechange', () => {
         if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-          waitingWorker = nw; state.updateReady = true;
+          waitingWorker = nw;
+          state.updateReady = true; // Vue reactive → Banner erscheint automatisch
         }
       });
     });
   }).catch(e => log('sw', 'Registrierung fehlgeschlagen', e));
+  // Nach skipWaiting → neuer SW übernimmt → reload
   navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
 }
 
@@ -126,7 +132,7 @@ const state = reactive({
   roles: [],   // [{name, isImposter, word}]
 
   // Timer
-  timerSeconds: TIMER_SECONDS,
+  timerSeconds: 45,
   timerInterval: null,
 
   // Abstimmung
@@ -428,6 +434,7 @@ function handleCoopMessage(msg) {
 function init() {
   applyTheme(); applyLocale(); maybeShowWhatsNew();
   if (state.lastSavedNames.length > 0) state.showSavedNamesHint = true;
+  registerSW(); // SW nach state-Init registrieren, damit updateReady reaktiv ist
 
   // Einladungslink: ?code=XXXXXX → direkt in Coop-Join-Ansicht
   const params = new URLSearchParams(window.location.search);
@@ -460,7 +467,7 @@ const App = {
     const imposters    = computed(() => state.roles.filter(r => r.isImposter).map(r => r.name));
 
     return {
-      state, BUILD, CHANGELOG, DONATE_URL, SUPPORTED_LOCALES, TIMER_SECONDS,
+      state, BUILD, CHANGELOG, DONATE_URL, SUPPORTED_LOCALES,
       timerPct, revealPlayer, currentVoter, voteOptions, imposters, maxImposterOptions, getTimerSeconds,
       t, i18nState,
       setTheme, setLang,
@@ -548,14 +555,15 @@ const App = {
       </div>
     </div>
 
-    <!-- ── UPDATE BANNER ── -->
-    <div v-if="state.updateReady && state.screen === 'home' && !state.showWhatsNew" class="modal-bg">
-      <div class="uc-card">
-        <span class="uc-badge">✦ UPDATE VERFÜGBAR</span>
-        <div class="uc-title">Version {{ CHANGELOG[0]?.version }} ist da!</div>
-        <div class="uc-desc">{{ CHANGELOG[0]?.changes?.slice(0,2).join(' · ') }}</div>
+    <!-- ── UPDATE BANNER (Bottom-Sheet, immer sichtbar) ── -->
+    <div v-if="state.updateReady && !state.showWhatsNew" class="update-sheet-overlay" @click.self="state.updateReady=false">
+      <div class="update-sheet">
+        <div class="sheet-handle"></div>
+        <span class="uc-badge" style="margin-bottom:.8rem">✦ UPDATE VERFÜGBAR</span>
+        <div class="uc-title" style="font-size:1.1rem;margin-bottom:.4rem">v{{ CHANGELOG[0]?.version }} ist bereit!</div>
+        <div class="uc-desc" style="font-size:.82rem;margin-bottom:1rem">{{ CHANGELOG[0]?.changes?.[0] }}</div>
         <button class="uc-btn-primary" @click="applyUpdate">⬆ Aktualisieren & neu starten</button>
-        <button class="uc-btn-later" @click="state.updateReady = false">Später</button>
+        <button class="uc-btn-later" @click="state.updateReady=false">Später</button>
       </div>
     </div>
 
@@ -651,9 +659,9 @@ const App = {
     <!-- ══════════════════════════════════════════════════════════════════ -->
     <!-- ── HOME SCREEN ── -->
     <!-- ══════════════════════════════════════════════════════════════════ -->
-    <div v-if="!state.showWhatsNew && !state.showHistory && !state.showSettingsModal && (state.updateReady ? state.screen !== 'home' : true) || (!state.updateReady && !state.showWhatsNew)">
+    <div v-if="!state.showWhatsNew && !state.showHistory && !state.showSettingsModal">
 
-    <template v-if="state.screen === 'home' && !state.showWhatsNew && !(state.updateReady)">
+    <template v-if="state.screen === 'home' && !state.showWhatsNew">
       <div class="top-bar">
         <button class="icon-btn" @click="state.showSettingsModal=true" title="Einstellungen">⚙️</button>
       </div>
