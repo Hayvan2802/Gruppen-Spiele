@@ -1,10 +1,20 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.39';
-export const BUILD_HASH = 'fix-double-pause-menu';
+export const BUILD      = '0.40';
+export const BUILD_HASH = 'wbi-text-rules-ui';
 
 export const CHANGELOG = [
   {
-    version: '0.39',
+    version: '0.40',
+    date: '27.06.2026',
+    changes: [
+      'WBI: Text korrigiert — Spieler hält Handy zur Gruppe, andere sehen Begriff',
+      'Hauptmenü: Extra-Buttons entfernt, nur große Spielkarten',
+      'Anleitungs-Button ❓ auf jeder Spielkarte im Hauptmenü',
+      'Anleitung auch im Spielmenü (Pause) erreichbar',
+    ],
+  },
+  {
+    version: '0.40',
     date: '27.06.2026',
     changes: [
       'Imposter: doppeltes Pause-Menü behoben',
@@ -12,7 +22,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.39',
+    version: '0.40',
     date: '27.06.2026',
     changes: [
       'WBI: Zurück-Pfeil nur im Setup sichtbar',
@@ -22,7 +32,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.39',
+    version: '0.40',
     date: '27.06.2026',
     changes: [
       'WBI: wbiNextCard im setup() return ergänzt — Button funktioniert jetzt',
@@ -30,7 +40,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.39',
+    version: '0.40',
     date: '27.06.2026',
     changes: [
       'WBI: Weiter-Button erst sichtbar nach Aufdecken + Schließen der Karte',
@@ -38,7 +48,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.39',
+    version: '0.40',
     date: '27.06.2026',
     changes: [
       'WBI: Weiter-Button funktioniert jetzt (wbiNextCard nicht exportiert)',
@@ -46,7 +56,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.39',
+    version: '0.40',
     date: '27.06.2026',
     changes: [
       '"Weiter zu Spieler X" Button Fix — war beim ersten Spieler nicht sichtbar',
