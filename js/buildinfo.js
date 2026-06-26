@@ -1,10 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.34';
-export const BUILD_HASH = 'wbi-flow-fixes';
+export const BUILD      = '0.35';
+export const BUILD_HASH = 'wbi-nextcard-stars-fix';
 
 export const CHANGELOG = [
   {
-    version: '0.34',
+    version: '0.35',
+    date: '27.06.2026',
+    changes: [
+      'WBI: Weiter-Button funktioniert jetzt (wbiNextCard nicht exportiert)',
+      'Sternenpunkte auf allen Screens entfernt',
+    ],
+  },
+  {
+    version: '0.35',
     date: '27.06.2026',
     changes: [
       '"Weiter zu Spieler X" Button Fix — war beim ersten Spieler nicht sichtbar',
