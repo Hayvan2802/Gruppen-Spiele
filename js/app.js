@@ -1,13 +1,17 @@
-// app.js — Gruppen-Spiele v1.0.0
+// app.js — Gruppen-Spiele v0.0.5 (Vue 3, esm-browser)
+// Portiert vom Werwolf-Projekt — nur Imposter-Spiellogik
+import { createApp, reactive, computed } from './vue.esm-browser.prod.js';
 import { BUILD, CHANGELOG } from './buildinfo.js';
-import { ALL_WORDS, TIMER_SECONDS } from './config.js';
+import { ALL_WORDS, TIMER_SECONDS, DONATE_URL, COOP_MAX_PLAYERS } from './config.js';
+import * as Coop from './coop.js';
+import { log, exportLogToFile } from './debuglog.js';
 import {
   loadSettings, saveSettings, loadSeenVersion, saveSeenVersion,
   loadLastNames, saveLastNames, loadConfigs, saveConfig, deleteConfig,
 } from './storage.js';
-import { log } from './debuglog.js';
+import { t, setLocale, detectLocale, i18nState, SUPPORTED_LOCALES } from './i18n/index.js';
 
-// ── Splash ───────────────────────────────────────────────────────────────────
+const APP_START = Date.now();
 const splashVersion = document.getElementById('splash-version');
 if (splashVersion) splashVersion.textContent = `v${BUILD}`;
 
@@ -21,9 +25,7 @@ if ('serviceWorker' in navigator) {
       const nw = reg.installing;
       nw.addEventListener('statechange', () => {
         if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-          waitingWorker = nw;
-          state.updateReady = true;
-          render();
+          waitingWorker = nw; state.updateReady = true;
         }
       });
     });
@@ -52,26 +54,23 @@ function haptic(style = 'light') {
 }
 function showToast(msg) {
   let el = document.getElementById('gs-toast');
-  if (!el) {
-    el = Object.assign(document.createElement('div'), { id: 'gs-toast', className: 'toast' });
-    document.body.appendChild(el);
-  }
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove('show'), 2600);
+  if (!el) { el = Object.assign(document.createElement('div'), { id:'gs-toast', className:'toast' }); document.body.appendChild(el); }
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 2600);
 }
 
 // ── State ─────────────────────────────────────────────────────────────────────
-const state = {
-  screen: 'home', // home | setup | reveal | timer | voting | result
+const state = reactive({
+  screen: 'home',
   settings: loadSettings(),
   showWhatsNew: false,
-  showHistory: false,
+  showHistory:  false,
   historyDetail: null,
   updateReady: false,
-  showSettingsDrawer: false,
-  showGameMenu: false,
+  showSettingsModal: false,
+  gameMenu: { active: false },
+  gamePaused: false,
+  gameEndConfirm: false,
   showConfigs: false,
   configNameDraft: '',
   savedConfigs: loadConfigs(),
@@ -79,44 +78,63 @@ const state = {
   showSavedNamesHint: false,
 
   // Setup
+  gameMode: 'local',
   playerCount: 5,
   playerNames: Array(5).fill(''),
   imposterCount: 1,
 
-  // Game
-  roles: [],       // [{name, isImposter, word}]
+  // Coop
+  coop: {
+    phase: 'idle', // idle | hosting | lobby | joining | joined | myRole
+    code: '', codeDraft: '',
+    myName: '', myUid: null,
+    isHost: false,
+    players: [],
+    error: null,
+    myRoleIsImposter: null,
+    myWord: null,
+  },
+
+  // Rollenverteilung
   revealIdx: 0,
   revealFlipped: false,
+  roles: [],   // [{name, isImposter, word}]
+
+  // Timer
   timerSeconds: TIMER_SECONDS,
   timerInterval: null,
+
+  // Abstimmung
   stimmIdx: 0,
   votes: {},
-  winner: null,   // 'village' | 'imposter'
-};
 
-// ── Theme ─────────────────────────────────────────────────────────────────────
+  // Ergebnis
+  winner: null,      // 'village' | 'imposter'
+  eliminatedNames: [],
+  tally: {},
+});
+
+// ── Theme / Locale ────────────────────────────────────────────────────────────
 function applyTheme() {
-  const t = state.settings.theme;
-  const isLight = t === 'auto'
+  const theme = state.settings.theme;
+  let isLight = theme === 'auto'
     ? window.matchMedia('(prefers-color-scheme: light)').matches
-    : t === 'light';
+    : theme === 'light';
   document.body.classList.toggle('light', isLight);
 }
 window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
   if (state.settings.theme === 'auto') applyTheme();
 });
-function setTheme(t) { state.settings.theme = t; saveSettings(state.settings); applyTheme(); render(); }
+function setTheme(th) { state.settings.theme = th; saveSettings(state.settings); applyTheme(); }
+function applyLocale() { setLocale(state.settings.lang); }
+function setLang(id) { state.settings.lang = id; saveSettings(state.settings); applyLocale(); }
 
 // ── Version / Update ──────────────────────────────────────────────────────────
 function maybeShowWhatsNew() {
-  if (loadSeenVersion() !== BUILD && CHANGELOG.length) state.showWhatsNew = true;
+  const seen = loadSeenVersion();
+  if (seen !== BUILD && CHANGELOG.length) state.showWhatsNew = true;
 }
-function dismissWhatsNew() { state.showWhatsNew = false; saveSeenVersion(BUILD); render(); }
-
-function applyUpdate() {
-  if (!waitingWorker) { location.reload(); return; }
-  waitingWorker.postMessage({ type: 'skipWaiting' });
-}
+function dismissWhatsNew() { state.showWhatsNew = false; saveSeenVersion(BUILD); }
 
 async function checkForUpdate() {
   if (window._swReg) {
@@ -128,79 +146,118 @@ async function checkForUpdate() {
   }
   if (state.updateReady || waitingWorker) {
     state.updateReady = true;
-    render();
   } else {
     showToast('Keine Updates verfügbar ✓');
   }
 }
 
-// ── Game Logic ────────────────────────────────────────────────────────────────
-function startGame() {
-  const names = state.playerNames.slice(0, state.playerCount).map((n,i) => n.trim() || `Spieler ${i+1}`);
+function applyUpdate() {
+  if (!waitingWorker) { location.reload(); return; }
+  waitingWorker.postMessage({ type: 'skipWaiting' });
+}
+
+// ── Setup ─────────────────────────────────────────────────────────────────────
+function changePlayerCount(d) {
+  const n = Math.max(3, Math.min(16, state.playerCount + d));
+  state.playerCount = n;
+  while (state.playerNames.length < n) state.playerNames.push('');
+  state.playerNames = state.playerNames.slice(0, n);
+}
+
+function loadLastNamesIntoSetup() {
+  const last = state.lastSavedNames;
+  if (!last.length) return;
+  state.playerCount = Math.max(3, Math.min(16, last.length));
+  while (state.playerNames.length < state.playerCount) state.playerNames.push('');
+  state.playerNames = state.playerNames.slice(0, state.playerCount);
+  last.forEach((n, i) => { if (i < state.playerNames.length) state.playerNames[i] = n; });
+  state.showSavedNamesHint = false;
+  showToast('Namen geladen');
+}
+function dismissNamesHint() { state.showSavedNamesHint = false; }
+
+// ── Konfigurationen ───────────────────────────────────────────────────────────
+function saveCurrentConfig() {
+  const name = state.configNameDraft.trim() || `${state.playerCount} Spieler`;
+  saveConfig({ id: genId(), name, playerCount: state.playerCount, playerNames: [...state.playerNames], imposterCount: state.imposterCount, createdAt: Date.now() });
+  state.savedConfigs = loadConfigs();
+  state.configNameDraft = '';
+  showToast('Gespeichert!');
+}
+function loadConfig(cfg) {
+  state.playerCount   = cfg.playerCount;
+  state.playerNames   = [...cfg.playerNames];
+  state.imposterCount = cfg.imposterCount || 1;
+  while (state.playerNames.length < state.playerCount) state.playerNames.push('');
+  state.showConfigs   = false;
+  showToast(cfg.name);
+}
+function removeConfig(id) { deleteConfig(id); state.savedConfigs = loadConfigs(); }
+
+// ── Spielmenü ─────────────────────────────────────────────────────────────────
+function openGameMenu()  { state.gameMenu.active = true; }
+function closeGameMenu() { state.gameMenu.active = false; }
+function pauseGame()     { state.gamePaused = true; state.gameMenu.active = false; }
+function resumeGame()    { state.gamePaused = false; }
+function confirmEndGame() {
+  state.gameEndConfirm = false; state.gamePaused = false; state.gameMenu.active = false;
+  clearInterval(state.timerInterval);
+  state.screen = 'home';
+}
+
+// ── Game Logic — Lokal ────────────────────────────────────────────────────────
+function startLocalGame() {
+  const names = state.playerNames.slice(0, state.playerCount).map((n, i) => n.trim() || `Spieler ${i + 1}`);
   saveLastNames(names);
   state.lastSavedNames = names;
 
-  const word      = rndWord();
-  const shuffled  = shuffle(names);
-  const impIdx    = new Set(shuffle([...Array(shuffled.length).keys()]).slice(0, state.imposterCount));
-  state.roles     = shuffled.map((name, i) => ({ name, isImposter: impIdx.has(i), word }));
-  state.revealIdx = 0;
+  const word     = rndWord();
+  const shuffled = shuffle(names);
+  const impIdx   = new Set(shuffle([...Array(shuffled.length).keys()]).slice(0, state.imposterCount));
+  state.roles    = shuffled.map((name, i) => ({ name, isImposter: impIdx.has(i), word }));
+
+  state.revealIdx    = 0;
   state.revealFlipped = false;
-  state.votes     = {};
-  state.stimmIdx  = 0;
-  state.winner    = null;
-  state.screen    = 'reveal';
+  state.votes        = {};
+  state.stimmIdx     = 0;
+  state.winner       = null;
+  state.eliminatedNames = [];
+  state.tally        = {};
+  state.timerSeconds = TIMER_SECONDS;
+  clearInterval(state.timerInterval);
+  state.screen = 'reveal';
   haptic('success');
-  render();
 }
+
+function revealCard() { state.revealFlipped = true; haptic('medium'); }
 
 function nextReveal() {
   if (state.revealIdx + 1 >= state.roles.length) {
-    clearInterval(state.timerInterval);
-    state.timerSeconds = TIMER_SECONDS;
+    // Alle haben ihre Karte gesehen → Timer
     state.screen = 'timer';
-    render();
+    state.timerSeconds = TIMER_SECONDS;
     startTimer();
   } else {
     state.revealIdx++;
     state.revealFlipped = false;
-    render();
   }
 }
 
 function startTimer() {
+  clearInterval(state.timerInterval);
   state.timerInterval = setInterval(() => {
     state.timerSeconds--;
-    updateTimerDOM();
     if (state.timerSeconds <= 0) {
       clearInterval(state.timerInterval);
-      setTimeout(() => { state.screen = 'voting'; state.stimmIdx = 0; render(); }, 600);
+      setTimeout(() => { state.screen = 'voting'; state.stimmIdx = 0; }, 600);
     }
   }, 1000);
-}
-
-function updateTimerDOM() {
-  const numEl  = document.getElementById('timer-num');
-  const fillEl = document.getElementById('timer-fill');
-  if (!numEl) return;
-  const s = state.timerSeconds;
-  const color = s <= 10 ? '#ef4444' : s <= 20 ? '#f59e0b' : 'var(--gold)';
-  numEl.textContent  = s;
-  numEl.style.color  = color;
-  if (fillEl) {
-    const R    = 54;
-    const circ = 2 * Math.PI * R;
-    fillEl.style.strokeDasharray  = circ;
-    fillEl.style.strokeDashoffset = circ * (1 - s / TIMER_SECONDS);
-    fillEl.style.stroke = color;
-  }
 }
 
 function skipTimer() {
   clearInterval(state.timerInterval);
   state.screen = 'voting';
   state.stimmIdx = 0;
-  render();
 }
 
 function castVote(target) {
@@ -211,7 +268,6 @@ function castVote(target) {
     calcResult();
   } else {
     state.stimmIdx++;
-    render();
   }
 }
 
@@ -222,571 +278,660 @@ function calcResult() {
   const max = Math.max(...Object.values(tally));
   const eliminated = Object.keys(tally).filter(n => tally[n] === max);
   const imposters  = state.roles.filter(r => r.isImposter).map(r => r.name);
-  state.winner = eliminated.some(n => imposters.includes(n)) ? 'village' : 'imposter';
+  state.winner          = eliminated.some(n => imposters.includes(n)) ? 'village' : 'imposter';
   state.eliminatedNames = eliminated;
-  state.tally = tally;
-  state.screen = 'result';
+  state.tally           = tally;
+  state.screen          = 'result';
   haptic(state.winner === 'village' ? 'success' : 'error');
-  render();
 }
 
-// ── Configs ───────────────────────────────────────────────────────────────────
-function saveCurrentConfig() {
-  const name = state.configNameDraft.trim() || `${state.playerCount} Spieler`;
-  saveConfig({ id: genId(), name, playerCount: state.playerCount, playerNames: [...state.playerNames], imposterCount: state.imposterCount, createdAt: Date.now() });
-  state.savedConfigs = loadConfigs();
-  state.configNameDraft = '';
-  showToast('Konfiguration gespeichert');
-  render();
-}
-function loadConfig(cfg) {
-  state.playerCount    = cfg.playerCount;
-  state.playerNames    = [...cfg.playerNames];
-  state.imposterCount  = cfg.imposterCount || 1;
-  while (state.playerNames.length < state.playerCount) state.playerNames.push('');
-  state.showConfigs    = false;
-  showToast(cfg.name);
-  render();
-}
-function removeConfig(id) { deleteConfig(id); state.savedConfigs = loadConfigs(); render(); }
+function newGame() { state.screen = 'home'; }
 
-// ── Render ────────────────────────────────────────────────────────────────────
-function render() {
-  applyTheme();
-  const app = document.getElementById('app');
-  let html = `<div class="app">`;
+// ── Coop ─────────────────────────────────────────────────────────────────────
+function selectMode(mode) { state.gameMode = mode; }
+function genCode() { return String(Math.floor(100000 + Math.random() * 900000)); }
 
-  // Update banner
-  if (state.updateReady && state.screen === 'home') {
-    html += renderUpdateBanner();
-  }
-
-  // Whats New
-  if (state.showWhatsNew) {
-    html += renderWhatsNew();
-  }
-
-  // History detail
-  else if (state.showHistory && state.historyDetail) {
-    html += renderHistoryDetail();
-  }
-
-  // Settings
-  else if (state.showSettingsDrawer) {
-    html += renderCurrentScreen();
-    html += renderSettingsDrawer();
-  }
-
-  else {
-    html += renderCurrentScreen();
-  }
-
-  html += `</div>`;
-  app.innerHTML = html;
-  bindEvents();
-
-  // Timer DOM update after render
-  if (state.screen === 'timer') updateTimerDOM();
+async function showHostSetup() {
+  state.coop.phase = 'hosting'; state.coop.codeDraft = genCode();
+  state.coop.players = []; state.coop.error = null; state.coop.isHost = true;
 }
 
-function renderCurrentScreen() {
-  switch (state.screen) {
-    case 'home':   return renderHome();
-    case 'setup':  return renderSetup();
-    case 'reveal': return renderReveal();
-    case 'timer':  return renderTimer();
-    case 'voting': return renderVoting();
-    case 'result': return renderResult();
-    default:       return renderHome();
-  }
-}
-
-// ── Home ──────────────────────────────────────────────────────────────────────
-function renderHome() {
-  return `
-    <div class="top-bar">
-      <button class="icon-btn" id="btn-settings" title="Einstellungen">⚙️</button>
-    </div>
-    <div style="padding:0 1.2rem 3rem;max-width:480px;margin:0 auto;">
-      <div class="logo">
-        <span class="logo-icon">🕵️</span>
-        <h1>GRUPPEN-SPIELE</h1>
-        <p>Party Games · Kostenlos · Werbefrei</p>
-      </div>
-
-      ${state.showSavedNamesHint && state.lastSavedNames.length ? `
-        <div class="names-hint">
-          💾 Letzte Spieler: <strong>${state.lastSavedNames.slice(0,3).join(', ')}${state.lastSavedNames.length > 3 ? ` +${state.lastSavedNames.length - 3}` : ''}</strong>
-          <br><button class="btn-sec" style="margin-top:.5rem;padding:.4rem" id="btn-load-names">Spieler laden</button>
-        </div>
-      ` : ''}
-
-      <div class="sec">
-        <h2>🎮 Spiel wählen</h2>
-        <div style="background:var(--sur);border:2px solid var(--pri);border-radius:14px;padding:1.2rem;cursor:pointer;transition:all .2s;" id="btn-goto-setup">
-          <div style="font-size:2rem;margin-bottom:.4rem">🕵️</div>
-          <div style="font-size:1rem;font-weight:700;color:var(--txt)">Imposter</div>
-          <div style="font-size:.78rem;color:var(--txt2);margin-top:.2rem">Finde den Verräter in eurer Gruppe – 3 bis 12 Spieler</div>
-        </div>
-      </div>
-
-      <button class="btn-start" id="btn-goto-setup2">🎮 Spiel starten</button>
-    </div>
-  `;
-}
-
-// ── Setup ─────────────────────────────────────────────────────────────────────
-function renderSetup() {
-  const names = state.playerNames.slice(0, state.playerCount);
-  const inputs = names.map((n, i) => `
-    <div class="nwrap">
-      <span>${i + 1}</span>
-      <input class="ninput player-name-input" data-idx="${i}" type="text" placeholder="Name..." value="${n}" autocomplete="off" />
-    </div>
-  `).join('');
-
-  const configs = state.savedConfigs.length ? `
-    <div style="margin-top:1rem">
-      <button class="btn-sec btn-sm" id="btn-show-configs">📋 Gespeicherte Konfigurationen (${state.savedConfigs.length})</button>
-    </div>
-    ${state.showConfigs ? `
-      <div style="margin-top:.7rem;background:var(--sur);border:1px solid var(--bdr);border-radius:10px;padding:.7rem .9rem">
-        ${state.savedConfigs.map(c => `
-          <div class="config-row">
-            <div class="config-info">
-              <div class="config-name">${c.name}</div>
-              <div class="config-sub">${c.playerCount} Spieler · ${c.imposterCount || 1} Imposter</div>
-            </div>
-            <button class="btn-sec btn-sm" data-load-cfg="${c.id}" style="flex-shrink:0">Laden</button>
-            <button class="btn-sec btn-sm" data-del-cfg="${c.id}" style="flex-shrink:0;margin-left:.3rem;color:var(--red2)">✕</button>
-          </div>
-        `).join('')}
-      </div>
-    ` : ''}
-  ` : '';
-
-  return `
-    <div class="top-bar">
-      <button class="icon-btn" id="btn-back-home" title="Zurück">←</button>
-      <button class="icon-btn" id="btn-settings" title="Einstellungen">⚙️</button>
-    </div>
-    <div style="padding:0 1.2rem 3rem;max-width:480px;margin:0 auto;">
-      <div style="padding:1.2rem 0 .8rem;font-size:1.2rem;font-weight:900;color:var(--txt)">🕵️ Imposter</div>
-
-      <div class="sec">
-        <h2>👥 Spieler</h2>
-        <div class="pc-row" style="margin-bottom:.8rem">
-          <button class="cnt-btn" id="btn-pc-down">−</button>
-          <div class="pc-stepper">
-            <div class="pc-num">${state.playerCount}</div>
-            <div class="cnt-lbl">Spieler</div>
-          </div>
-          <button class="cnt-btn" id="btn-pc-up">+</button>
-        </div>
-        <div class="names-scroll">
-          <div class="names-grid">${inputs}</div>
-        </div>
-      </div>
-
-      <div class="sec">
-        <h2>🕵️ Imposter</h2>
-        <div style="display:flex;gap:.6rem">
-          ${[1,2].map(n => `
-            <button style="flex:1;padding:.7rem;border-radius:10px;border:none;cursor:pointer;font-weight:700;font-size:.9rem;color:#fff;background:${state.imposterCount===n ? 'linear-gradient(135deg,var(--pri),var(--pri2))' : 'var(--sur)'};border:1px solid ${state.imposterCount===n ? 'transparent' : 'var(--bdr2)'};transition:all .15s" data-imposter="${n}">${n}</button>
-          `).join('')}
-        </div>
-      </div>
-
-      <div class="sec">
-        <h2>💾 Konfiguration speichern</h2>
-        <div style="display:flex;gap:.5rem">
-          <input class="ninput" id="cfg-name-input" placeholder="Name (optional)" value="${state.configNameDraft}" style="flex:1;margin:0" />
-          <button class="btn-sec btn-sm" id="btn-save-cfg" style="flex-shrink:0;white-space:nowrap">Speichern</button>
-        </div>
-        ${configs}
-      </div>
-
-      <button class="btn-start" id="btn-start-game" ${state.playerCount < 3 ? 'disabled' : ''}>
-        ▶ Spiel starten
-      </button>
-    </div>
-  `;
-}
-
-// ── Reveal ────────────────────────────────────────────────────────────────────
-function renderReveal() {
-  const sp    = state.roles[state.revealIdx];
-  const total = state.roles.length;
-  const pct   = (state.revealIdx / total * 100).toFixed(0);
-  const isLast = state.revealIdx + 1 >= total;
-
-  return `
-    <div class="top-bar">
-      <button class="icon-btn" id="btn-game-menu" title="Spielmenü">⏸</button>
-    </div>
-    <div class="reveal-inner">
-      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
-      <div class="rev-head">
-        <div class="for">Karte für</div>
-        <div class="pname">${sp.name}</div>
-      </div>
-      <div class="rev-card ${state.revealFlipped ? ('flipped' + (sp.isImposter ? ' imposter' : '')) : ''}">
-        ${!state.revealFlipped ? `
-          <div class="card-back">
-            <span class="cbi">🃏</span>
-            <span class="cbt">TIPPEN ZUM AUFDECKEN</span>
-          </div>
-        ` : `
-          <div class="card-front">
-            ${sp.isImposter ? `
-              <span class="cfi">🕵️</span>
-              <div class="cft" style="color:var(--red2)">IMPOSTER!</div>
-              <div class="cfa">Du kennst das Wort nicht.<br>Tu so als ob — lass dich nicht erwischen!</div>
-              <div class="cfg">Beobachte die Anderen genau und passe dich an.</div>
-            ` : `
-              <span class="cfi">💬</span>
-              <div class="cft">Dein Wort:</div>
-              <div style="font-size:2rem;font-weight:900;color:var(--gold);margin:.3rem 0">${sp.word}</div>
-              <div class="cfg">Beschreibe es ohne das Wort zu nennen!</div>
-            `}
-          </div>
-        `}
-      </div>
-      ${!state.revealFlipped
-        ? `<button class="btn-rev" id="btn-flip">👁 Karte aufdecken</button>`
-        : `<button class="btn-nxt" id="btn-next-reveal">${isLast ? '▶ Diskussion starten' : '➡ Weiter'}</button>`
+async function createRoom() {
+  const code = state.coop.codeDraft.replace(/\D/g, '').slice(0, 6);
+  if (code.length !== 6) { state.coop.error = t('coop.codeHint'); return; }
+  const myName = state.coop.myName.trim() || 'Host';
+  state.coop.code = code; state.coop.error = null; state.coop.phase = 'lobby';
+  state.coop.players = [{ uid: 'host', name: myName, ready: true, isHost: true }];
+  await Coop.hostGame({
+    code, name: myName,
+    onOpen: (uid) => { state.coop.myUid = uid; },
+    onError: (e) => { state.coop.error = e.type === 'code-taken' ? t('coop.codeTaken') : t('coop.errorGeneric'); state.coop.phase = 'hosting'; },
+    onJoin: (uid, data) => {
+      if (!state.coop.players.find(p => p.uid === uid))
+        state.coop.players.push({ uid, name: data?.name || uid, ready: false, isHost: false });
+    },
+    onLeave: (uid) => { state.coop.players = state.coop.players.filter(p => p.uid !== uid); },
+    onMessage: (msg) => {
+      if (msg.type === Coop.MSG.READY) {
+        const p = state.coop.players.find(x => x.uid === msg.author);
+        if (p) p.ready = msg.ready;
       }
-      <div class="rev-prog">${state.revealIdx + 1} / ${total}</div>
-    </div>
-    ${renderGameMenuModal()}
-  `;
+    },
+  });
 }
 
-// ── Timer ─────────────────────────────────────────────────────────────────────
-function renderTimer() {
-  const R    = 54;
-  const circ = 2 * Math.PI * R;
-  return `
-    <div class="top-bar">
-      <button class="icon-btn" id="btn-game-menu" title="Spielmenü">⏸</button>
-    </div>
-    <div class="timer-wrap">
-      <div style="font-size:1.1rem;font-weight:700;color:var(--txt);margin-bottom:.4rem">💬 Jetzt diskutieren!</div>
-      <div class="timer-desc">Wer verhält sich verdächtig?<br>Redet über das geheime Wort, ohne es zu sagen!</div>
-      <div class="timer-ring-outer">
-        <svg width="140" height="140" viewBox="0 0 140 140">
-          <circle class="timer-track" cx="70" cy="70" r="${R}" />
-          <circle id="timer-fill" class="timer-fill" cx="70" cy="70" r="${R}"
-            stroke="var(--gold)"
-            stroke-dasharray="${circ}"
-            stroke-dashoffset="0"
-          />
-        </svg>
-        <div class="timer-num" id="timer-num">${state.timerSeconds}</div>
-      </div>
-      <div class="timer-label">SEKUNDEN</div>
-      <button class="btn-sec" style="max-width:300px;width:100%" id="btn-skip-timer">Abstimmung jetzt starten →</button>
-    </div>
-    ${renderGameMenuModal()}
-  `;
+async function startCoopGame() {
+  const players  = state.coop.players;
+  const word     = rndWord();
+  const impIdx   = new Set(shuffle([...Array(players.length).keys()]).slice(0, state.imposterCount));
+  const assignments = players.map((p, i) => ({
+    uid: p.uid, name: p.name, isImposter: impIdx.has(i), word,
+  }));
+  await Coop.send({ type: Coop.MSG.START, assignments });
+
+  // Host sieht auch seine eigene Karte
+  const mine = assignments.find(a => a.uid === state.coop.myUid);
+  if (mine) { state.coop.myRoleIsImposter = mine.isImposter; state.coop.myWord = mine.word; state.coop.phase = 'myRole'; }
 }
 
-// ── Voting ────────────────────────────────────────────────────────────────────
-function renderVoting() {
-  const voter  = state.roles[state.stimmIdx];
-  const others = state.roles.filter(r => r.name !== voter.name);
-  const pct    = (state.stimmIdx / state.roles.length * 100).toFixed(0);
+function showJoinSetup() {
+  state.coop.phase = 'joining'; state.coop.codeDraft = ''; state.coop.myName = ''; state.coop.error = null; state.coop.isHost = false;
+}
 
-  return `
-    <div class="top-bar">
-      <button class="icon-btn" id="btn-game-menu" title="Spielmenü">⏸</button>
-    </div>
-    <div style="padding:1.2rem;max-width:480px;margin:0 auto">
-      <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
-      <div style="text-align:center;margin-bottom:1.5rem">
-        <div style="font-size:2rem;margin-bottom:.5rem">🗳</div>
-        <div style="font-size:1.1rem;font-weight:900;color:var(--txt);margin-bottom:.2rem">Wer ist der Imposter?</div>
-        <div style="color:var(--gold);font-weight:700;font-size:1rem">${voter.name} stimmt ab</div>
-        <div style="font-size:.75rem;color:var(--txt3);margin-top:.2rem">${state.stimmIdx + 1} von ${state.roles.length}</div>
+async function joinRoom() {
+  const name = state.coop.myName.trim();
+  const code = state.coop.codeDraft.replace(/\D/g, '').slice(0, 6);
+  if (!name) { state.coop.error = t('coop.yourName'); return; }
+  if (code.length !== 6) { state.coop.error = t('coop.codeHint'); return; }
+  state.coop.error = null; state.coop.code = code;
+  await Coop.joinGame({
+    code, name,
+    onOpen: (uid) => { state.coop.myUid = uid; state.coop.phase = 'joined'; },
+    onError: (e) => {
+      if (e.type === 'code-not-found') state.coop.error = t('coop.codeWrong');
+      else if (e.type === 'room-full') state.coop.error = t('coop.roomFull');
+      else if (e.type === 'timeout')   state.coop.error = t('coop.errorTimeout');
+      else state.coop.error = t('coop.errorGeneric');
+    },
+    onMessage: handleCoopMessage,
+    onClose: () => { state.coop.phase = 'idle'; },
+  });
+}
+
+async function toggleReady() { await Coop.send({ type: Coop.MSG.READY, ready: true }); }
+
+function getInviteLink() {
+  const base = window.location.origin + window.location.pathname;
+  return `${base}?code=${state.coop.code}`;
+}
+
+async function shareInviteLink() {
+  const url = getInviteLink();
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Gruppen-Spiele — Raum beitreten', text: `Tritt meinem Raum bei! Code: ${state.coop.code}`, url }); return; }
+    catch(e) { if (e.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(url); showToast('Link kopiert!'); }
+  catch(e) { showToast(url); }
+}
+
+async function cancelCoop() {
+  await Coop.leave();
+  state.coop.phase = 'idle'; state.coop.players = []; state.coop.error = null;
+  state.coop.myUid = null; state.coop.myRoleIsImposter = null; state.coop.myWord = null;
+}
+
+function handleCoopMessage(msg) {
+  if (!msg) return;
+  if (msg.type === Coop.MSG.START) {
+    const mine = msg.assignments?.find(a => a.uid === state.coop.myUid);
+    if (mine) {
+      state.coop.myRoleIsImposter = mine.isImposter;
+      state.coop.myWord = mine.word;
+      state.coop.phase = 'myRole';
+    }
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+function init() {
+  applyTheme(); applyLocale(); maybeShowWhatsNew();
+  if (state.lastSavedNames.length > 0) state.showSavedNamesHint = true;
+
+  // Einladungslink: ?code=XXXXXX → direkt in Coop-Join-Ansicht
+  const params = new URLSearchParams(window.location.search);
+  const inviteCode = params.get('code');
+  if (inviteCode && /^[0-9]{6}$/.test(inviteCode)) {
+    state.gameMode = 'coop';
+    state.coop.phase = 'joining';
+    state.coop.codeDraft = inviteCode;
+    log('coop', `Einladungslink erkannt: Code ${inviteCode}`);
+  }
+
+  setTimeout(() => {
+    const splash = document.getElementById('splash');
+    if (splash) splash.classList.add('fade-out');
+  }, Math.max(0, 600 - (Date.now() - APP_START)));
+}
+
+// ── Vue App ───────────────────────────────────────────────────────────────────
+const App = {
+  setup() {
+    const timerPct = computed(() => state.timerSeconds / TIMER_SECONDS * 100);
+    const revealPlayer = computed(() => state.roles[state.revealIdx]);
+    const currentVoter = computed(() => state.roles[state.stimmIdx]);
+    const voteOptions  = computed(() => state.roles.filter(r => r.name !== currentVoter.value?.name));
+    const imposters    = computed(() => state.roles.filter(r => r.isImposter).map(r => r.name));
+
+    return {
+      state, BUILD, CHANGELOG, DONATE_URL, SUPPORTED_LOCALES, TIMER_SECONDS,
+      timerPct, revealPlayer, currentVoter, voteOptions, imposters,
+      t, i18nState,
+      setTheme, setLang,
+      changePlayerCount, selectMode,
+      loadLastNamesIntoSetup, dismissNamesHint,
+      saveCurrentConfig, loadConfig, removeConfig,
+      openGameMenu, closeGameMenu, pauseGame, resumeGame, confirmEndGame,
+      startLocalGame, revealCard, nextReveal, skipTimer, castVote, newGame,
+      showHostSetup, createRoom, startCoopGame,
+      showJoinSetup, joinRoom, toggleReady, cancelCoop,
+      getInviteLink, shareInviteLink,
+      dismissWhatsNew, applyUpdate, checkForUpdate,
+      exportLogToFile,
+    };
+  },
+  template: `
+  <div class="app" :class="{ rtl: i18nState.rtl }">
+
+    <!-- ── PAUSE OVERLAY ── -->
+    <div v-if="state.gamePaused" class="modal-bg" style="z-index:500">
+      <div class="modal" style="text-align:center">
+        <div style="font-size:3rem;margin-bottom:.8rem">🕵️</div>
+        <h3 style="color:var(--gold);margin-bottom:.5rem">PAUSIERT</h3>
+        <p class="confirm-msg">Das Spiel ist pausiert. Tippe Fortsetzen wenn alle bereit sind.</p>
+        <button class="btn btn-primary" @click="resumeGame">▶ Fortsetzen</button>
+        <button class="btn btn-ghost btn-sm" @click="state.gamePaused=false;state.gameEndConfirm=true">Spiel beenden</button>
       </div>
-      ${others.map(r => `
-        <button class="vote-btn" data-vote="${r.name}">
-          <span>👤</span> ${r.name}
+    </div>
+
+    <!-- ── SPIELMENÜ ── -->
+    <div v-if="state.gameMenu.active" class="modal-bg" @click.self="closeGameMenu">
+      <div class="modal" style="animation:fadeIn .2s ease">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.1rem">
+          <span style="font-size:.9rem;letter-spacing:.15em;color:var(--gold);font-weight:700">SPIELMENÜ</span>
+          <button class="icon-btn" @click="closeGameMenu">✕</button>
+        </div>
+        <button class="btn btn-primary" style="margin-bottom:.6rem" @click="closeGameMenu">▶ Fortsetzen</button>
+        <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="pauseGame">⏸ Pausieren</button>
+        <div style="height:1px;background:var(--bdr);margin:.4rem 0 .9rem"></div>
+        <button class="btn btn-ghost" style="color:#e07070;border-color:#e07070" @click="state.gameEndConfirm=true;state.gameMenu.active=false">
+          🚪 Spiel beenden
         </button>
-      `).join('')}
-    </div>
-    ${renderGameMenuModal()}
-  `;
-}
-
-// ── Result ────────────────────────────────────────────────────────────────────
-function renderResult() {
-  const win       = state.winner === 'village';
-  const imposters = state.roles.filter(r => r.isImposter).map(r => r.name);
-  const tally     = state.tally || {};
-
-  return `
-    <div class="top-bar">
-      <button class="icon-btn" id="btn-settings" title="Einstellungen">⚙️</button>
-    </div>
-    <div class="go-inner">
-      <div class="wicon">${win ? '🎉' : '🕵️'}</div>
-      <div class="wtitle" style="color:${win ? 'var(--green)' : 'var(--red2)'}">${win ? 'Imposter erwischt!' : 'Imposter gewinnt!'}</div>
-      <div class="wsub">${win ? 'Das Dorf hat gewonnen 🥳' : 'Der Imposter hat alle getäuscht 😈'}</div>
-
-      <div class="surv-box" style="margin-bottom:1rem">
-        <h3>🔍 Auflösung</h3>
-        <div style="margin-bottom:.6rem">
-          <span style="font-size:.78rem;color:var(--txt3)">Das Wort war: </span>
-          <strong style="font-size:1.1rem;color:var(--txt)">${state.roles[0]?.word}</strong>
-        </div>
-        <div style="margin-bottom:.8rem">
-          <span style="font-size:.78rem;color:var(--txt3)">Imposter: </span>
-          ${imposters.map(n => `<span style="background:rgba(176,32,32,.3);color:#f87171;border-radius:20px;padding:2px 10px;font-size:.78rem;margin-left:4px">${n}</span>`).join('')}
-        </div>
-        <div style="border-top:1px solid var(--bdr);padding-top:.6rem">
-          <div style="font-size:.65rem;letter-spacing:.15em;color:var(--txt3);text-transform:uppercase;margin-bottom:.5rem">Stimmen</div>
-          ${state.roles.map(r => `
-            <div class="surv-item">
-              <span>${r.name}${r.isImposter ? ' 🕵️' : ''}</span>
-              <span style="margin-left:auto;color:var(--gold);font-weight:700">${tally[r.name] || 0}×</span>
-              ${(state.eliminatedNames || []).includes(r.name) ? `<span style="background:rgba(124,58,237,.3);color:#c4b5fd;border-radius:20px;padding:2px 8px;font-size:.7rem;margin-left:.3rem">Raus</span>` : ''}
-            </div>
-          `).join('')}
-        </div>
-      </div>
-
-      <button class="btn-start" id="btn-new-game">🔄 Neues Spiel</button>
-      <button class="btn-sec" style="margin-top:.5rem" id="btn-back-home-result">Zurück zum Menü</button>
-    </div>
-  `;
-}
-
-// ── Game Menu Modal ───────────────────────────────────────────────────────────
-function renderGameMenuModal() {
-  if (!state.showGameMenu) return '';
-  return `
-    <div class="game-menu-overlay" id="game-menu-overlay">
-      <div class="game-menu-card">
-        <h3>⏸ Spiel</h3>
-        <button class="btn-sec" style="width:100%;margin-bottom:.5rem" id="btn-resume">▶ Fortsetzen</button>
-        <button class="btn-sec" style="width:100%;margin-bottom:.5rem;color:var(--red2)" id="btn-end-game">✕ Spiel beenden</button>
       </div>
     </div>
-  `;
-}
 
-// ── Settings Drawer ───────────────────────────────────────────────────────────
-function renderSettingsDrawer() {
-  const t = state.settings.theme;
-  const themes = ['dark','light','auto'];
-  const themeLabels = { dark:'🌙 Dunkel', light:'☀️ Hell', auto:'🔄 System' };
-
-  let body = `
-    <div class="settings-overlay" id="settings-overlay"></div>
-    <div class="settings-drawer">
-      <div class="drawer-head">
-        <span class="drawer-title">⚙️ Einstellungen</span>
-        <button class="icon-btn" id="btn-close-settings">✕</button>
-      </div>
-      <div class="drawer-body">
-        <div class="drawer-section">
-          <div class="drawer-section-title">Darstellung</div>
-          <div class="srow">
-            <div><div class="slabel">Theme</div></div>
-            <div class="theme-btns">
-              ${themes.map(th => `
-                <button class="theme-btn ${t === th ? 'active' : ''}" data-theme="${th}">${themeLabels[th]}</button>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-
-        <div class="drawer-section">
-          <div class="drawer-section-title">Über die App</div>
-          <div class="srow">
-            <div><div class="slabel">Version</div></div>
-            <span class="verbadge">v${BUILD}</span>
-          </div>
-          <div class="srow">
-            <div><div class="slabel">Versionshistorie</div></div>
-            <button class="ver-hist-btn" id="btn-show-history">Anzeigen</button>
-          </div>
-          <div class="srow">
-            <div>
-              <div class="slabel">Auf Update prüfen</div>
-              <div class="ssub">Sucht nach einer neuen Version</div>
-            </div>
-            <button class="ver-hist-btn" id="btn-check-update" style="white-space:nowrap">🔄 Prüfen</button>
-          </div>
-          ${state.updateReady ? `
-            <div class="srow">
-              <div><div class="slabel">Update verfügbar</div></div>
-              <button class="ver-hist-btn" id="btn-apply-update" style="color:var(--gold)">Installieren</button>
-            </div>
-          ` : ''}
-        </div>
+    <!-- ── SPIEL BEENDEN BESTÄTIGUNG ── -->
+    <div v-if="state.gameEndConfirm" class="modal-bg" style="z-index:510">
+      <div class="modal">
+        <div class="whatsnew-badge" style="background:var(--blood2)">⚠ Beenden</div>
+        <h3>Spiel wirklich beenden?</h3>
+        <p class="confirm-msg">Der aktuelle Spielstand geht verloren.</p>
+        <button class="btn btn-ghost" style="color:#e07070;border-color:#e07070;margin-bottom:.6rem" @click="confirmEndGame">Ja, Spiel beenden</button>
+        <button class="btn btn-primary" @click="state.gameEndConfirm=false;state.gamePaused=false;state.gameMenu.active=false">Nein, weiterspielen</button>
       </div>
     </div>
-  `;
-  return body;
-}
 
-// ── Update Banner ─────────────────────────────────────────────────────────────
-function renderUpdateBanner() {
-  const latest = CHANGELOG[0];
-  return `
-    <div class="modal-bg" id="update-banner">
+    <!-- ── COOP: MEINE KARTE (Gast) ── -->
+    <div v-if="state.coop.phase === 'myRole'" class="modal-bg" style="z-index:400">
+      <div class="modal" style="text-align:center">
+        <div class="whatsnew-badge">🕵️ Deine Karte</div>
+        <div v-if="state.coop.myRoleIsImposter">
+          <div style="font-size:3rem;margin:.8rem 0">🕵️</div>
+          <div style="font-size:1.2rem;font-weight:900;color:var(--blood2);margin-bottom:.5rem">DU BIST DER IMPOSTER!</div>
+          <p class="confirm-msg">Du kennst das Wort nicht. Tu so als ob — lass dich nicht erwischen!</p>
+        </div>
+        <div v-else>
+          <div style="font-size:3rem;margin:.8rem 0">💬</div>
+          <div style="font-size:.78rem;letter-spacing:.15em;color:var(--txt2);margin-bottom:.3rem">DEIN WORT</div>
+          <div style="font-size:2.2rem;font-weight:900;color:var(--gold);margin:.4rem 0">{{ state.coop.myWord }}</div>
+          <p class="confirm-msg">Beschreibe es ohne das Wort zu sagen!</p>
+        </div>
+        <button class="btn btn-primary" style="margin-top:1rem" @click="state.coop.phase = 'idle'">Verstanden ✓</button>
+      </div>
+    </div>
+
+    <!-- ── WHATS NEW ── -->
+    <div v-if="state.showWhatsNew && !state.showHistory" class="modal-bg">
+      <div class="modal">
+        <span class="whatsnew-badge">✦ NEU IN VERSION {{ CHANGELOG[0]?.version }}</span>
+        <div class="wnv-version">v{{ CHANGELOG[0]?.version }}</div>
+        <ul class="wnv-list">
+          <li v-for="c in CHANGELOG[0]?.changes" :key="c">{{ c }}</li>
+        </ul>
+        <button class="btn-start" @click="dismissWhatsNew">Los geht's! 🎮</button>
+      </div>
+    </div>
+
+    <!-- ── UPDATE BANNER ── -->
+    <div v-if="state.updateReady && state.screen === 'home' && !state.showWhatsNew" class="modal-bg">
       <div class="uc-card">
         <span class="uc-badge">✦ UPDATE VERFÜGBAR</span>
-        <div class="uc-title">Version ${latest?.version} ist da!</div>
-        <div class="uc-desc">${latest?.changes?.slice(0,2).join(' · ')}</div>
-        <button class="uc-btn-primary" id="btn-apply-update">⬆ Aktualisieren & neu starten</button>
-        <button class="uc-btn-later" id="btn-dismiss-update">Später</button>
+        <div class="uc-title">Version {{ CHANGELOG[0]?.version }} ist da!</div>
+        <div class="uc-desc">{{ CHANGELOG[0]?.changes?.slice(0,2).join(' · ') }}</div>
+        <button class="uc-btn-primary" @click="applyUpdate">⬆ Aktualisieren & neu starten</button>
+        <button class="uc-btn-later" @click="state.updateReady = false">Später</button>
       </div>
     </div>
-  `;
-}
 
-// ── Whats New ─────────────────────────────────────────────────────────────────
-function renderWhatsNew() {
-  const latest = CHANGELOG[0];
-  return `
-    <div class="modal-bg">
-      <div class="modal">
-        <span class="whatsnew-badge">✦ NEU IN VERSION ${latest?.version}</span>
-        <div class="wnv-version">v${latest?.version}</div>
-        <ul class="wnv-list">
-          ${latest?.changes.map(c => `<li>${c}</li>`).join('')}
-        </ul>
-        <button class="btn-start" id="btn-dismiss-whatsnew">Los geht's! 🎮</button>
-      </div>
-    </div>
-  `;
-}
-
-// ── History ───────────────────────────────────────────────────────────────────
-function renderHistoryDetail() {
-  const d = state.historyDetail;
-  return `
-    <div style="padding:1.2rem;max-width:480px;margin:0 auto">
-      <div class="cl-detail-back" id="btn-back-history">← Zurück</div>
+    <!-- ── VERSIONSHISTORIE DETAIL ── -->
+    <div v-if="state.showHistory && state.historyDetail" style="padding:1.2rem;max-width:480px;margin:0 auto">
+      <div class="cl-detail-back" @click="state.showHistory=false;state.historyDetail=null">← Zurück</div>
       <div style="margin-bottom:.4rem">
-        <span class="cl-version-num">v${d.version}</span>
-        <span class="cl-version-date" style="margin-left:.5rem">${d.date}</span>
+        <span class="cl-version-num">v{{ state.historyDetail.version }}</span>
+        <span class="cl-version-date" style="margin-left:.5rem">{{ state.historyDetail.date }}</span>
       </div>
       <ul style="list-style:none;padding:0;margin-top:.8rem">
-        ${d.changes.map(c => `
-          <li style="font-size:.85rem;color:var(--txt2);padding:.3rem 0;border-bottom:1px solid var(--bdr);display:flex;gap:.5rem">
-            <span style="color:var(--gold);flex-shrink:0">✦</span>${c}
-          </li>
-        `).join('')}
+        <li v-for="c in state.historyDetail.changes" :key="c" style="font-size:.85rem;color:var(--txt2);padding:.3rem 0;border-bottom:1px solid var(--bdr);display:flex;gap:.5rem">
+          <span style="color:var(--gold);flex-shrink:0">✦</span>{{ c }}
+        </li>
       </ul>
     </div>
-  `;
-}
 
-// ── Bind Events ───────────────────────────────────────────────────────────────
-function bindEvents() {
-  const $ = id => document.getElementById(id);
-  const on = (id, fn) => $( id)?.addEventListener('click', fn);
+    <!-- ── SETTINGS DRAWER ── -->
+    <template v-if="state.showSettingsModal && !state.showHistory">
+      <div class="settings-overlay" @click="state.showSettingsModal=false"></div>
+      <div class="settings-drawer">
+        <div class="drawer-head">
+          <span class="drawer-title">⚙️ EINSTELLUNGEN</span>
+          <button class="icon-btn" @click="state.showSettingsModal=false">✕</button>
+        </div>
+        <div class="drawer-body">
 
-  // Home
-  on('btn-settings', () => { state.showSettingsDrawer = true; render(); });
-  on('btn-goto-setup', () => { state.screen = 'setup'; render(); });
-  on('btn-goto-setup2', () => { state.screen = 'setup'; render(); });
-  on('btn-load-names', () => {
-    state.playerCount = Math.max(3, state.lastSavedNames.length);
-    state.playerNames = [...state.lastSavedNames];
-    while (state.playerNames.length < state.playerCount) state.playerNames.push('');
-    state.showSavedNamesHint = false;
-    state.screen = 'setup';
-    showToast('Spieler geladen');
-    render();
-  });
-  on('btn-dismiss-update', () => { state.updateReady = false; render(); });
-  on('btn-apply-update', applyUpdate);
-  on('btn-dismiss-whatsnew', dismissWhatsNew);
+          <div class="drawer-section">
+            <div class="drawer-section-title">Darstellung</div>
+            <div class="srow">
+              <div><div class="slabel">Theme</div></div>
+              <div class="theme-btns">
+                <button v-for="th in ['dark','light','auto']" :key="th"
+                  class="theme-btn" :class="{active: state.settings.theme===th}"
+                  @click="setTheme(th)">
+                  {{ th==='dark'?'🌙 Dunkel':th==='light'?'☀️ Hell':'🔄 System' }}
+                </button>
+              </div>
+            </div>
+            <div class="srow">
+              <div><div class="slabel">Sprache</div></div>
+              <select class="lsel" :value="state.settings.lang" @change="setLang($event.target.value)">
+                <option v-for="l in SUPPORTED_LOCALES" :key="l.id" :value="l.id">{{ l.label }}</option>
+              </select>
+            </div>
+          </div>
 
-  // Setup
-  on('btn-back-home', () => { state.screen = 'home'; state.showSavedNamesHint = state.lastSavedNames.length > 0; render(); });
-  on('btn-pc-down', () => { if (state.playerCount > 3) { state.playerCount--; state.playerNames = state.playerNames.slice(0, state.playerCount); render(); } });
-  on('btn-pc-up',   () => { if (state.playerCount < 16) { state.playerCount++; while (state.playerNames.length < state.playerCount) state.playerNames.push(''); render(); } });
-  on('btn-start-game', startGame);
-  on('btn-save-cfg', saveCurrentConfig);
-  on('btn-show-configs', () => { state.showConfigs = !state.showConfigs; render(); });
+          <div class="drawer-section">
+            <div class="drawer-section-title">Über die App</div>
+            <div class="srow">
+              <div><div class="slabel">Version</div><div class="ssub">Gruppen-Spiele</div></div>
+              <span class="verbadge">v{{ BUILD }}</span>
+            </div>
+            <div class="srow">
+              <div><div class="slabel">Versionshistorie</div><div class="ssub">Alle Änderungen</div></div>
+              <button class="ver-hist-btn" @click="state.showHistory=true;state.historyDetail=CHANGELOG[0]">Anzeigen</button>
+            </div>
+            <div class="srow">
+              <div><div class="slabel">Auf Update prüfen</div><div class="ssub">Sucht nach neuer Version</div></div>
+              <button class="ver-hist-btn" @click="checkForUpdate" style="white-space:nowrap">🔄 Prüfen</button>
+            </div>
+            <div v-if="state.updateReady" class="srow">
+              <div><div class="slabel">Update verfügbar</div></div>
+              <button class="ver-hist-btn" @click="applyUpdate" style="color:var(--gold)">Installieren</button>
+            </div>
+            <div class="srow">
+              <div><div class="slabel">Diagnoseprotokoll</div></div>
+              <button class="ver-hist-btn" @click="exportLogToFile">Exportieren</button>
+            </div>
+          </div>
 
-  const cfgNameInput = $('cfg-name-input');
-  if (cfgNameInput) cfgNameInput.addEventListener('input', e => { state.configNameDraft = e.target.value; });
+          <!-- Versionshistorie Liste -->
+          <div v-if="state.showHistory && !state.historyDetail" class="drawer-section">
+            <div class="drawer-section-title">Versionshistorie</div>
+            <div v-for="cl in CHANGELOG" :key="cl.version" class="cl-version-card"
+              @click="state.historyDetail=cl">
+              <div class="cl-version-card-head">
+                <span class="cl-version-num">v{{ cl.version }}</span>
+                <span class="cl-version-date">{{ cl.date }}</span>
+              </div>
+              <ul class="cl-version-preview-list">
+                <li v-for="(c,i) in cl.changes.slice(0,2)" :key="i">{{ c }}</li>
+                <li v-if="cl.changes.length > 2" class="cl-more">+ {{ cl.changes.length - 2 }} weitere…</li>
+              </ul>
+              <div class="cl-tap-hint">Antippen für Details →</div>
+            </div>
+          </div>
 
-  document.querySelectorAll('[data-imposter]').forEach(btn =>
-    btn.addEventListener('click', () => { state.imposterCount = +btn.dataset.imposter; render(); })
-  );
-  document.querySelectorAll('[data-load-cfg]').forEach(btn =>
-    btn.addEventListener('click', () => loadConfig(state.savedConfigs.find(c => c.id === btn.dataset.loadCfg)))
-  );
-  document.querySelectorAll('[data-del-cfg]').forEach(btn =>
-    btn.addEventListener('click', () => removeConfig(btn.dataset.delCfg))
-  );
-  document.querySelectorAll('.player-name-input').forEach(inp =>
-    inp.addEventListener('input', e => { state.playerNames[+e.target.dataset.idx] = e.target.value; })
-  );
+        </div>
+      </div>
+    </template>
 
-  // Reveal
-  on('btn-flip', () => { state.revealFlipped = true; haptic('medium'); render(); });
-  on('btn-next-reveal', nextReveal);
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- ── HOME SCREEN ── -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <div v-if="!state.showWhatsNew && !state.showHistory && !state.showSettingsModal && (state.updateReady ? state.screen !== 'home' : true) || (!state.updateReady && !state.showWhatsNew)">
 
-  // Timer
-  on('btn-skip-timer', skipTimer);
+    <template v-if="state.screen === 'home' && !state.showWhatsNew && !(state.updateReady)">
+      <div class="top-bar">
+        <button class="icon-btn" @click="state.showSettingsModal=true" title="Einstellungen">⚙️</button>
+      </div>
+      <div style="padding:0 1.2rem 3rem;max-width:480px;margin:0 auto">
+        <div class="logo">
+          <span class="logo-moon" style="animation:none;filter:drop-shadow(0 0 20px rgba(124,58,237,.5))">🕵️</span>
+          <h1>GRUPPEN-SPIELE</h1>
+          <p>Party Games · Kostenlos · Werbefrei</p>
+        </div>
 
-  // Voting
-  document.querySelectorAll('[data-vote]').forEach(btn =>
-    btn.addEventListener('click', () => castVote(btn.dataset.vote))
-  );
+        <div v-if="state.showSavedNamesHint && state.lastSavedNames.length" class="names-hint">
+          💾 Letzte Spieler: <strong>{{ state.lastSavedNames.slice(0,3).join(', ') }}{{ state.lastSavedNames.length > 3 ? ' +' + (state.lastSavedNames.length - 3) : '' }}</strong>
+          <br><button class="btn-sec" style="margin-top:.5rem;padding:.4rem" @click="loadLastNamesIntoSetup;state.screen='setup'">Spieler laden</button>
+          <button class="btn-sec" style="margin-top:.5rem;padding:.4rem;margin-left:.4rem" @click="dismissNamesHint">✕</button>
+        </div>
 
-  // Result
-  on('btn-new-game', startGame);
-  on('btn-back-home-result', () => { state.screen = 'home'; render(); });
+        <div class="sec">
+          <h2>🎮 Spiel wählen</h2>
+          <div style="background:var(--sur);border:2px solid var(--gold);border-radius:14px;padding:1.2rem;cursor:pointer;transition:all .2s" @click="state.screen='setup'">
+            <div style="font-size:2rem;margin-bottom:.4rem">🕵️</div>
+            <div style="font-size:1rem;font-weight:700;color:var(--txt)">Imposter</div>
+            <div style="font-size:.78rem;color:var(--txt2);margin-top:.2rem">Finde den Verräter — 3 bis 16 Spieler</div>
+          </div>
+        </div>
 
-  // Game menu
-  on('btn-game-menu', () => { state.showGameMenu = true; render(); });
-  on('btn-resume', () => { state.showGameMenu = false; render(); });
-  on('btn-end-game', () => {
-    state.showGameMenu = false;
-    clearInterval(state.timerInterval);
-    state.screen = 'home';
-    render();
-  });
-  on('game-menu-overlay', () => { state.showGameMenu = false; render(); });
+        <button class="btn-start" @click="state.screen='setup'">🎮 Spiel starten</button>
+      </div>
+    </template>
 
-  // Settings
-  on('settings-overlay', () => { state.showSettingsDrawer = false; render(); });
-  on('btn-close-settings', () => { state.showSettingsDrawer = false; render(); });
-  on('btn-check-update', checkForUpdate);
-  on('btn-show-history', () => {
-    state.showHistory = true;
-    state.historyDetail = CHANGELOG[0];
-    state.showSettingsDrawer = false;
-    render();
-  });
-  on('btn-back-history', () => { state.showHistory = false; state.historyDetail = null; render(); });
-  on('btn-apply-update', applyUpdate);
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- ── SETUP SCREEN ── -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <template v-if="state.screen === 'setup'">
+      <div class="top-bar">
+        <button class="icon-btn" @click="state.screen='home'" title="Zurück">←</button>
+        <button class="icon-btn" @click="state.showSettingsModal=true" title="Einstellungen">⚙️</button>
+      </div>
+      <div style="padding:0 1.2rem 3rem;max-width:480px;margin:0 auto">
+        <div style="padding:1.2rem 0 .8rem;font-size:1.2rem;font-weight:900;color:var(--txt)">🕵️ Imposter</div>
 
-  document.querySelectorAll('[data-theme]').forEach(btn =>
-    btn.addEventListener('click', () => setTheme(btn.dataset.theme))
-  );
-}
+        <!-- Spielmodus -->
+        <div class="sec">
+          <h2>{{ t('mode.title') }}</h2>
+          <div class="mode-grid">
+            <div class="mode-card" :class="{active: state.gameMode==='local'}" @click="selectMode('local')">
+              <span class="mode-icon">📱</span>
+              <div class="mode-name">{{ t('mode.local') }}</div>
+              <div class="mode-desc">{{ t('mode.localSub') }}</div>
+            </div>
+            <div class="mode-card" :class="{active: state.gameMode==='coop'}" @click="selectMode('coop')">
+              <span class="mode-icon">🌐</span>
+              <div class="mode-name">{{ t('mode.coop') }}</div>
+              <div class="mode-desc">{{ t('mode.coopSub') }}</div>
+            </div>
+          </div>
+        </div>
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
-applyTheme();
-render();
-maybeShowWhatsNew();
+        <!-- Coop Setup -->
+        <div v-if="state.gameMode==='coop'" class="coop-box">
 
-// Splash ausblenden
-setTimeout(() => {
-  const splash = document.getElementById('splash');
-  if (splash) {
-    splash.classList.add('fade-out');
-    setTimeout(() => splash.remove(), 500);
-  }
-}, 900);
+          <!-- Idle -->
+          <div v-if="state.coop.phase==='idle'" style="display:flex;gap:.6rem">
+            <button class="btn-pri" style="flex:1" @click="showHostSetup">🏠 {{ t('coop.host') }}</button>
+            <button class="btn-sec" style="flex:1" @click="showJoinSetup">🚪 {{ t('coop.join') }}</button>
+          </div>
+
+          <!-- Hosting -->
+          <div v-if="state.coop.phase==='hosting'">
+            <div class="coop-hint">{{ t('coop.yourName') }}</div>
+            <input class="name-input-big" v-model="state.coop.myName" :placeholder="t('coop.namePlaceholder')" />
+            <div class="coop-hint">{{ t('coop.code') }}</div>
+            <input class="code-input" v-model="state.coop.codeDraft" maxlength="6" type="tel" placeholder="000000" />
+            <div v-if="state.coop.error" class="coop-error">{{ state.coop.error }}</div>
+            <button class="btn-pri" @click="createRoom">🏠 Raum erstellen</button>
+            <button class="btn-sec" style="margin-top:.5rem" @click="state.coop.phase='idle'">{{ t('coop.cancel') }}</button>
+          </div>
+
+          <!-- Lobby (Host) -->
+          <div v-if="state.coop.phase==='lobby'">
+            <div class="invite-box">
+              <span class="invite-code">{{ state.coop.code }}</span>
+              <button class="btn-sec btn-sm" @click="shareInviteLink">🔗 Link teilen</button>
+            </div>
+            <div class="coop-hint">{{ t('coop.waiting') }}</div>
+            <ul class="lobby-list">
+              <li v-for="p in state.coop.players" :key="p.uid" class="lobby-item">
+                <span class="li-icon">{{ p.isHost ? '👑' : '👤' }}</span>
+                <span class="li-name">{{ p.name }}</span>
+                <span class="li-ready" :class="p.isHost ? 'host' : p.ready ? 'yes' : 'no'">
+                  {{ p.isHost ? t('coop.host') : p.ready ? t('coop.readyDone') : t('coop.notReady') }}
+                </span>
+              </li>
+            </ul>
+            <button class="btn-pri" @click="startCoopGame" :disabled="state.coop.players.length < 2">{{ t('coop.startBtn') }}</button>
+            <button class="btn-sec" style="margin-top:.5rem" @click="cancelCoop">{{ t('coop.leave') }}</button>
+          </div>
+
+          <!-- Joining -->
+          <div v-if="state.coop.phase==='joining'">
+            <div class="coop-hint">{{ t('coop.yourName') }}</div>
+            <input class="name-input-big" v-model="state.coop.myName" :placeholder="t('coop.namePlaceholder')" />
+            <div class="coop-hint">{{ t('coop.code') }}</div>
+            <input class="code-input" v-model="state.coop.codeDraft" maxlength="6" type="tel" :placeholder="t('coop.codeHint')" />
+            <div v-if="state.coop.error" class="coop-error">{{ state.coop.error }}</div>
+            <button class="btn-pri" @click="joinRoom">🚪 {{ t('coop.joinBtn') }}</button>
+            <button class="btn-sec" style="margin-top:.5rem" @click="state.coop.phase='idle'">{{ t('coop.cancel') }}</button>
+          </div>
+
+          <!-- Joined (Gast wartet) -->
+          <div v-if="state.coop.phase==='joined'" style="text-align:center;padding:1rem">
+            <div style="font-size:1.5rem;margin-bottom:.5rem">⏳</div>
+            <p style="color:var(--txt2);font-size:.9rem">{{ t('coop.waiting') }}</p>
+            <div style="font-size:1.4rem;font-weight:900;color:var(--gold);letter-spacing:.2em;margin:.6rem 0">{{ state.coop.code }}</div>
+            <button class="btn-pri" @click="toggleReady" style="margin-bottom:.5rem">✓ {{ t('coop.readyBtn') }}</button>
+            <button class="btn-sec" @click="cancelCoop">{{ t('coop.leave') }}</button>
+          </div>
+
+        </div>
+
+        <!-- Spieler (nur Lokal) -->
+        <template v-if="state.gameMode==='local'">
+          <div class="sec" style="margin-top:1rem">
+            <h2>👥 {{ t('setup.players') }}</h2>
+            <div class="pc-row" style="margin-bottom:.8rem">
+              <button class="cnt-btn" @click="changePlayerCount(-1)">−</button>
+              <div class="pc-stepper">
+                <div class="pc-num">{{ state.playerCount }}</div>
+                <div class="cnt-lbl">{{ t('setup.playerUnit') }}</div>
+              </div>
+              <button class="cnt-btn" @click="changePlayerCount(1)">+</button>
+            </div>
+            <div class="names-scroll">
+              <div class="names-grid">
+                <div v-for="(name, i) in state.playerNames.slice(0, state.playerCount)" :key="i" class="nwrap">
+                  <span>{{ i + 1 }}</span>
+                  <input class="ninput" v-model="state.playerNames[i]" :placeholder="t('setup.playerUnit') + ' ' + (i+1)" type="text" autocomplete="off" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sec">
+            <h2>🕵️ {{ t('setup.imposter') }}</h2>
+            <div style="display:flex;gap:.6rem">
+              <button v-for="n in [1,2]" :key="n"
+                :style="{ flex:1, padding:'.7rem', borderRadius:'10px', border:'none', cursor:'pointer', fontWeight:'700', fontSize:'.9rem', color:'#fff', background: state.imposterCount===n ? 'linear-gradient(135deg,var(--pri),var(--pri2))' : 'var(--sur)', border: state.imposterCount===n ? 'transparent' : '1px solid var(--bdr2)', transition:'all .15s' }"
+                @click="state.imposterCount=n">{{ n }}</button>
+            </div>
+          </div>
+
+          <div class="sec">
+            <h2>💾 Konfiguration</h2>
+            <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
+              <input class="ninput" v-model="state.configNameDraft" placeholder="Name (optional)" style="flex:1;padding:.5rem .7rem;margin:0" />
+              <button class="btn-sec btn-sm" style="flex-shrink:0;white-space:nowrap" @click="saveCurrentConfig">Speichern</button>
+            </div>
+            <button v-if="state.savedConfigs.length" class="btn-sec btn-sm" @click="state.showConfigs=!state.showConfigs">
+              📋 Gespeicherte Konfigurationen ({{ state.savedConfigs.length }})
+            </button>
+            <div v-if="state.showConfigs" style="margin-top:.7rem;background:var(--sur);border:1px solid var(--bdr);border-radius:10px;padding:.7rem .9rem">
+              <div v-if="!state.savedConfigs.length" style="font-size:.8rem;color:var(--txt3);text-align:center;padding:.5rem">Noch keine gespeichert.</div>
+              <div v-for="c in state.savedConfigs" :key="c.id" class="config-row">
+                <div class="config-info">
+                  <div class="config-name">{{ c.name }}</div>
+                  <div class="config-sub">{{ c.playerCount }} Spieler · {{ c.imposterCount||1 }} Imposter</div>
+                </div>
+                <button class="btn-sec btn-sm" style="flex-shrink:0" @click="loadConfig(c)">Laden</button>
+                <button class="btn-sec btn-sm" style="flex-shrink:0;margin-left:.3rem;color:var(--blood2)" @click="removeConfig(c.id)">✕</button>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn-start" @click="startLocalGame" :disabled="state.playerCount < 3">
+            ▶ {{ t('setup.startBtn') }}
+          </button>
+        </template>
+
+      </div>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- ── REVEAL SCREEN ── -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <template v-if="state.screen === 'reveal'">
+      <div class="top-bar">
+        <button class="icon-btn" @click="openGameMenu" title="Spielmenü">⏸</button>
+      </div>
+      <div class="reveal-inner">
+        <div style="width:100%;max-width:360px">
+          <div class="prog-bar"><div class="prog-fill" :style="{width: (state.revealIdx / state.roles.length * 100) + '%'}"></div></div>
+        </div>
+        <div class="rev-head">
+          <div class="for">{{ t('reveal.for') }}</div>
+          <div class="pname">{{ revealPlayer?.name }}</div>
+        </div>
+        <div class="rev-card" :class="{ flipped: state.revealFlipped, imposter: state.revealFlipped && revealPlayer?.isImposter }">
+          <div v-if="!state.revealFlipped" class="card-back">
+            <span class="cbi">🃏</span>
+            <span class="cbt">{{ t('reveal.tap') }}</span>
+          </div>
+          <div v-else class="card-front">
+            <template v-if="revealPlayer?.isImposter">
+              <span class="cfi">🕵️</span>
+              <div class="cft" style="color:var(--blood2)">IMPOSTER!</div>
+              <div class="cfa">Du kennst das Wort nicht. Tu so als ob — lass dich nicht erwischen!</div>
+              <div class="cfg">Beobachte die anderen genau und passe dich an.</div>
+            </template>
+            <template v-else>
+              <span class="cfi">💬</span>
+              <div class="cft">Dein Wort:</div>
+              <div style="font-size:2rem;font-weight:900;color:var(--gold);margin:.3rem 0">{{ revealPlayer?.word }}</div>
+              <div class="cfg">Beschreibe es ohne das Wort zu nennen!</div>
+            </template>
+          </div>
+        </div>
+        <button v-if="!state.revealFlipped" class="btn-rev" @click="revealCard">👁 {{ t('reveal.show') }}</button>
+        <button v-else class="btn-nxt" @click="nextReveal">
+          {{ state.revealIdx + 1 >= state.roles.length ? '▶ Diskussion starten' : '➡ ' + t('reveal.next') }}
+        </button>
+        <div class="rev-prog">{{ state.revealIdx + 1 }} / {{ state.roles.length }}</div>
+      </div>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- ── TIMER SCREEN ── -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <template v-if="state.screen === 'timer'">
+      <div class="top-bar">
+        <button class="icon-btn" @click="openGameMenu" title="Spielmenü">⏸</button>
+      </div>
+      <div class="timer-wrap">
+        <div style="font-size:1.1rem;font-weight:700;color:var(--txt);margin-bottom:.4rem">{{ t('timer.title') }}</div>
+        <div class="timer-desc">{{ t('timer.desc') }}</div>
+        <div class="timer-ring-outer">
+          <svg width="140" height="140" viewBox="0 0 140 140">
+            <circle class="timer-track" cx="70" cy="70" r="54"/>
+            <circle class="timer-fill" cx="70" cy="70" r="54"
+              :stroke="state.timerSeconds <= 10 ? '#ef4444' : state.timerSeconds <= 20 ? '#f59e0b' : 'var(--gold)'"
+              :style="{
+                strokeDasharray: 2 * Math.PI * 54,
+                strokeDashoffset: 2 * Math.PI * 54 * (1 - state.timerSeconds / TIMER_SECONDS),
+                transition: 'stroke-dashoffset 1s linear, stroke .5s'
+              }"/>
+          </svg>
+          <div class="timer-num" :style="{color: state.timerSeconds <= 10 ? '#ef4444' : state.timerSeconds <= 20 ? '#f59e0b' : 'var(--gold)'}">
+            {{ state.timerSeconds }}
+          </div>
+        </div>
+        <div class="timer-label">{{ t('timer.seconds') }}</div>
+        <button class="btn-sec" style="max-width:300px;width:100%" @click="skipTimer">{{ t('timer.skip') }}</button>
+      </div>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- ── VOTING SCREEN ── -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <template v-if="state.screen === 'voting'">
+      <div class="top-bar">
+        <button class="icon-btn" @click="openGameMenu" title="Spielmenü">⏸</button>
+      </div>
+      <div style="padding:1.2rem;max-width:480px;margin:0 auto">
+        <div class="prog-bar"><div class="prog-fill" :style="{width: (state.stimmIdx / state.roles.length * 100) + '%'}"></div></div>
+        <div style="text-align:center;margin-bottom:1.5rem">
+          <div style="font-size:2rem;margin-bottom:.5rem">🗳</div>
+          <div style="font-size:1.1rem;font-weight:900;color:var(--txt);margin-bottom:.2rem">{{ t('voting.title') }}</div>
+          <div style="color:var(--gold);font-weight:700;font-size:1rem">{{ currentVoter?.name }} {{ t('voting.sub') }}</div>
+          <div style="font-size:.75rem;color:var(--txt3);margin-top:.2rem">{{ state.stimmIdx + 1 }} {{ t('voting.of') }} {{ state.roles.length }}</div>
+        </div>
+        <button v-for="r in voteOptions" :key="r.name" class="vote-btn" @click="castVote(r.name)">
+          <span>👤</span> {{ r.name }}
+        </button>
+      </div>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- ── RESULT SCREEN ── -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <template v-if="state.screen === 'result'">
+      <div class="top-bar">
+        <button class="icon-btn" @click="state.showSettingsModal=true" title="Einstellungen">⚙️</button>
+      </div>
+      <div class="go-inner">
+        <div class="wicon">{{ state.winner === 'village' ? '🎉' : '🕵️' }}</div>
+        <div class="wtitle" :style="{color: state.winner==='village' ? 'var(--green)' : 'var(--blood2)'}">
+          {{ state.winner === 'village' ? t('result.caught') : t('result.wins') }}
+        </div>
+        <div class="wsub">{{ state.winner === 'village' ? t('result.caughtSub') : t('result.winsSub') }}</div>
+
+        <div class="surv-box" style="margin-bottom:1rem">
+          <h3>🔍 {{ t('result.word') }}: <span style="color:var(--txt);font-size:1rem">{{ state.roles[0]?.word }}</span></h3>
+          <div style="margin:.6rem 0">
+            <span style="font-size:.78rem;color:var(--txt3)">{{ t('result.imposter') }}: </span>
+            <span v-for="n in imposters" :key="n" style="background:rgba(124,58,237,.3);color:#c4b5fd;border-radius:20px;padding:2px 10px;font-size:.78rem;margin-left:4px">{{ n }}</span>
+          </div>
+          <div style="border-top:1px solid var(--bdr);padding-top:.6rem;margin-top:.6rem">
+            <div style="font-size:.65rem;letter-spacing:.15em;color:var(--txt3);text-transform:uppercase;margin-bottom:.5rem">{{ t('result.votes') }}</div>
+            <div v-for="r in state.roles" :key="r.name" class="surv-item">
+              <span>{{ r.name }}{{ r.isImposter ? ' 🕵️' : '' }}</span>
+              <span style="margin-left:auto;color:var(--gold);font-weight:700">{{ state.tally[r.name] || 0 }}×</span>
+              <span v-if="state.eliminatedNames.includes(r.name)" style="background:rgba(124,58,237,.3);color:#c4b5fd;border-radius:20px;padding:2px 8px;font-size:.7rem;margin-left:.3rem">{{ t('result.out') }}</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-start" @click="startLocalGame">🔄 {{ t('result.newGame') }}</button>
+        <button class="btn-sec" style="margin-top:.5rem" @click="newGame">{{ t('result.backHome') }}</button>
+      </div>
+    </template>
+
+    </div>
+
+  </div>
+  `,
+};
+
+createApp(App).mount('#app');
+init();
