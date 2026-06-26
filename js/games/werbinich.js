@@ -53,6 +53,7 @@ export const wbiState = reactive({
   localCards: [],      // [{ word, category, playerName, guessed, skipped }]
   currentIdx: 0,       // aktueller Spieler beim Kartenverteilen
   showCard: false,     // Karte sichtbar für anderen Spieler
+  cardSeen: false,      // Karte wurde mindestens einmal aufgedeckt
   localPhase: 'distribute', // distribute | discuss | resolve
   // Diskussionsphase: welche Karte gerade sichtbar
   discussIdx: 0,
@@ -113,7 +114,7 @@ export function wbiStartLocal() {
   haptic('success');
 }
 
-export function wbiShowCard()  { wbiState.showCard = true; haptic('medium'); }
+export function wbiShowCard()  { wbiState.showCard = true; wbiState.cardSeen = true; haptic('medium'); }
 export function wbiHideCard()  { wbiState.showCard = false; }
 
 export function wbiMarkGuessed(idx) {
@@ -165,6 +166,7 @@ export function wbiNextCard() {
     } else {
       wbiState.currentIdx++;
       wbiState.showCard = false;
+      wbiState.cardSeen = false;
     }
   }
 }
@@ -186,6 +188,7 @@ export function wbiRestart() {
   wbiState.localCards        = [];
   wbiState.currentIdx        = 0;
   wbiState.showCard          = false;
+  wbiState.cardSeen          = false;
   wbiState.localPhase        = 'distribute';
   wbiState.discussIdx        = 0;
   wbiState.discussCardVisible = false;
