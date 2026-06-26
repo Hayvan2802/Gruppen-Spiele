@@ -34,6 +34,15 @@ function createRoles(names, imposterCount) {
   return shuffled.map((name, i) => ({ name, isImposter: impIdx.has(i), word }));
 }
 
+function selectVote(state, target) { state.voteSelection = target; }
+function confirmVote(state, roles, votes) {
+  if (!state.voteSelection) return;
+  const voter = roles[state.stimmIdx].name;
+  votes[voter] = state.voteSelection;
+  state.voteSelection = null;
+  if (state.stimmIdx + 1 >= roles.length) { return 'done'; }
+  else { state.stimmIdx++; return 'next'; }
+}
 function calcResult(roles, votes) {
   const tally = {};
   roles.forEach(r => { tally[r.name] = 0; });
@@ -141,6 +150,22 @@ test('Imposter erwischt bei Gleichstand mit Imposter dabei', () => {
   const votes = { Bob: 'Alice', Clara: 'Alice', Alice: 'Bob', David: 'Bob' };
   const { winner } = calcResult(roles, votes);
   assertEqual(winner, 'village', 'Alice (Imposter) ist im Gleichstand → village gewinnt');
+});
+
+test('selectVote + confirmVote — Vorauswahl dann Bestätigen', () => {
+  const roles = [
+    { name: 'A', isImposter: true,  word: 'X' },
+    { name: 'B', isImposter: false, word: 'X' },
+    { name: 'C', isImposter: false, word: 'X' },
+  ];
+  const votes = {};
+  const vstate = { stimmIdx: 0, voteSelection: null };
+  selectVote(vstate, 'A');
+  assert(vstate.voteSelection === 'A', 'Vorauswahl sollte A sein');
+  const res = confirmVote(vstate, roles, votes);
+  assert(vstate.voteSelection === null, 'voteSelection nach Bestätigung null');
+  assertEqual(votes['B'], undefined, 'B hat noch nicht gestimmt');
+  assertEqual(votes['A'], 'A', 'A hat für A gestimmt'); // wait — voter is A (stimmIdx=0)
 });
 
 test('Tally zählt Stimmen korrekt', () => {
