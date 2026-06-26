@@ -1,6 +1,6 @@
-// Gruppen-Spiele Service Worker v0.36
+// Gruppen-Spiele Service Worker v0.37
 // Kein self.skipWaiting() im install — Nutzer entscheidet per Banner.
-const CACHE = 'gruppen-spiele-v0.36';
+const CACHE = 'gruppen-spiele-v0.37';
 const ASSETS = [
   './index.html', './css/styles.css',
   './js/app.js', './js/buildinfo.js',
