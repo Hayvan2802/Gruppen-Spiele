@@ -1243,3 +1243,21 @@ body.neon .btn-start {
   font-size: .82rem; font-weight: 700; cursor: pointer;
   min-height: 40px; min-width: 52px;
 }
+
+/* ── Anleitungs-Modal ────────────────────────────────────────────────────── */
+.rules-section { display: flex; flex-direction: column; gap: .8rem; }
+.rules-step {
+  background: var(--sur); border: 1px solid var(--bdr);
+  border-radius: 12px; padding: .85rem 1rem;
+  font-size: .88rem; color: var(--txt2); line-height: 1.6;
+}
+.rules-step strong { color: var(--txt); }
+
+/* ── Spielauswahl: Anleitung-Link ────────────────────────────────────────── */
+.game-select-hint-btn {
+  display: inline-block; margin-top: .5rem;
+  font-size: .72rem; color: var(--txt3);
+  cursor: pointer; padding: .2rem .5rem;
+  border-radius: 6px; transition: color .15s;
+}
+.game-select-hint-btn:hover { color: var(--gold); }
