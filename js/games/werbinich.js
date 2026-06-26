@@ -153,7 +153,7 @@ export function wbiStartResolve() {
   haptic('medium');
 }
 
-function wbiNextCard() {
+export function wbiNextCard() {
   if (wbiState.localPhase === 'distribute') {
     // Nächster Spieler bekommt Karte
     if (wbiState.currentIdx + 1 >= wbiState.localCards.length) {
