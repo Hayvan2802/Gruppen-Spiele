@@ -2,6 +2,13 @@
 // Portiert vom Werwolf-Projekt — nur Imposter-Spiellogik
 import { createApp, reactive, computed } from './vue.esm-browser.prod.js';
 import { BUILD, CHANGELOG } from './buildinfo.js';
+import {
+  wbiState, WBI_KATEGORIEN, WBI_DEFAULT_KATEGORIEN,
+  wbiStartLocal, wbiShowCard, wbiHideCard, wbiMarkGuessed, wbiMarkSkipped,
+  wbiRestart, wbiSelectMode, wbiShowHostSetup, wbiCreateRoom,
+  wbiShowJoinSetup, wbiJoinRoom, wbiStartCoopGame, wbiCancelCoop,
+  wbiShareLink, wbiSendGuess, wbiCurrentCard, wbiRemainingCount, wbiGuessedCount,
+} from './games/werbinich.js';
 import { ALL_WORDS, KATEGORIEN, DEFAULT_KATEGORIEN, DONATE_URL, COOP_MAX_PLAYERS } from './config.js';
 import * as Coop from './coop.js';
 import { log, exportLogToFile } from './debuglog.js';
@@ -635,6 +642,14 @@ function init() {
     state.coop.codeDraft = inviteCode;
     log('coop', `Einladungslink erkannt: Code ${inviteCode}`);
   }
+  const wbiCode = params.get('wbi');
+  if (wbiCode && /^[0-9]{6}$/.test(wbiCode)) {
+    state.screen = 'wbi';
+    wbiState.gameMode = 'coop';
+    wbiState.coop.phase = 'joining';
+    wbiState.coop.codeDraft = wbiCode;
+    log('coop', `WBI Einladungslink: Code ${wbiCode}`);
+  }
 
   setTimeout(() => {
     const splash = document.getElementById('splash');
@@ -665,6 +680,12 @@ const App = {
       openGameMenu, closeGameMenu, pauseGame, resumeGame, confirmEndGame,
       startLocalGame, revealCard, nextReveal, skipTimer, selectVote, confirmVote, newGame, nextRound, resetGame,
       KATEGORIEN, DEFAULT_KATEGORIEN,
+      // Wer bin ich
+      wbiState, WBI_KATEGORIEN, WBI_DEFAULT_KATEGORIEN,
+      wbiStartLocal, wbiShowCard, wbiHideCard, wbiMarkGuessed, wbiMarkSkipped,
+      wbiRestart, wbiSelectMode, wbiShowHostSetup, wbiCreateRoom,
+      wbiShowJoinSetup, wbiJoinRoom, wbiStartCoopGame, wbiCancelCoop,
+      wbiShareLink, wbiSendGuess, wbiCurrentCard, wbiRemainingCount, wbiGuessedCount,
       showHostSetup, createRoom, startCoopGame,
       showJoinSetup, joinRoom, toggleReady, cancelCoop,
       getInviteLink, shareInviteLink,
@@ -1028,6 +1049,267 @@ const App = {
       </div>
     </template>
 
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- ── WER BIN ICH? SCREEN ── -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <template v-if="state.screen === 'wbi'">
+      <div class="top-bar">
+        <button class="icon-btn" @click="state.screen='home';wbiRestart()" title="Zurück">←</button>
+        <button class="icon-btn" @click="state.showSettingsModal=true" title="Einstellungen">⚙️</button>
+      </div>
+      <div style="padding:0 1.2rem 3rem;max-width:480px;margin:0 auto">
+        <div style="padding:1rem 0 .6rem;font-size:1.2rem;font-weight:900;color:var(--txt)">🤔 Wer bin ich?</div>
+
+        <!-- SETUP -->
+        <template v-if="wbiState.phase === 'setup'">
+          <!-- Spielmodus -->
+          <div class="sec">
+            <h2>📱 Spielmodus</h2>
+            <div class="mode-grid">
+              <div class="mode-card" :class="{active: wbiState.gameMode==='local'}" @click="wbiSelectMode('local')">
+                <span class="mode-icon">📱</span>
+                <div class="mode-name">Ein Gerät</div>
+                <div class="mode-desc">Alle spielen auf einem Handy</div>
+              </div>
+              <div class="mode-card" :class="{active: wbiState.gameMode==='coop'}" @click="wbiSelectMode('coop')">
+                <span class="mode-icon">🌐</span>
+                <div class="mode-name">Multiplayer</div>
+                <div class="mode-desc">Jeder auf eigenem Handy</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- COOP Setup -->
+          <div v-if="wbiState.gameMode==='coop'" class="coop-box">
+            <!-- Idle -->
+            <div v-if="wbiState.coop.phase==='idle'" style="display:flex;gap:.6rem">
+              <button class="btn-pri" style="flex:1" @click="wbiShowHostSetup">🏠 Host erstellen</button>
+              <button class="btn-sec" style="flex:1" @click="wbiShowJoinSetup">🚪 Beitreten</button>
+            </div>
+            <!-- Hosting -->
+            <div v-if="wbiState.coop.phase==='hosting'">
+              <div class="coop-hint">Dein Name</div>
+              <input class="name-input-big" v-model="wbiState.coop.myName" placeholder="Name eingeben..." />
+              <div class="coop-hint" style="margin-top:.8rem">Raumcode (6 Ziffern)</div>
+              <input class="code-input" v-model="wbiState.coop.codeDraft" maxlength="6" type="tel" inputmode="numeric" placeholder="z.B. 123456"
+                style="font-size:1.6rem;letter-spacing:.3em;text-align:center;padding:.8rem" />
+              <div v-if="wbiState.coop.error" class="coop-error">{{ wbiState.coop.error }}</div>
+              <button class="btn-create-room"
+                :disabled="wbiState.coop.codeDraft.replace(/\D/g,'').length!==6 || !wbiState.coop.myName.trim()"
+                @click="wbiCreateRoom">🏠 Raum erstellen</button>
+              <button class="btn-sec" style="margin-top:.5rem" @click="wbiState.coop.phase='idle'">Abbrechen</button>
+            </div>
+            <!-- Lobby -->
+            <div v-if="wbiState.coop.phase==='lobby'">
+              <div class="invite-box">
+                <span class="invite-code">{{ wbiState.coop.code }}</span>
+                <button class="btn-sec btn-sm" @click="wbiShareLink">🔗 Link teilen</button>
+              </div>
+              <div class="coop-hint">Spieler in der Lobby</div>
+              <ul class="lobby-list">
+                <li v-for="p in wbiState.coop.players" :key="p.uid" class="lobby-item">
+                  <span class="li-icon">{{ p.isHost ? '👑' : '👤' }}</span>
+                  <span class="li-name">{{ p.name }}</span>
+                  <span class="li-ready" :class="p.isHost ? 'host' : 'yes'">{{ p.isHost ? 'Host' : 'Bereit' }}</span>
+                </li>
+              </ul>
+              <button class="btn-create-room" :disabled="wbiState.coop.players.length < 2" @click="wbiStartCoopGame">
+                ▶ Spiel starten ({{ wbiState.coop.players.length }} Spieler)
+              </button>
+              <button class="btn-sec" style="margin-top:.5rem" @click="wbiCancelCoop">Verlassen</button>
+            </div>
+            <!-- Joining -->
+            <div v-if="wbiState.coop.phase==='joining'">
+              <div class="coop-hint">Dein Name</div>
+              <input class="name-input-big" v-model="wbiState.coop.myName" placeholder="Name eingeben..." />
+              <div class="coop-hint" style="margin-top:.8rem">Raumcode (6 Ziffern)</div>
+              <input class="code-input" v-model="wbiState.coop.codeDraft" maxlength="6" type="tel" inputmode="numeric" placeholder="z.B. 123456"
+                style="font-size:1.6rem;letter-spacing:.3em;text-align:center;padding:.8rem" />
+              <div v-if="wbiState.coop.error" class="coop-error">{{ wbiState.coop.error }}</div>
+              <button class="btn-create-room"
+                :disabled="wbiState.coop.codeDraft.replace(/\D/g,'').length!==6 || !wbiState.coop.myName.trim()"
+                @click="wbiJoinRoom">🚪 Beitreten</button>
+              <button class="btn-sec" style="margin-top:.5rem" @click="wbiState.coop.phase='idle'">Abbrechen</button>
+            </div>
+            <!-- Joined: Warten -->
+            <div v-if="wbiState.coop.phase==='joined'" style="text-align:center;padding:1rem">
+              <div style="font-size:1.5rem;margin-bottom:.5rem">⏳</div>
+              <p style="color:var(--txt2);font-size:.9rem">Warte auf den Host…</p>
+              <div style="font-size:1.4rem;font-weight:900;color:var(--gold);letter-spacing:.2em;margin:.6rem 0">{{ wbiState.coop.code }}</div>
+              <button class="btn-sec" style="margin-top:.5rem" @click="wbiCancelCoop">Verlassen</button>
+            </div>
+          </div>
+
+          <!-- LOKAL Setup -->
+          <template v-if="wbiState.gameMode==='local'">
+            <div class="sec">
+              <h2>👥 Spieler</h2>
+              <div class="pc-row" style="margin-bottom:.8rem">
+                <button class="cnt-btn" @click="wbiState.playerCount = Math.max(2, wbiState.playerCount-1)">−</button>
+                <div class="pc-stepper">
+                  <div class="pc-num">{{ wbiState.playerCount }}</div>
+                  <div class="cnt-lbl">Spieler</div>
+                </div>
+                <button class="cnt-btn" @click="wbiState.playerCount = Math.min(16, wbiState.playerCount+1)">+</button>
+              </div>
+              <div class="names-scroll">
+                <div class="names-grid">
+                  <div v-for="(name, i) in wbiState.playerNames.slice(0, wbiState.playerCount)" :key="i" class="nwrap">
+                    <span>{{ i+1 }}</span>
+                    <input class="ninput" v-model="wbiState.playerNames[i]" :placeholder="'Spieler '+(i+1)" type="text" autocomplete="off" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Kategorien -->
+            <div class="sec">
+              <h2 style="cursor:pointer" @click="wbiState.showKats=!wbiState.showKats">
+                🗂 Kategorien
+                <span style="font-size:.75rem;color:var(--txt3);font-weight:500;letter-spacing:0;text-transform:none;margin-left:.4rem">
+                  {{ wbiState.selectedKats.length }} / {{ Object.keys(WBI_KATEGORIEN).length }}
+                </span>
+                <span style="margin-left:auto;font-size:.9rem;color:var(--txt3)">{{ wbiState.showKats ? '▲' : '▼' }}</span>
+              </h2>
+              <div v-if="wbiState.showKats">
+                <div style="display:flex;gap:.5rem;margin-bottom:.7rem">
+                  <button class="btn-sec btn-sm" style="flex:1" @click="wbiState.selectedKats=Object.keys(WBI_KATEGORIEN)">✓ Alle</button>
+                  <button class="btn-sec btn-sm" style="flex:1" @click="wbiState.selectedKats=[]">✗ Keine</button>
+                </div>
+                <div class="kat-grid">
+                  <button v-for="(words, kat) in WBI_KATEGORIEN" :key="kat"
+                    class="kat-btn" :class="{'kat-btn-active': wbiState.selectedKats.includes(kat)}"
+                    @click="wbiState.selectedKats.includes(kat)
+                      ? wbiState.selectedKats=wbiState.selectedKats.filter(k=>k!==kat)
+                      : wbiState.selectedKats.push(kat)">
+                    <span class="kat-label">{{ kat }}</span>
+                    <span class="kat-count">{{ words.length }} Karten</span>
+                  </button>
+                </div>
+                <!-- Eigene Karten -->
+                <div style="margin-top:1rem">
+                  <div style="font-size:.72rem;color:var(--txt3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.5rem">➕ Eigene Begriffe</div>
+                  <div style="display:flex;gap:.5rem">
+                    <input class="ninput" v-model="wbiState.customCardDraft" placeholder="Begriff eingeben..." style="flex:1;margin:0;padding:.5rem .7rem"
+                      @keydown.enter="wbiState.customCardDraft.trim() && !wbiState.customCards.includes(wbiState.customCardDraft.trim()) && wbiState.customCards.push(wbiState.customCardDraft.trim()) && (wbiState.customCardDraft='')" />
+                    <button class="btn-sec btn-sm" @click="wbiState.customCardDraft.trim() && (wbiState.customCards.push(wbiState.customCardDraft.trim()), wbiState.customCardDraft='')">+ Add</button>
+                  </div>
+                  <div v-if="wbiState.customCards.length" style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.6rem">
+                    <span v-for="w in wbiState.customCards" :key="w" class="custom-word-tag">
+                      {{ w }}
+                      <button @click="wbiState.customCards=wbiState.customCards.filter(x=>x!==w)" style="background:none;border:none;color:var(--txt3);cursor:pointer;margin-left:.2rem">×</button>
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div v-else style="display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.4rem">
+                <span v-for="kat in wbiState.selectedKats.slice(0,3)" :key="kat" style="font-size:.7rem;background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);border-radius:20px;padding:2px 8px;color:var(--gold)">
+                  {{ kat.split(' ').slice(1).join(' ') }}
+                </span>
+                <span v-if="wbiState.selectedKats.length>3" style="font-size:.7rem;color:var(--txt3)">+{{ wbiState.selectedKats.length-3 }}</span>
+              </div>
+            </div>
+
+            <button class="btn-start" @click="wbiStartLocal" :disabled="wbiState.playerCount < 2">
+              ▶ Spiel starten
+            </button>
+          </template>
+        </template>
+
+        <!-- LOKAL: KARTE ZEIGEN -->
+        <template v-if="wbiState.phase === 'local-reveal'">
+          <div style="text-align:center;margin-bottom:1rem">
+            <div style="font-size:.72rem;color:var(--txt3);letter-spacing:.12em;text-transform:uppercase">Noch {{ wbiRemainingCount() }} übrig · {{ wbiGuessedCount() }} erraten</div>
+            <div class="prog-bar" style="margin-top:.5rem">
+              <div class="prog-fill" :style="{width: (wbiGuessedCount()/wbiState.localCards.length*100)+'%'}"></div>
+            </div>
+          </div>
+
+          <div v-if="wbiCurrentCard()" class="wbi-card-wrap">
+            <div class="wbi-for-label">Karte für</div>
+            <div class="wbi-player-name">{{ wbiCurrentCard().playerName }}</div>
+            <div class="wbi-hint">Nur der nächste Spieler schaut — haltet das Handy gegen die Stirn von {{ wbiCurrentCard().playerName }}!</div>
+
+            <!-- Karte -->
+            <div class="wbi-card" :class="{'wbi-card-visible': wbiState.showCard}">
+              <div v-if="!wbiState.showCard" class="wbi-card-back" @click="wbiShowCard">
+                <div style="font-size:3rem;margin-bottom:.6rem">🤔</div>
+                <div style="font-size:.85rem;letter-spacing:.1em;color:var(--txt2);text-transform:uppercase">Antippen zum Aufdecken</div>
+              </div>
+              <div v-else class="wbi-card-front">
+                <div style="font-size:.75rem;letter-spacing:.12em;color:var(--txt3);text-transform:uppercase;margin-bottom:.4rem">{{ wbiCurrentCard().category }}</div>
+                <div class="wbi-word">{{ wbiCurrentCard().word }}</div>
+                <div style="font-size:.82rem;color:var(--txt2);margin-top:.6rem">Halt das Handy gegen die Stirn — nur die anderen sehen die Karte!</div>
+              </div>
+            </div>
+
+            <template v-if="wbiState.showCard">
+              <button class="btn-start" style="margin-top:1rem" @click="wbiMarkGuessed(wbiState.currentIdx)">✓ Erraten!</button>
+              <button class="btn-sec" style="margin-top:.5rem" @click="wbiMarkSkipped(wbiState.currentIdx)">→ Überspringen</button>
+              <button class="btn-sec" style="margin-top:.4rem;font-size:.8rem" @click="wbiHideCard">🙈 Karte verbergen</button>
+            </template>
+          </div>
+        </template>
+
+        <!-- COOP: MEINE KARTE -->
+        <template v-if="wbiState.coop.phase === 'playing'">
+          <div class="wbi-card-wrap" style="text-align:center">
+            <div class="wbi-for-label">Deine Karte (nur du siehst sie NICHT)</div>
+            <div class="wbi-player-name">Du bist…</div>
+            <div class="wbi-card wbi-card-visible" style="margin:1rem 0">
+              <div class="wbi-card-front">
+                <div style="font-size:.75rem;color:var(--txt3);margin-bottom:.4rem">{{ wbiState.coop.myCard?.category }}</div>
+                <div class="wbi-word">{{ wbiState.coop.myCard?.word }}</div>
+                <div style="font-size:.78rem;color:var(--txt2);margin-top:.6rem">
+                  Die anderen sehen deine Karte. Stelle Ja/Nein-Fragen!
+                </div>
+              </div>
+            </div>
+            <div style="font-size:.85rem;color:var(--txt2);margin-bottom:1rem">Hast du erraten wer du bist?</div>
+            <button class="btn-start" @click="wbiSendGuess(true)">✓ Ja, ich hab's erraten!</button>
+            <button class="btn-sec" style="margin-top:.5rem" @click="wbiSendGuess(false)">✗ Noch nicht</button>
+
+            <!-- Guess-History -->
+            <div v-if="wbiState.coop.guesses.length" style="margin-top:1.2rem;text-align:left">
+              <div style="font-size:.68rem;letter-spacing:.12em;color:var(--txt3);text-transform:uppercase;margin-bottom:.5rem">Verlauf</div>
+              <div v-for="g in wbiState.coop.guesses" :key="g.ts" class="surv-item">
+                <span>{{ g.correct ? '✓' : '✗' }}</span>
+                <span>{{ g.name }}: <strong>{{ g.word }}</strong></span>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- ERGEBNIS -->
+        <template v-if="wbiState.phase === 'result' || wbiState.coop.phase === 'result'">
+          <div class="go-inner" style="padding-top:1rem">
+            <div class="wicon">🎉</div>
+            <div class="wtitle">Runde vorbei!</div>
+            <div class="wsub">{{ wbiState.results.filter(r=>r.guessed).length }} von {{ wbiState.results.length }} erraten</div>
+
+            <div class="surv-box" style="width:100%">
+              <h3>Ergebnisse</h3>
+              <div v-for="r in wbiState.results" :key="r.playerName" class="surv-item">
+                <span style="font-size:1rem">{{ r.guessed ? '✓' : '✗' }}</span>
+                <div style="flex:1">
+                  <div style="font-weight:600">{{ r.playerName }}</div>
+                  <div style="font-size:.75rem;color:var(--txt3)">{{ r.word }}</div>
+                </div>
+                <span :style="{color: r.guessed ? 'var(--green)' : 'var(--red2)', fontWeight:700}">
+                  {{ r.guessed ? '+1' : '0' }}
+                </span>
+              </div>
+            </div>
+
+            <button class="btn-start" @click="wbiRestart();wbiCancelCoop()">🔄 Neues Spiel</button>
+            <button class="btn-sec" style="margin-top:.5rem" @click="state.screen='home';wbiRestart();wbiCancelCoop()">🏠 Hauptmenü</button>
+          </div>
+        </template>
+
+      </div>
+    </template>
+
     <!-- ══════════════════════════════════════════════════════════════════ -->
     <!-- ── HOME SCREEN ── -->
     <!-- ══════════════════════════════════════════════════════════════════ -->
@@ -1052,14 +1334,23 @@ const App = {
 
         <div class="sec">
           <h2>🎮 Spiel wählen</h2>
-          <div style="background:var(--sur);border:2px solid var(--gold);border-radius:14px;padding:1.2rem;cursor:pointer;transition:all .2s" @click="state.screen='setup'">
-            <div style="font-size:2rem;margin-bottom:.4rem">🕵️</div>
-            <div style="font-size:1rem;font-weight:700;color:var(--txt)">Imposter</div>
-            <div style="font-size:.78rem;color:var(--txt2);margin-top:.2rem">Finde den Verräter — 3 bis 16 Spieler</div>
+          <!-- Imposter -->
+          <div class="game-select-card" :class="{active: state.screen==='setup'}"
+            @click="state.screen='setup'">
+            <div class="game-select-icon">🕵️</div>
+            <div class="game-select-name">Imposter</div>
+            <div class="game-select-desc">Finde den Verräter — 3 bis 16 Spieler</div>
+          </div>
+          <!-- Wer bin ich -->
+          <div class="game-select-card" :class="{active: state.screen==='wbi'}"
+            @click="state.screen='wbi'">
+            <div class="game-select-icon">🤔</div>
+            <div class="game-select-name">Wer bin ich?</div>
+            <div class="game-select-desc">Errate deinen Begriff — 2 bis 16 Spieler</div>
           </div>
         </div>
 
-        <button class="btn-start" @click="state.screen='setup'">🎮 Spiel starten</button>
+        <button class="btn-start" @click="state.screen='setup'">🕵️ Imposter spielen</button>
       </div>
     </template>
 
