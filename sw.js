@@ -1,6 +1,6 @@
-// Gruppen-Spiele Service Worker v0.30
+// Gruppen-Spiele Service Worker v0.31
 // Kein self.skipWaiting() im install — Nutzer entscheidet per Banner.
-const CACHE = 'gruppen-spiele-v0.30';
+const CACHE = 'gruppen-spiele-v0.31';
 const ASSETS = [
   './index.html', './css/styles.css',
   './js/app.js', './js/buildinfo.js',
@@ -17,7 +17,8 @@ const ASSETS = [
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).catch(() => {}));
-  // Bewusst KEIN self.skipWaiting() — Nutzer entscheidet per Banner.
+  // EINMALIG skipWaiting — erzwingt sofortigen Cache-Reset für v0.31
+  self.skipWaiting();
 });
 
 // Nutzer hat "Aktualisieren" getippt
