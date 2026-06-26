@@ -1263,12 +1263,9 @@ const App = {
             </div>
 
             <!-- Weiter: nur wenn Karte geschlossen -->
-            <button v-if="!wbiState.showCard && wbiState.currentIdx > 0 || wbiState.localCards.length === 1"
+            <button v-if="!wbiState.showCard"
               class="btn-start" style="margin-top:1rem" @click="wbiNextCard()">
               {{ wbiState.currentIdx + 1 >= wbiState.localCards.length ? '▶ Diskussion starten' : '➡ Weiter zu ' + (wbiState.localCards[wbiState.currentIdx+1]?.playerName || '') }}
-            </button>
-            <button v-else-if="!wbiState.showCard" class="btn-start" style="margin-top:1rem" @click="wbiNextCard()">
-              ➡ Weiter zu {{ wbiState.localCards[wbiState.currentIdx + 1]?.playerName || 'Diskussion' }}
             </button>
           </div>
         </template>
@@ -1441,7 +1438,12 @@ const App = {
           </div>
         </div>
 
-        <button class="btn-start" @click="state.screen='setup'">🕵️ Imposter spielen</button>
+        <button class="btn-start" @click="state.screen='setup'">🕵️ Imposter
+          </button>
+          <button class="btn-start" style="margin-top:.5rem;background:linear-gradient(135deg,#0ea5e9,#0284c7)" @click="state.screen='wbi'">🤔 Wer bin ich?</button>
+      <div style="text-align:center;padding:1.5rem 0 .5rem;font-size:.72rem;color:var(--txt3);letter-spacing:.08em">
+          v{{ BUILD }}
+        </div>
       </div>
     </template>
 
