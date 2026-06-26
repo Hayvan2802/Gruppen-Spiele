@@ -884,11 +884,21 @@ const App = {
           <div v-if="state.coop.phase==='joining'">
             <div class="coop-hint">{{ t('coop.yourName') }}</div>
             <input class="name-input-big" v-model="state.coop.myName" :placeholder="t('coop.namePlaceholder')" />
-            <div class="coop-hint">{{ t('coop.code') }}</div>
-            <input class="code-input" v-model="state.coop.codeDraft" maxlength="6" type="tel" :placeholder="t('coop.codeHint')" />
+
+            <div class="coop-hint" style="margin-top:.8rem">Raumcode (6 Ziffern)</div>
+            <input class="code-input" v-model="state.coop.codeDraft"
+              maxlength="6" type="tel" inputmode="numeric" pattern="[0-9]*"
+              :placeholder="t('coop.codeHint')"
+              style="font-size:1.6rem;letter-spacing:.3em;text-align:center;padding:.8rem" />
+
             <div v-if="state.coop.error" class="coop-error">{{ state.coop.error }}</div>
-            <button class="btn-pri" @click="joinRoom">🚪 {{ t('coop.joinBtn') }}</button>
-            <button class="btn-sec" style="margin-top:.5rem" @click="state.coop.phase='idle'">{{ t('coop.cancel') }}</button>
+
+            <button class="btn-create-room"
+              :disabled="state.coop.codeDraft.replace(/\D/g,'').length !== 6 || !state.coop.myName.trim()"
+              @click="joinRoom">
+              🚪 Beitreten
+            </button>
+            <button class="btn-sec" style="margin-top:.6rem" @click="state.coop.phase='idle'">{{ t('coop.cancel') }}</button>
           </div>
 
           <!-- Joined (Gast wartet) -->
