@@ -1,30 +1,59 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '1.0.1';
-export const BUILD_HASH = 'fix-swipe-update-check';
+export const BUILD      = '0.0.5';
+export const BUILD_HASH = 'full-werwolf-port';
 
 export const CHANGELOG = [
   {
-    version: '1.0.1',
+    version: '0.0.5',
     date: '26.06.2026',
     changes: [
-      'Seitwärts-Wischen auf iOS behoben',
-      'Einstellungen: Auf Update prüfen Button hinzugefügt',
+      'Kompletter Neuaufbau nach Werwolf-Muster',
+      'Vue 3 Composition API — wie im Werwolf-Projekt',
+      'Coop-Modus mit Firebase — Einladungslink, Lobby, Rollen-Broadcast',
+      'Dark / Light / Auto System-Theme',
+      'Splash Screen, Service Worker, Offline-Support',
+      'Update-Banner + Auf Update prüfen Button',
+      'Versionshistorie in den Einstellungen',
+      'Spielernamen & Konfigurationen speichern (bis zu 8)',
+      '45-Sek Diskussions-Timer mit animiertem Ring',
+      'Seitwärts-Wischen komplett gesperrt',
     ],
   },
-
   {
-    version: '1.0.0',
+    version: '0.0.4',
+    date: '26.06.2026',
+    changes: [
+      'Auf Update prüfen Button in Einstellungen',
+      'Seitwärts-Wischen auf iOS behoben',
+    ],
+  },
+  {
+    version: '0.0.3',
+    date: '26.06.2026',
+    changes: [
+      'Ordnerstruktur komplett neu nach Werwolf-Muster',
+      'Service Worker — App funktioniert offline',
+      'Dark/Light/Auto Theme, Splash Screen, PWA Icon',
+      'Spielernamen & Konfigurationen speichern',
+      '45-Sekunden Timer mit animiertem Ring',
+    ],
+  },
+  {
+    version: '0.0.2',
+    date: '26.06.2026',
+    changes: [
+      'Timer (45 Sekunden) zwischen Karten und Abstimmung',
+      'Weiße Ränder oben/unten behoben',
+      'PWA Icon für Safari Homescreen',
+    ],
+  },
+  {
+    version: '0.0.1',
     date: '26.06.2026',
     changes: [
       'Imposter Game — Erstveröffentlichung',
-      'Dark / Light / Auto System-Theme',
-      'Splash Screen mit App-Icon',
-      'Service Worker — App funktioniert offline',
-      'Update-Banner statt Auto-Reload',
-      'Versionshistorie in den Einstellungen',
-      '45-Sekunden Diskussions-Timer',
-      'Spielernamen werden gespeichert',
-      'Lieblingskonfigurationen (bis zu 8)',
+      'Spieler hinzufügen, Karten aufdecken, Abstimmung, Ergebnis',
+      '60+ Wörter in 7 Kategorien',
     ],
   },
 ];
