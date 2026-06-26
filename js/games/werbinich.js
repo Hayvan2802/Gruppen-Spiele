@@ -1,0 +1,361 @@
+// werbinich.js — "Wer bin ich?" Spiellogik
+// Sauber getrennt von Imposter. Gleiche Coop-Infrastruktur.
+// Version: 0.28
+
+import { reactive, computed } from '../vue.esm-browser.prod.js';
+import { WBI_KATEGORIEN, WBI_ALL_CARDS, WBI_DEFAULT_KATEGORIEN } from './werbinich-words.js';
+import * as Coop from '../coop.js';
+import { log } from '../debuglog.js';
+import { loadSettings, saveSettings } from '../storage.js';
+
+export { WBI_KATEGORIEN, WBI_DEFAULT_KATEGORIEN };
+
+// ── Hilfsfunktionen ───────────────────────────────────────────────────────────
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function haptic(style = 'light') {
+  try {
+    if (navigator.vibrate) {
+      const p = { light:[10], medium:[20], success:[10,50,10], error:[50,10,50] };
+      navigator.vibrate(p[style] || [10]);
+    }
+  } catch {}
+}
+
+function showToast(msg) {
+  let el = document.getElementById('gs-toast');
+  if (!el) { el = Object.assign(document.createElement('div'), { id:'gs-toast', className:'toast' }); document.body.appendChild(el); }
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+export const wbiState = reactive({
+  // Setup
+  phase: 'setup', // setup | local-reveal | coop-lobby | coop-joined | coop-play | result
+  gameMode: 'local',
+  playerCount: 4,
+  playerNames: Array(4).fill(''),
+  customCards: [],
+  customCardDraft: '',
+  selectedKats: [...WBI_DEFAULT_KATEGORIEN],
+  showKats: false,
+  roundsTotal: 1,
+
+  // Lokales Spiel
+  localCards: [],      // [{ word, category, playerName, guessed, skipped }]
+  currentIdx: 0,       // aktueller Spieler (Stirn-Karte)
+  showCard: false,     // Karte sichtbar für anderen Spieler
+
+  // Coop
+  coop: {
+    phase: 'idle',     // idle | hosting | lobby | joining | joined | playing | result
+    code: '', codeDraft: '',
+    myName: '', myUid: null,
+    isHost: false,
+    players: [],
+    error: null,
+    myCard: null,      // { word, category } — nur ich sehe meine Karte
+    allCards: {},      // { uid: { word, category, guessed, skipped } } — Host verwaltet
+    guesses: [],       // History der Runde
+    roundOver: false,
+  },
+
+  // Ergebnis
+  results: [],         // [{ playerName, word, guessed }]
+  scores: {},          // { name: punkte }
+});
+
+// ── Karten-Pool ───────────────────────────────────────────────────────────────
+function getCardPool() {
+  let pool = [];
+  wbiState.selectedKats.forEach(k => {
+    if (WBI_KATEGORIEN[k]) pool.push(...WBI_KATEGORIEN[k].map(w => ({ word: w, category: k })));
+  });
+  wbiState.customCards.forEach(w => pool.push({ word: w, category: '✏️ Eigene' }));
+  if (!pool.length) pool = [...WBI_ALL_CARDS];
+  return shuffle(pool);
+}
+
+// ── Lokales Spiel ─────────────────────────────────────────────────────────────
+export function wbiStartLocal() {
+  const names = wbiState.playerNames.slice(0, wbiState.playerCount)
+    .map((n, i) => n.trim() || `Spieler ${i + 1}`);
+  const pool  = getCardPool();
+
+  wbiState.localCards = names.map((name, i) => ({
+    word:       pool[i % pool.length]?.word || '???',
+    category:   pool[i % pool.length]?.category || '',
+    playerName: name,
+    guessed:    false,
+    skipped:    false,
+  }));
+
+  wbiState.currentIdx = 0;
+  wbiState.showCard   = false;
+  wbiState.results    = [];
+  wbiState.scores     = {};
+  wbiState.phase      = 'local-reveal';
+  haptic('success');
+}
+
+export function wbiShowCard()  { wbiState.showCard = true; haptic('medium'); }
+export function wbiHideCard()  { wbiState.showCard = false; }
+
+export function wbiMarkGuessed(idx) {
+  wbiState.localCards[idx].guessed = true;
+  wbiState.scores[wbiState.localCards[idx].playerName] =
+    (wbiState.scores[wbiState.localCards[idx].playerName] || 0) + 1;
+  haptic('success');
+  wbiNextCard();
+}
+
+export function wbiMarkSkipped(idx) {
+  wbiState.localCards[idx].skipped = true;
+  haptic('light');
+  wbiNextCard();
+}
+
+function wbiNextCard() {
+  const remaining = wbiState.localCards.filter(c => !c.guessed && !c.skipped);
+  if (!remaining.length) {
+    wbiFinishLocal();
+    return;
+  }
+  // Nächsten nicht erledigten finden
+  let next = (wbiState.currentIdx + 1) % wbiState.localCards.length;
+  while (wbiState.localCards[next].guessed || wbiState.localCards[next].skipped) {
+    next = (next + 1) % wbiState.localCards.length;
+  }
+  wbiState.currentIdx = next;
+  wbiState.showCard   = false;
+}
+
+function wbiFinishLocal() {
+  wbiState.results = wbiState.localCards.map(c => ({
+    playerName: c.playerName,
+    word:       c.word,
+    category:   c.category,
+    guessed:    c.guessed,
+    skipped:    c.skipped,
+  }));
+  wbiState.phase = 'result';
+  haptic(wbiState.results.filter(r => r.guessed).length > 0 ? 'success' : 'error');
+}
+
+export function wbiRestart() {
+  wbiState.phase      = 'setup';
+  wbiState.localCards = [];
+  wbiState.currentIdx = 0;
+  wbiState.showCard   = false;
+  wbiState.results    = [];
+  wbiState.scores     = {};
+}
+
+// ── Coop ──────────────────────────────────────────────────────────────────────
+export function wbiSelectMode(m) { wbiState.gameMode = m; }
+
+export function wbiShowHostSetup() {
+  wbiState.coop.phase = 'hosting';
+  wbiState.coop.codeDraft = '';
+  wbiState.coop.players = [];
+  wbiState.coop.error = null;
+  wbiState.coop.isHost = true;
+}
+
+export async function wbiCreateRoom() {
+  const code = wbiState.coop.codeDraft.replace(/\D/g, '').slice(0, 6);
+  if (code.length !== 6) { wbiState.coop.error = '6-stelligen Code eingeben'; return; }
+  const myName = wbiState.coop.myName.trim() || 'Host';
+  wbiState.coop.code = code;
+  wbiState.coop.error = null;
+  wbiState.coop.phase = 'lobby';
+  wbiState.coop.players = [{ uid: 'host', name: myName, ready: true, isHost: true }];
+
+  await Coop.hostGame({
+    code, name: myName,
+    onOpen: (uid) => { wbiState.coop.myUid = uid; },
+    onError: (e) => {
+      wbiState.coop.error = e.type === 'code-taken' ? 'Code bereits vergeben!' : 'Verbindungsfehler.';
+      wbiState.coop.phase = 'hosting';
+    },
+    onJoin: (uid, data) => {
+      if (!wbiState.coop.players.find(p => p.uid === uid))
+        wbiState.coop.players.push({ uid, name: data?.name || uid, ready: false, isHost: false });
+    },
+    onLeave: (uid) => { wbiState.coop.players = wbiState.coop.players.filter(p => p.uid !== uid); },
+    onMessage: wbiHandleCoopMsg,
+  });
+}
+
+export function wbiShowJoinSetup() {
+  wbiState.coop.phase = 'joining';
+  wbiState.coop.codeDraft = '';
+  wbiState.coop.myName = '';
+  wbiState.coop.error = null;
+  wbiState.coop.isHost = false;
+}
+
+export async function wbiJoinRoom() {
+  const name = wbiState.coop.myName.trim();
+  const code = wbiState.coop.codeDraft.replace(/\D/g, '').slice(0, 6);
+  if (!name) { wbiState.coop.error = 'Name eingeben'; return; }
+  if (code.length !== 6) { wbiState.coop.error = '6-stelligen Code eingeben'; return; }
+  wbiState.coop.error = null;
+  wbiState.coop.code = code;
+
+  await Coop.joinGame({
+    code, name,
+    onOpen: (uid) => { wbiState.coop.myUid = uid; wbiState.coop.phase = 'joined'; },
+    onError: (e) => {
+      if (e.type === 'code-not-found') wbiState.coop.error = 'Raum nicht gefunden!';
+      else if (e.type === 'room-full')  wbiState.coop.error = 'Raum ist voll!';
+      else if (e.type === 'timeout')    wbiState.coop.error = 'Verbindungs-Timeout.';
+      else wbiState.coop.error = 'Verbindungsfehler.';
+    },
+    onMessage: wbiHandleCoopMsg,
+    onClose: () => { wbiState.coop.phase = 'idle'; },
+  });
+}
+
+export async function wbiStartCoopGame() {
+  // Host teilt Karten zu und sendet sie verschlüsselt
+  const pool    = getCardPool();
+  const players = wbiState.coop.players;
+  const assignments = players.map((p, i) => ({
+    uid:      p.uid,
+    name:     p.name,
+    word:     pool[i % pool.length]?.word || '???',
+    category: pool[i % pool.length]?.category || '',
+  }));
+
+  wbiState.coop.allCards = {};
+  assignments.forEach(a => {
+    wbiState.coop.allCards[a.uid] = { word: a.word, category: a.category, guessed: false, skipped: false };
+  });
+  wbiState.coop.guesses  = [];
+  wbiState.coop.roundOver = false;
+
+  // Jeder bekommt nur seine eigene Karte
+  for (const a of assignments) {
+    await Coop.sendTo(a.uid, {
+      type:     'WBI_CARD',
+      word:     a.word,
+      category: a.category,
+    });
+  }
+  // Host auch selbst
+  const mine = assignments.find(a => a.uid === wbiState.coop.myUid);
+  if (mine) {
+    wbiState.coop.myCard = { word: mine.word, category: mine.category };
+  }
+
+  await Coop.send({ type: 'WBI_START', players: assignments.map(a => ({ uid: a.uid, name: a.name })) });
+}
+
+function wbiHandleCoopMsg(msg) {
+  if (!msg) return;
+
+  if (msg.type === 'WBI_CARD' && msg.targetUid === wbiState.coop.myUid) {
+    wbiState.coop.myCard = { word: msg.word, category: msg.category };
+  }
+
+  if (msg.type === 'WBI_START') {
+    wbiState.coop.phase = 'playing';
+    wbiState.coop.guesses = [];
+    if (msg.targetUid) return; // Ignore targeted
+  }
+
+  if (msg.type === 'WBI_GUESS') {
+    // Spieler hat geraten — alle sehen's
+    wbiState.coop.guesses.push({
+      name:    msg.guesserName,
+      word:    msg.word,
+      correct: msg.correct,
+      ts:      msg.ts || Date.now(),
+    });
+    if (wbiState.coop.isHost && wbiState.coop.allCards[msg.author]) {
+      wbiState.coop.allCards[msg.author].guessed = msg.correct;
+    }
+    haptic(msg.correct ? 'success' : 'light');
+    // Prüfen ob alle fertig
+    if (wbiState.coop.isHost) wbiCheckCoopDone();
+  }
+
+  if (msg.type === 'WBI_RESULT') {
+    wbiState.results = msg.results;
+    wbiState.scores  = msg.scores;
+    wbiState.coop.phase = 'result';
+    haptic('success');
+  }
+}
+
+async function wbiCheckCoopDone() {
+  const all = Object.values(wbiState.coop.allCards);
+  if (all.every(c => c.guessed || c.skipped)) {
+    // Alle fertig → Ergebnis senden
+    const results = wbiState.coop.players.map(p => {
+      const card = wbiState.coop.allCards[p.uid];
+      return { playerName: p.name, word: card?.word || '', guessed: card?.guessed || false };
+    });
+    const scores = {};
+    results.filter(r => r.guessed).forEach(r => { scores[r.playerName] = (scores[r.playerName] || 0) + 1; });
+    await Coop.send({ type: 'WBI_RESULT', results, scores });
+  }
+}
+
+export async function wbiSendGuess(correct) {
+  const card = wbiState.coop.myCard;
+  if (!card) return;
+  await Coop.send({
+    type:        'WBI_GUESS',
+    guesserName: wbiState.coop.myName || wbiState.coop.players.find(p => p.uid === wbiState.coop.myUid)?.name || '?',
+    word:        card.word,
+    correct,
+  });
+  haptic(correct ? 'success' : 'light');
+}
+
+export async function wbiCancelCoop() {
+  await Coop.leave();
+  wbiState.coop.phase    = 'idle';
+  wbiState.coop.players  = [];
+  wbiState.coop.error    = null;
+  wbiState.coop.myUid    = null;
+  wbiState.coop.myCard   = null;
+  wbiState.coop.allCards = {};
+  wbiState.coop.guesses  = [];
+}
+
+export async function wbiGetInviteLink() {
+  const base = window.location.origin + window.location.pathname;
+  return `${base}?wbi=${wbiState.coop.code}`;
+}
+
+export async function wbiShareLink() {
+  const url = await wbiGetInviteLink();
+  if (navigator.share) {
+    try { await navigator.share({ title: 'Wer bin ich? — Beitreten', text: `Code: ${wbiState.coop.code}`, url }); return; }
+    catch(e) { if (e.name === 'AbortError') return; }
+  }
+  try { await navigator.clipboard.writeText(url); showToast('Link kopiert!'); }
+  catch { showToast(url); }
+}
+
+// Computed Helpers
+export function wbiCurrentCard() {
+  return wbiState.localCards[wbiState.currentIdx] || null;
+}
+export function wbiRemainingCount() {
+  return wbiState.localCards.filter(c => !c.guessed && !c.skipped).length;
+}
+export function wbiGuessedCount() {
+  return wbiState.localCards.filter(c => c.guessed).length;
+}
