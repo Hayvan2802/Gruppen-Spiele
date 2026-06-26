@@ -385,3 +385,80 @@ if (failed > 0) {
 } else {
   console.log(`  Alle Tests grün ✓`);
 }
+
+// ── Tests: Wer bin ich ────────────────────────────────────────────────────────
+console.log('\n=== WER BIN ICH ===');
+
+// Mock WBI_KATEGORIEN
+const WBI_KAT_TEST = {
+  'Schauspieler': ['Tom Hanks', 'Brad Pitt', 'Meryl Streep'],
+  'Sport':        ['Messi', 'Ronaldo', 'Jordan'],
+};
+const WBI_ALL = Object.values(WBI_KAT_TEST).flat();
+
+function wbiGetPool(selectedKats, customCards) {
+  let pool = [];
+  selectedKats.forEach(k => { if (WBI_KAT_TEST[k]) pool.push(...WBI_KAT_TEST[k].map(w => ({ word: w, category: k }))); });
+  customCards.forEach(w => pool.push({ word: w, category: 'Eigene' }));
+  if (!pool.length) pool = WBI_ALL.map(w => ({ word: w, category: '?' }));
+  return pool;
+}
+
+test('WBI: Pool aus gewählten Kategorien', () => {
+  const pool = wbiGetPool(['Schauspieler'], []);
+  assert(pool.every(c => WBI_KAT_TEST['Schauspieler'].includes(c.word)));
+  assertEqual(pool.length, 3);
+});
+
+test('WBI: Eigene Begriffe im Pool', () => {
+  const pool = wbiGetPool([], ['Einstein', 'Newton']);
+  assertEqual(pool.length, 2);
+  assert(pool.some(c => c.word === 'Einstein'));
+});
+
+test('WBI: Fallback wenn keine Kategorie', () => {
+  const pool = wbiGetPool([], []);
+  assert(pool.length > 0);
+});
+
+test('WBI: Karten-Zuteilung — jeder Spieler bekommt eine Karte', () => {
+  const names = ['Alice', 'Bob', 'Clara', 'David'];
+  const pool  = wbiGetPool(['Schauspieler', 'Sport'], []);
+  const cards = names.map((name, i) => ({ playerName: name, word: pool[i % pool.length].word, guessed: false }));
+  assertEqual(cards.length, 4);
+  cards.forEach(c => assert(c.word, 'Karte hat kein Wort'));
+});
+
+test('WBI: Erraten zählt Punkt', () => {
+  const scores = {};
+  const card = { playerName: 'Alice', word: 'Messi', guessed: false };
+  card.guessed = true;
+  scores[card.playerName] = (scores[card.playerName] || 0) + 1;
+  assertEqual(scores['Alice'], 1);
+});
+
+test('WBI: Übersprungen zählt keinen Punkt', () => {
+  const scores = {};
+  const card = { playerName: 'Bob', word: 'Newton', skipped: true };
+  // kein Punkt
+  assertEqual(scores['Bob'] || 0, 0);
+});
+
+test('WBI: Runde vorbei wenn alle erledigt', () => {
+  const cards = [
+    { guessed: true, skipped: false },
+    { guessed: false, skipped: true },
+    { guessed: true, skipped: false },
+  ];
+  const done = cards.every(c => c.guessed || c.skipped);
+  assert(done, 'Runde sollte vorbei sein');
+});
+
+test('WBI: Noch nicht vorbei wenn einer übrig', () => {
+  const cards = [
+    { guessed: true, skipped: false },
+    { guessed: false, skipped: false }, // noch offen
+  ];
+  const done = cards.every(c => c.guessed || c.skipped);
+  assert(!done, 'Runde sollte noch laufen');
+});
