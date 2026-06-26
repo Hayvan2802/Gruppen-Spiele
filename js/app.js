@@ -111,7 +111,7 @@ const state = reactive({
 
   // Coop
   coop: {
-    phase: 'idle', // idle | hosting | lobby | joining | joined | myRole
+    phase: 'idle', // idle | hosting | lobby | joining | joined | myRole | coopVoting | coopResult
     code: '', codeDraft: '',
     myName: '', myUid: null,
     isHost: false,
@@ -119,6 +119,12 @@ const state = reactive({
     error: null,
     myRoleIsImposter: null,
     myWord: null,
+    // Abstimmung
+    voteSelection: null,
+    myVoteDone: false,
+    votesReceived: {},   // { voterUid: targetName } — nur Host sieht alle
+    voteResult: null,    // { eliminated, imposters, winner, tally }
+    allPlayers: [],      // snapshot aller Spieler für Ergebnisanzeige
   },
 
   // Rollenverteilung
@@ -521,17 +527,86 @@ async function cancelCoop() {
   await Coop.leave();
   state.coop.phase = 'idle'; state.coop.players = []; state.coop.error = null;
   state.coop.myUid = null; state.coop.myRoleIsImposter = null; state.coop.myWord = null;
+  state.coop.voteResult = null; state.coop.votesReceived = {};
+  state.coop.myVoteDone = false; state.coop.voteSelection = null;
+}
+
+function coopSelectVote(name) {
+  state.coop.voteSelection = name;
+  haptic('light');
+}
+
+async function coopConfirmVote() {
+  if (!state.coop.voteSelection || state.coop.myVoteDone) return;
+  state.coop.myVoteDone = true;
+  haptic('medium');
+  await Coop.send({ type: Coop.MSG.VOTE_CAST, targetName: state.coop.voteSelection });
+}
+
+function startCoopVoting() {
+  // Host startet Abstimmungsphase
+  const candidates = state.coop.allPlayers.map(p => p.name);
+  state.coop.phase = 'coopVoting';
+  state.coop.votesReceived = {};
+  state.coop.myVoteDone = false;
+  state.coop.voteSelection = null;
+  Coop.send({ type: Coop.MSG.VOTE_START, candidates });
+}
+
+function calcCoopResult() {
+  const votes  = state.coop.votesReceived;
+  const players = state.coop.allPlayers;
+  const tally  = {};
+  players.forEach(p => { tally[p.name] = 0; });
+  Object.values(votes).forEach(t => { tally[t] = (tally[t] || 0) + 1; });
+  const max = Math.max(...Object.values(tally));
+  const eliminated = Object.keys(tally).filter(n => tally[n] === max);
+  const imposters  = players.filter(p => p.isImposter).map(p => p.name);
+  const winner     = eliminated.some(n => imposters.includes(n)) ? 'village' : 'imposter';
+  const result     = { eliminated, imposters, winner, tally, word: state.roles[0]?.word || '' };
+  // Ergebnis an alle senden
+  Coop.send({ type: Coop.MSG.VOTE_RESULT, result });
+  state.coop.voteResult = result;
+  state.coop.phase = 'coopResult';
 }
 
 function handleCoopMessage(msg) {
   if (!msg) return;
+
   if (msg.type === Coop.MSG.START) {
     const mine = msg.assignments?.find(a => a.uid === state.coop.myUid);
     if (mine) {
       state.coop.myRoleIsImposter = mine.isImposter;
       state.coop.myWord = mine.word;
+      // allPlayers auch für Gäste speichern
+      state.coop.allPlayers = msg.assignments.map(a => ({ uid: a.uid, name: a.name, isImposter: a.isImposter }));
       state.coop.phase = 'myRole';
     }
+  }
+
+  if (msg.type === Coop.MSG.VOTE_START) {
+    // Abstimmung startet auf allen Geräten
+    state.coop.phase = 'coopVoting';
+    state.coop.myVoteDone = false;
+    state.coop.voteSelection = null;
+  }
+
+  if (msg.type === Coop.MSG.VOTE_CAST) {
+    // Nur Host zählt Stimmen
+    if (state.coop.isHost) {
+      state.coop.votesReceived[msg.author] = msg.targetName;
+      const total = state.coop.allPlayers.length;
+      const received = Object.keys(state.coop.votesReceived).length;
+      // Wenn alle gestimmt haben → Ergebnis berechnen
+      if (received >= total) calcCoopResult();
+    }
+  }
+
+  if (msg.type === Coop.MSG.VOTE_RESULT) {
+    // Alle empfangen das Ergebnis
+    state.coop.voteResult = msg.result;
+    state.coop.phase = 'coopResult';
+    haptic(msg.result.winner === 'village' ? 'success' : 'error');
   }
 }
 
@@ -582,6 +657,7 @@ const App = {
       showHostSetup, createRoom, startCoopGame,
       showJoinSetup, joinRoom, toggleReady, cancelCoop,
       getInviteLink, shareInviteLink,
+      coopSelectVote, coopConfirmVote, startCoopVoting,
       dismissWhatsNew, applyUpdate, checkForUpdate,
       exportLogToFile,
     };
@@ -643,7 +719,13 @@ const App = {
           <div style="font-size:2.2rem;font-weight:900;color:var(--gold);margin:.4rem 0">{{ state.coop.myWord }}</div>
           <p class="confirm-msg">Beschreibe es ohne das Wort zu sagen!</p>
         </div>
-        <button class="btn btn-primary" style="margin-top:1rem" @click="state.coop.phase = 'idle'">Verstanden ✓</button>
+        <div style="font-size:.78rem;color:var(--txt3);margin-top:.8rem;text-align:center">
+          {{ state.coop.isHost ? 'Du startest die Diskussion für alle.' : 'Warte bis der Host die Diskussion startet.' }}
+        </div>
+        <button class="btn btn-primary" style="margin-top:1rem"
+          @click="state.coop.isHost ? startCoopVoting() : (state.coop.phase = 'coopWaiting')">
+          {{ state.coop.isHost ? '▶ Abstimmung starten' : 'Verstanden ✓' }}
+        </button>
       </div>
     </div>
 
@@ -672,6 +754,98 @@ const App = {
         <button class="uc-btn-primary" @click="applyUpdate">⬆ Aktualisieren & neu starten</button>
         <button class="uc-btn-export" @click="exportLogToFile">📋 Protokoll exportieren</button>
         <button class="uc-btn-later" @click="state.updateReady=false">Später</button>
+      </div>
+    </div>
+
+    <!-- ── COOP: WARTEN (Gast wartet auf Abstimmung) ── -->
+    <div v-if="state.coop.phase === 'coopWaiting'" class="modal-bg" style="z-index:400">
+      <div class="modal" style="text-align:center">
+        <div style="font-size:2.5rem;margin-bottom:.8rem">⏳</div>
+        <h3 style="color:var(--gold);margin-bottom:.5rem">Warte auf Abstimmung</h3>
+        <p class="confirm-msg">Der Host startet gleich die Abstimmung…</p>
+        <div class="timer-players" style="margin-top:1rem">
+          <div v-for="p in state.coop.allPlayers" :key="p.uid" class="timer-player-dot"
+            style="background:rgba(124,58,237,.25)">
+            {{ p.name[0].toUpperCase() }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── COOP: ABSTIMMUNG (jeder auf eigenem Handy) ── -->
+    <div v-if="state.coop.phase === 'coopVoting'" class="modal-bg" style="z-index:400">
+      <div class="modal" style="max-height:88vh;overflow-y:auto">
+        <div class="whatsnew-badge" style="margin-bottom:.8rem">🗳 ABSTIMMUNG</div>
+        <h3 style="margin-bottom:.3rem">Wer ist der Imposter?</h3>
+        <p style="font-size:.8rem;color:var(--txt2);margin-bottom:1rem">Wähle einen Spieler aus und bestätige.</p>
+
+        <div v-if="!state.coop.myVoteDone">
+          <!-- Kandidaten -->
+          <div class="voting-options">
+            <button v-for="p in state.coop.allPlayers.filter(p => p.uid !== state.coop.myUid)"
+              :key="p.uid" class="voting-option"
+              :class="{'voting-option-selected': state.coop.voteSelection === p.name}"
+              @click="coopSelectVote(p.name)">
+              <div class="voting-option-avatar">{{ p.name[0].toUpperCase() }}</div>
+              <div class="voting-option-name">{{ p.name }}</div>
+              <div class="voting-option-check" v-if="state.coop.voteSelection === p.name">✓</div>
+            </button>
+          </div>
+          <button class="voting-confirm-btn"
+            :disabled="!state.coop.voteSelection"
+            @click="coopConfirmVote"
+            style="position:relative;margin-top:.8rem">
+            {{ state.coop.voteSelection ? '✓ ' + state.coop.voteSelection + ' beschuldigen' : 'Spieler auswählen…' }}
+          </button>
+        </div>
+
+        <div v-else style="text-align:center;padding:1rem 0">
+          <div style="font-size:2rem;margin-bottom:.6rem">✓</div>
+          <p style="color:var(--txt2);font-size:.9rem">Deine Stimme wurde abgegeben.<br>Warte auf die anderen…</p>
+          <div v-if="state.coop.isHost" style="margin-top:.8rem;font-size:.78rem;color:var(--txt3)">
+            {{ Object.keys(state.coop.votesReceived).length }} / {{ state.coop.allPlayers.length }} Stimmen
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── COOP: ERGEBNIS ── -->
+    <div v-if="state.coop.phase === 'coopResult' && state.coop.voteResult" class="modal-bg" style="z-index:400">
+      <div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto">
+        <div style="font-size:3.5rem;margin-bottom:.6rem">
+          {{ state.coop.voteResult.winner === 'village' ? '🎉' : '🕵️' }}
+        </div>
+        <div style="font-size:1.3rem;font-weight:900;margin-bottom:.3rem"
+          :style="{color: state.coop.voteResult.winner==='village' ? 'var(--green)' : 'var(--red2)'}">
+          {{ state.coop.voteResult.winner === 'village' ? 'Imposter erwischt!' : 'Imposter gewinnt!' }}
+        </div>
+        <div style="color:var(--txt2);font-size:.85rem;margin-bottom:1.2rem">
+          {{ state.coop.voteResult.winner === 'village' ? 'Die Gruppe hat gewonnen 🥳' : 'Der Imposter hat alle getäuscht 😈' }}
+        </div>
+
+        <div class="result-box" style="text-align:left;margin-bottom:1rem">
+          <div style="font-size:.68rem;letter-spacing:.15em;color:var(--gold);text-transform:uppercase;margin-bottom:.6rem">Auflösung</div>
+          <div style="margin-bottom:.5rem;font-size:.85rem">
+            <span style="color:var(--txt3)">Imposter: </span>
+            <span v-for="n in state.coop.voteResult.imposters" :key="n"
+              style="background:rgba(176,32,32,.3);color:#f87171;border-radius:20px;padding:2px 10px;font-size:.78rem;margin-left:4px">{{ n }}</span>
+          </div>
+          <div style="border-top:1px solid var(--bdr);padding-top:.6rem">
+            <div style="font-size:.65rem;letter-spacing:.15em;color:var(--txt3);text-transform:uppercase;margin-bottom:.5rem">Stimmen</div>
+            <div v-for="p in state.coop.allPlayers" :key="p.uid" class="surv-item">
+              <span>{{ p.name }}{{ p.isImposter ? ' 🕵️' : '' }}</span>
+              <span style="margin-left:auto;color:var(--gold);font-weight:700">
+                {{ state.coop.voteResult.tally[p.name] || 0 }}×
+              </span>
+              <span v-if="state.coop.voteResult.eliminated.includes(p.name)"
+                style="background:rgba(124,58,237,.3);color:#c4b5fd;border-radius:20px;padding:2px 8px;font-size:.7rem;margin-left:.3rem">
+                Raus
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-start" @click="cancelCoop">🏠 Zurück zum Menü</button>
       </div>
     </div>
 
