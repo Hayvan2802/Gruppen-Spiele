@@ -1,8 +1,20 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.0.5';
-export const BUILD_HASH = 'full-werwolf-port';
+export const BUILD      = '0.0.6';
+export const BUILD_HASH = 'timer-imposter-history-fixes';
 
 export const CHANGELOG = [
+  {
+    version: '0.0.6',
+    date: '26.06.2026',
+    changes: [
+      'Timer pausiert jetzt korrekt bei Pause',
+      'Timer-Dauer dynamisch nach Spieleranzahl (45s–120s)',
+      'Sound bei 30s, 15s und Countdown ab 15s',
+      'Imposter-Anzahl dynamisch (1 pro 4 Spieler)',
+      'Imposter-Buttons: aktiver Zustand jetzt klar sichtbar',
+      'Versionshistorie als eigene scrollbare Seite',
+    ],
+  },
   {
     version: '0.0.5',
     date: '26.06.2026',
