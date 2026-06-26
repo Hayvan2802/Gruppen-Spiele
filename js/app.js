@@ -144,6 +144,10 @@ function registerSW() {
     });
   }).catch(e => log('sw', 'Registrierung fehlgeschlagen', e));
   navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
+  // Alle 30 Sekunden auf Update prüfen solange Seite offen ist
+  setInterval(() => {
+    reg.update().catch(() => {});
+  }, 30000);
 }
 
 // ── Theme / Locale ────────────────────────────────────────────────────────────
@@ -227,10 +231,24 @@ function loadConfig(cfg) {
 function removeConfig(id) { deleteConfig(id); state.savedConfigs = loadConfigs(); }
 
 // ── Spielmenü ─────────────────────────────────────────────────────────────────
-function openGameMenu()  { state.gameMenu.active = true; }
-function closeGameMenu() { state.gameMenu.active = false; }
+function openGameMenu()  {
+  state.gameMenu.active = true;
+  // Timer sofort pausieren wenn Menü geöffnet wird
+  if (state.screen === 'timer') {
+    clearInterval(state.timerInterval);
+    state.gamePaused = true;
+  }
+}
+function closeGameMenu() {
+  state.gameMenu.active = false;
+  // Timer fortsetzen wenn er pausiert wurde
+  if (state.screen === 'timer' && state.gamePaused) resumeGame();
+}
 function pauseGame()     { state.gamePaused = true; state.gameMenu.active = false; clearInterval(state.timerInterval); }
-function resumeGame()    { state.gamePaused = false; if (state.screen === 'timer' && state.timerSeconds > 0) startTimer(); }
+function resumeGame() {
+  state.gamePaused = false;
+  if (state.screen === 'timer' && state.timerSeconds > 0) startTimer();
+}
 function confirmEndGame() {
   state.gameEndConfirm = false; state.gamePaused = false; state.gameMenu.active = false;
   clearInterval(state.timerInterval);
@@ -498,6 +516,7 @@ const App = {
         <h3 style="color:var(--gold);margin-bottom:.5rem">PAUSIERT</h3>
         <p class="confirm-msg">Das Spiel ist pausiert. Tippe Fortsetzen wenn alle bereit sind.</p>
         <button class="btn btn-primary" @click="resumeGame">▶ Fortsetzen</button>
+        <button class="btn btn-ghost btn-sm" style="margin-bottom:.4rem" @click="state.showSettingsModal=true;state.gamePaused=false">⚙️ Einstellungen</button>
         <button class="btn btn-ghost btn-sm" @click="state.gamePaused=false;state.gameEndConfirm=true">Spiel beenden</button>
       </div>
     </div>
@@ -509,8 +528,8 @@ const App = {
           <span style="font-size:.9rem;letter-spacing:.15em;color:var(--gold);font-weight:700">SPIELMENÜ</span>
           <button class="icon-btn" @click="closeGameMenu">✕</button>
         </div>
-        <button class="btn btn-primary" style="margin-bottom:.6rem" @click="closeGameMenu">▶ Fortsetzen</button>
-        <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="pauseGame">⏸ Pausieren</button>
+        <button class="btn btn-primary" style="margin-bottom:.6rem" @click="resumeGame;closeGameMenu()">▶ Fortsetzen</button>
+        <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="state.showSettingsModal=true;state.gameMenu.active=false">⚙️ Einstellungen</button>
         <div style="height:1px;background:var(--bdr);margin:.4rem 0 .9rem"></div>
         <button class="btn btn-ghost" style="color:#e07070;border-color:#e07070" @click="state.gameEndConfirm=true;state.gameMenu.active=false">
           🚪 Spiel beenden
@@ -821,7 +840,7 @@ const App = {
               </button>
             </div>
             <div v-if="state.imposterCount >= state.playerCount" style="font-size:.75rem;color:#f59e0b;margin-top:.5rem">
-              ⚠ Mehr Imposter als Dorfbewohner!
+              ⚠ Mehr Imposter als Spieler möglich!
             </div>
           </div>
 
