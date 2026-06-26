@@ -93,7 +93,6 @@ const state = reactive({
   historyDetail: null,
   historyList: false,
   updateReady: false,
-  updateVersion: '', // Version des wartenden SW
   showSettingsModal: false,
   gameMenu: { active: false },
   gamePaused: false,
@@ -665,7 +664,7 @@ const App = {
       <div class="update-modal" style="animation:fadeIn .25s ease">
         <div style="font-size:2.2rem;margin-bottom:.6rem">🆕</div>
         <span class="uc-badge" style="margin-bottom:.8rem">✦ UPDATE VERFÜGBAR</span>
-        <div class="uc-title">v{{ state.updateVersion || BUILD }} ist bereit!</div>
+        <div class="uc-title">Update ist bereit!</div>
         <div class="uc-desc">
           Eine neue Version steht bereit.<br>
           <span style="font-size:.75rem;color:var(--txt3)">Exportiere zuerst dein Protokoll falls nötig.</span>
