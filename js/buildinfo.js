@@ -1,25 +1,33 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.42';
-export const BUILD_HASH = 'new-icons';
+export const BUILD      = '0.43';
+export const BUILD_HASH = 'changelog-fix';
 
 export const CHANGELOG = [
   {
-    version: '0.42',
+    version: '0.43',
     date: '27.06.2026',
     changes: [
-      'Neues App-Icon — Gamepad-Design mit Gruppen-Spiele Branding',
-      'Imposter-Icon — Astronauten-Figur mit Messer und Visier',
-      'Wer bin ich?-Icon — Spielkarte mit verdecktem Gesicht',
-      'Icons im Hauptmenü und in den Anleitungs-Modals',
+      'Versionshistorie bereinigt — keine Duplikate mehr',
+      'Fehlende Version 0.41 nachgetragen',
     ],
   },
   {
     version: '0.42',
     date: '27.06.2026',
     changes: [
-      'Versionshistorie bereinigt — alle Versionen 0.1 bis 0.41',
-      'Rechtschreibung überprüft — Deutsch und Englisch',
+      'Neues App-Icon — Gamepad-Design mit Gruppen-Spiele Branding',
+      'Imposter-Icon — Astronauten-Figur mit Visier',
+      'Wer bin ich?-Icon — Spielkarte mit verdecktem Gesicht',
+      'Icons im Hauptmenü und Anleitungs-Modals',
+    ],
+  },
+  {
+    version: '0.41',
+    date: '27.06.2026',
+    changes: [
+      'Versionshistorie bereinigt',
       'Englische Übersetzung auf Gruppen-Spiele angepasst',
+      'Rechtschreibung Deutsch korrigiert',
     ],
   },
   {
@@ -27,7 +35,7 @@ export const CHANGELOG = [
     date: '27.06.2026',
     changes: [
       'WBI: Text korrigiert — Spieler hält Handy zur Gruppe',
-      'Hauptmenü: Extra-Buttons entfernt, nur große Spielkarten',
+      'Hauptmenü: Extra-Buttons entfernt',
       'Anleitungs-Button auf jeder Spielkarte',
       'Anleitung auch im Spielmenü erreichbar',
     ],
@@ -52,14 +60,14 @@ export const CHANGELOG = [
     version: '0.37',
     date: '27.06.2026',
     changes: [
-      'WBI: wbiNextCard im setup() return ergänzt — Button funktioniert',
+      'WBI: Weiter-Button funktioniert jetzt — wbiNextCard im return ergänzt',
     ],
   },
   {
     version: '0.36',
     date: '27.06.2026',
     changes: [
-      'WBI: Weiter-Button erscheint erst nach Aufdecken und Schließen',
+      'WBI: Weiter-Button erst nach Aufdecken und Schließen sichtbar',
       'Update-Banner: Button lila wie Los geht\'s',
     ],
   },
@@ -67,7 +75,7 @@ export const CHANGELOG = [
     version: '0.35',
     date: '27.06.2026',
     changes: [
-      'WBI: Weiter-Button funktioniert — wbiNextCard war nicht exportiert',
+      'WBI: Weiter-Button Fix — wbiNextCard war nicht exportiert',
       'Sternenpunkte auf allen Screens entfernt',
     ],
   },
@@ -75,7 +83,7 @@ export const CHANGELOG = [
     version: '0.34',
     date: '27.06.2026',
     changes: [
-      'Weiter-Button fix, Versionsanzeige im Hauptmenü',
+      'Weiter-Button Fix, Versionsanzeige im Hauptmenü',
       'Versionshistorie bereinigt',
     ],
   },
@@ -119,7 +127,7 @@ export const CHANGELOG = [
     date: '26.06.2026',
     changes: [
       'Neues Spiel: Wer bin ich? — 300+ Karten in 11 Kategorien',
-      'Ein-Gerät und Coop-Modus, Einladungslink',
+      'Ein-Gerät und Coop-Modus, Einladungslink via ?wbi=CODE',
     ],
   },
   {
@@ -176,7 +184,7 @@ export const CHANGELOG = [
     version: '0.20',
     date: '26.06.2026',
     changes: [
-      '13 Kategorien mit 300+ Wörtern, Runden-Modus, Neon-Theme',
+      '13 Kategorien mit 300+ Wörtern, Runden-Modus 1–10, Neon-Theme',
     ],
   },
   {
@@ -240,7 +248,7 @@ export const CHANGELOG = [
     version: '0.11',
     date: '26.06.2026',
     changes: [
-      'Karte antippen zum Aufdecken, Timer neu, Abstimmung mit Bestätigung',
+      'Karte antippen zum Aufdecken, Timer neu gestaltet, Abstimmung mit Bestätigung',
     ],
   },
   {
