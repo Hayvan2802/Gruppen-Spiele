@@ -94,6 +94,8 @@ const state = reactive({
   roundsCurrent: 1,
   scores: {},            // { name: punkte }
   lobbyHistory: [],      // [{ round, word, winner, imposters, eliminated, tally, roles }]
+  wbiMenu: false,
+  wbiEndConfirm: false,
   // Theme
   activeTheme: 'dark',  // 'dark'|'light'|'auto'|'neon'
   settings: loadSettings(),
@@ -1057,9 +1059,44 @@ const App = {
     <!-- ══════════════════════════════════════════════════════════════════ -->
     <template v-if="state.screen === 'wbi'">
       <div class="top-bar">
-        <button class="icon-btn" @click="state.screen='home';wbiRestart()" title="Zurück">←</button>
+        <!-- Im Setup: Zurück-Pfeil. Im Spiel: Pause-Button -->
+        <button v-if="wbiState.phase === 'setup'" class="icon-btn"
+          @click="state.screen='home';wbiRestart()" title="Zurück">←</button>
+        <button v-else class="icon-btn"
+          @click="state.wbiMenu=true" title="Spielmenü">⏸</button>
         <button class="icon-btn" @click="state.showSettingsModal=true" title="Einstellungen">⚙️</button>
       </div>
+      <!-- WBI Spielmenü -->
+      <div v-if="state.wbiMenu" class="modal-bg" @click.self="state.wbiMenu=false">
+        <div class="modal" style="animation:fadeIn .2s ease">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.1rem">
+            <span style="font-size:.9rem;letter-spacing:.15em;color:var(--gold);font-weight:700">SPIELMENÜ</span>
+            <button class="icon-btn" @click="state.wbiMenu=false">✕</button>
+          </div>
+          <button class="btn btn-primary" style="margin-bottom:.6rem" @click="state.wbiMenu=false">▶ Fortsetzen</button>
+          <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="state.showSettingsModal=true;state.wbiMenu=false">⚙️ Einstellungen</button>
+          <div style="height:1px;background:var(--bdr);margin:.4rem 0 .9rem"></div>
+          <button class="btn btn-ghost" style="color:#e07070;border-color:#e07070"
+            @click="state.wbiEndConfirm=true;state.wbiMenu=false">
+            🚪 Spiel beenden
+          </button>
+        </div>
+      </div>
+
+      <!-- WBI Beenden Bestätigung -->
+      <div v-if="state.wbiEndConfirm" class="modal-bg" style="z-index:510">
+        <div class="modal">
+          <div class="whatsnew-badge" style="background:var(--red2)">⚠ Beenden</div>
+          <h3>Spiel wirklich beenden?</h3>
+          <p class="confirm-msg">Der aktuelle Spielstand geht verloren.</p>
+          <button class="btn btn-ghost" style="color:#e07070;border-color:#e07070;margin-bottom:.6rem"
+            @click="state.wbiEndConfirm=false;wbiRestart();state.screen='home'">
+            Ja, Spiel beenden
+          </button>
+          <button class="btn btn-primary" @click="state.wbiEndConfirm=false">Nein, weiterspielen</button>
+        </div>
+      </div>
+
       <div style="padding:0 1.2rem 3rem;max-width:480px;margin:0 auto">
         <div style="padding:1rem 0 .6rem;font-size:1.2rem;font-weight:900;color:var(--txt)">🤔 Wer bin ich?</div>
 
