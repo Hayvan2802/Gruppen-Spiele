@@ -1202,3 +1202,51 @@ body.neon .btn-start {
 .game-select-icon { font-size: 2rem; display: block; margin-bottom: .35rem; }
 .game-select-name { font-size: 1rem; font-weight: 700; color: var(--txt); }
 .game-select-desc { font-size: .78rem; color: var(--txt2); margin-top: .2rem; }
+
+/* ── WBI Diskussions- und Auflösungs-Styles ──────────────────────────────── */
+.wbi-discuss-player {
+  display: flex; align-items: center; gap: .7rem;
+  background: var(--sur); border: 1px solid var(--bdr);
+  border-radius: 12px; padding: .75rem 1rem;
+  cursor: pointer; transition: all .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.wbi-discuss-player-active {
+  border-color: var(--gold); background: rgba(124,58,237,.1);
+  border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+}
+.wbi-discuss-avatar {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--pri), var(--pri2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; font-weight: 700; color: #fff;
+}
+.wbi-discuss-name {
+  font-size: .95rem; font-weight: 700; color: var(--txt); flex: 1;
+}
+.wbi-discuss-card {
+  background: var(--bg2); border: 1px solid var(--gold);
+  border-top: none; border-radius: 0 0 12px 12px;
+  padding: 1rem 1.2rem; text-align: center;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+
+/* Auflösungs-Row */
+.wbi-resolve-row { margin-bottom: .6rem; }
+.wbi-resolve-player {
+  display: flex; align-items: center; gap: .7rem;
+  background: var(--sur); border: 1px solid var(--bdr);
+  border-radius: 12px; padding: .75rem 1rem; min-height: 60px;
+}
+.wbi-resolve-yes {
+  padding: .5rem .9rem; border-radius: 10px; border: none;
+  background: rgba(16,163,74,.2); color: #4ade80;
+  font-size: .82rem; font-weight: 700; cursor: pointer;
+  margin-left: .3rem; min-height: 40px; min-width: 52px;
+}
+.wbi-resolve-no {
+  padding: .5rem .9rem; border-radius: 10px; border: none;
+  background: rgba(220,38,38,.15); color: #f87171;
+  font-size: .82rem; font-weight: 700; cursor: pointer;
+  min-height: 40px; min-width: 52px;
+}
