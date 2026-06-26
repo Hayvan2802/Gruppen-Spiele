@@ -2,7 +2,7 @@
 // Portiert vom Werwolf-Projekt — nur Imposter-Spiellogik
 import { createApp, reactive, computed } from './vue.esm-browser.prod.js';
 import { BUILD, CHANGELOG } from './buildinfo.js';
-import { ALL_WORDS, TIMER_SECONDS, DONATE_URL, COOP_MAX_PLAYERS } from './config.js';
+import { ALL_WORDS, DONATE_URL, COOP_MAX_PLAYERS } from './config.js';
 import * as Coop from './coop.js';
 import { log, exportLogToFile } from './debuglog.js';
 import {
@@ -12,6 +12,30 @@ import {
 import { t, setLocale, detectLocale, i18nState, SUPPORTED_LOCALES } from './i18n/index.js';
 
 const APP_START = Date.now();
+
+// ── Timer-Dauer nach Spieleranzahl ────────────────────────────────────────────
+function getTimerSeconds(playerCount) {
+  // 3-4 Spieler: 45s, +10s pro 2 weitere Spieler, max 120s
+  const base = 45;
+  const extra = Math.floor((playerCount - 3) / 2) * 10;
+  return Math.min(120, base + extra);
+}
+
+// ── Sound via Web Audio API ───────────────────────────────────────────────────
+function playBeep(freq = 880, duration = 0.15, gain = 0.3) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const g   = ctx.createGain();
+    osc.connect(g); g.connect(ctx.destination);
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(gain, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.start(); osc.stop(ctx.currentTime + duration);
+  } catch(e) {}
+}
+
+
 const splashVersion = document.getElementById('splash-version');
 if (splashVersion) splashVersion.textContent = `v${BUILD}`;
 
@@ -66,6 +90,7 @@ const state = reactive({
   showWhatsNew: false,
   showHistory:  false,
   historyDetail: null,
+  historyList: false,
   updateReady: false,
   showSettingsModal: false,
   gameMenu: { active: false },
@@ -197,8 +222,8 @@ function removeConfig(id) { deleteConfig(id); state.savedConfigs = loadConfigs()
 // ── Spielmenü ─────────────────────────────────────────────────────────────────
 function openGameMenu()  { state.gameMenu.active = true; }
 function closeGameMenu() { state.gameMenu.active = false; }
-function pauseGame()     { state.gamePaused = true; state.gameMenu.active = false; }
-function resumeGame()    { state.gamePaused = false; }
+function pauseGame()     { state.gamePaused = true; state.gameMenu.active = false; clearInterval(state.timerInterval); }
+function resumeGame()    { state.gamePaused = false; if (state.screen === 'timer' && state.timerSeconds > 0) startTimer(); }
 function confirmEndGame() {
   state.gameEndConfirm = false; state.gamePaused = false; state.gameMenu.active = false;
   clearInterval(state.timerInterval);
@@ -223,7 +248,7 @@ function startLocalGame() {
   state.winner       = null;
   state.eliminatedNames = [];
   state.tally        = {};
-  state.timerSeconds = TIMER_SECONDS;
+  state.timerSeconds = getTimerSeconds(state.playerCount);
   clearInterval(state.timerInterval);
   state.screen = 'reveal';
   haptic('success');
@@ -235,7 +260,7 @@ function nextReveal() {
   if (state.revealIdx + 1 >= state.roles.length) {
     // Alle haben ihre Karte gesehen → Timer
     state.screen = 'timer';
-    state.timerSeconds = TIMER_SECONDS;
+    state.timerSeconds = getTimerSeconds(state.roles.length);
     startTimer();
   } else {
     state.revealIdx++;
@@ -245,10 +270,16 @@ function nextReveal() {
 
 function startTimer() {
   clearInterval(state.timerInterval);
+  const totalSeconds = getTimerSeconds(state.roles.length);
   state.timerInterval = setInterval(() => {
     state.timerSeconds--;
+    // Töne: bei 30s, 15s, und ab 15s jeden Schritt
+    if (state.timerSeconds === 30) playBeep(660, 0.2, 0.25);
+    if (state.timerSeconds === 15) playBeep(880, 0.25, 0.3);
+    if (state.timerSeconds <= 15 && state.timerSeconds > 0) playBeep(1100, 0.08, 0.15);
     if (state.timerSeconds <= 0) {
       clearInterval(state.timerInterval);
+      playBeep(440, 0.5, 0.4);
       setTimeout(() => { state.screen = 'voting'; state.stimmIdx = 0; }, 600);
     }
   }, 1000);
@@ -417,7 +448,12 @@ function init() {
 // ── Vue App ───────────────────────────────────────────────────────────────────
 const App = {
   setup() {
-    const timerPct = computed(() => state.timerSeconds / TIMER_SECONDS * 100);
+    const timerPct = computed(() => state.timerSeconds / getTimerSeconds(state.roles.length || state.playerCount) * 100);
+    // Dynamische Imposter-Optionen: 1 per 4 Spieler, min 1, max 4
+    const maxImposterOptions = computed(() => {
+      const max = Math.max(1, Math.floor(state.playerCount / 4));
+      return Array.from({length: max}, (_, i) => i + 1);
+    });
     const revealPlayer = computed(() => state.roles[state.revealIdx]);
     const currentVoter = computed(() => state.roles[state.stimmIdx]);
     const voteOptions  = computed(() => state.roles.filter(r => r.name !== currentVoter.value?.name));
@@ -425,7 +461,7 @@ const App = {
 
     return {
       state, BUILD, CHANGELOG, DONATE_URL, SUPPORTED_LOCALES, TIMER_SECONDS,
-      timerPct, revealPlayer, currentVoter, voteOptions, imposters,
+      timerPct, revealPlayer, currentVoter, voteOptions, imposters, maxImposterOptions, getTimerSeconds,
       t, i18nState,
       setTheme, setLang,
       changePlayerCount, selectMode,
@@ -525,7 +561,7 @@ const App = {
 
     <!-- ── VERSIONSHISTORIE DETAIL ── -->
     <div v-if="state.showHistory && state.historyDetail" style="padding:1.2rem;max-width:480px;margin:0 auto">
-      <div class="cl-detail-back" @click="state.showHistory=false;state.historyDetail=null">← Zurück</div>
+      <div class="cl-detail-back" @click="state.historyDetail ? state.historyDetail=null : state.screen='home'">← Zurück</div>
       <div style="margin-bottom:.4rem">
         <span class="cl-version-num">v{{ state.historyDetail.version }}</span>
         <span class="cl-version-date" style="margin-left:.5rem">{{ state.historyDetail.date }}</span>
@@ -575,7 +611,7 @@ const App = {
             </div>
             <div class="srow">
               <div><div class="slabel">Versionshistorie</div><div class="ssub">Alle Änderungen</div></div>
-              <button class="ver-hist-btn" @click="state.showHistory=true;state.historyDetail=CHANGELOG[0]">Anzeigen</button>
+              <button class="ver-hist-btn" @click="state.screen='history';state.showSettingsModal=false;state.historyDetail=null">Anzeigen</button>
             </div>
             <div class="srow">
               <div><div class="slabel">Auf Update prüfen</div><div class="ssub">Sucht nach neuer Version</div></div>
@@ -762,8 +798,9 @@ const App = {
           <div class="sec">
             <h2>🕵️ {{ t('setup.imposter') }}</h2>
             <div style="display:flex;gap:.6rem">
-              <button v-for="n in [1,2]" :key="n"
-                :style="{ flex:1, padding:'.7rem', borderRadius:'10px', border:'none', cursor:'pointer', fontWeight:'700', fontSize:'.9rem', color:'#fff', background: state.imposterCount===n ? 'linear-gradient(135deg,var(--pri),var(--pri2))' : 'var(--sur)', border: state.imposterCount===n ? 'transparent' : '1px solid var(--bdr2)', transition:'all .15s' }"
+              <button v-for="n in maxImposterOptions" :key="n"
+                class="imposter-btn"
+                :class="{ 'imposter-btn-active': state.imposterCount===n }"
                 @click="state.imposterCount=n">{{ n }}</button>
             </div>
           </div>
@@ -858,7 +895,7 @@ const App = {
               :stroke="state.timerSeconds <= 10 ? '#ef4444' : state.timerSeconds <= 20 ? '#f59e0b' : 'var(--gold)'"
               :style="{
                 strokeDasharray: 2 * Math.PI * 54,
-                strokeDashoffset: 2 * Math.PI * 54 * (1 - state.timerSeconds / TIMER_SECONDS),
+                strokeDashoffset: 2 * Math.PI * 54 * (1 - timerPct / 100),
                 transition: 'stroke-dashoffset 1s linear, stroke .5s'
               }"/>
           </svg>
@@ -924,6 +961,46 @@ const App = {
 
         <button class="btn-start" @click="startLocalGame">🔄 {{ t('result.newGame') }}</button>
         <button class="btn-sec" style="margin-top:.5rem" @click="newGame">{{ t('result.backHome') }}</button>
+      </div>
+    </template>
+
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- ── HISTORY SCREEN ── -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <template v-if="state.screen === 'history'">
+      <div class="top-bar">
+        <button class="icon-btn" @click="state.historyDetail ? state.historyDetail=null : state.screen='home'">←</button>
+      </div>
+      <!-- Detailansicht einer Version -->
+      <div v-if="state.historyDetail" style="padding:0 1.2rem 3rem;max-width:480px;margin:0 auto">
+        <div style="padding:1rem 0 .5rem">
+          <span class="cl-version-num">v{{ state.historyDetail.version }}</span>
+          <span class="cl-version-date" style="margin-left:.6rem">{{ state.historyDetail.date }}</span>
+        </div>
+        <ul style="list-style:none;padding:0">
+          <li v-for="c in state.historyDetail.changes" :key="c"
+            style="font-size:.9rem;color:var(--txt2);padding:.5rem 0;border-bottom:1px solid var(--bdr);display:flex;gap:.6rem;line-height:1.5">
+            <span style="color:var(--gold);flex-shrink:0;margin-top:.1rem">✦</span>{{ c }}
+          </li>
+        </ul>
+        <button class="btn-sec" style="margin-top:1.2rem" @click="state.historyDetail=null">← Zur Übersicht</button>
+      </div>
+      <!-- Liste aller Versionen -->
+      <div v-else style="padding:0 1.2rem 3rem;max-width:480px;margin:0 auto">
+        <div style="padding:1.2rem 0 .8rem;font-size:1.1rem;font-weight:900;color:var(--txt)">📋 Versionshistorie</div>
+        <div v-for="cl in CHANGELOG" :key="cl.version" class="cl-version-card"
+          @click="state.historyDetail=cl">
+          <div class="cl-version-card-head">
+            <span class="cl-version-num">v{{ cl.version }}</span>
+            <span class="cl-version-date">{{ cl.date }}</span>
+          </div>
+          <ul class="cl-version-preview-list">
+            <li v-for="(c,i) in cl.changes.slice(0,2)" :key="i">{{ c }}</li>
+            <li v-if="cl.changes.length > 2" class="cl-more">+ {{ cl.changes.length - 2 }} weitere…</li>
+          </ul>
+          <div class="cl-tap-hint">Antippen für Details →</div>
+        </div>
       </div>
     </template>
 
