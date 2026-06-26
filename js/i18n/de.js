@@ -1,0 +1,17 @@
+export default {
+  app: { title: 'GRUPPEN-SPIELE', sub: 'Party Games · Kostenlos · Werbefrei' },
+  home: { donate: 'Entwickler unterstützen' },
+  update: { badge: 'Update', title: 'Neue Version verfügbar', body: 'Eine neue Version ist bereit.', backup: 'Backup herunterladen', apply: 'Aktualisieren & neu starten', later: 'Später' },
+  whatsNew: { badge: 'Neu', close: "Los geht's", histTitle: 'Frühere Versionen' },
+  settings: { title: 'EINSTELLUNGEN', theme: 'Helles Design', themeSub: 'Dark / Light', lang: 'Sprache', langSub: 'Spielsprache', version: 'Version', versionSub: 'Aktuell', history: 'Versionshistorie', historySub: 'Alle Änderungen', historyBtn: 'Anzeigen', checkUpdate: 'Auf Update prüfen', checkUpdateSub: 'Sucht nach einer neuen Version', checkBtn: '🔄 Prüfen', diagBtn: 'Protokoll exportieren' },
+  mode: { title: 'Spielmodus', local: 'Ein Gerät', localSub: 'Alle spielen auf einem Handy', coop: 'Multiplayer', coopSub: 'Jeder auf eigenem Handy' },
+  setup: { players: 'Spieleranzahl', playerUnit: 'Spieler', names: 'Spielernamen', imposter: 'Imposter', startBtn: 'Spiel starten' },
+  coop: { host: 'Host erstellen', join: 'Beitreten', code: 'Raumcode', codeSub: 'Teile diesen Code mit deinen Mitspielern', codeHint: '6-stellige Zahl eingeben', codeTaken: 'Code bereits vergeben!', codeWrong: 'Raum nicht gefunden!', roomFull: 'Raum ist voll!', yourName: 'Dein Name', namePlaceholder: 'Name eingeben...', joinBtn: 'Beitreten', cancel: 'Abbrechen', leave: 'Verlassen', waiting: 'Warte auf Spieler...', readyBtn: 'Bereit erklären', readyDone: 'Bereit!', startBtn: 'Spiel starten', host: 'Host', ready: 'Bereit', notReady: 'Wartet', errorTimeout: 'Verbindungs-Timeout. Erneut versuchen.', errorGeneric: 'Verbindungsfehler.' },
+  reveal: { for: 'Karte für', tap: 'TIPPEN ZUM AUFDECKEN', show: 'Karte anzeigen', next: 'Weiter' },
+  timer: { title: 'Jetzt diskutieren!', desc: 'Wer verhält sich verdächtig? Redet über das Wort — ohne es zu sagen!', skip: 'Abstimmung jetzt starten →', seconds: 'SEKUNDEN' },
+  voting: { title: 'Wer ist der Imposter?', sub: 'stimmt ab', of: 'von' },
+  result: { caught: 'Imposter erwischt!', caughtSub: 'Die Gruppe hat gewonnen 🥳', wins: 'Imposter gewinnt!', winsSub: 'Der Imposter hat alle getäuscht 😈', word: 'Das Wort war', imposter: 'Imposter', votes: 'Stimmen', out: 'Raus', newGame: 'Neues Spiel', backHome: 'Zurück zum Menü' },
+  common: { ok: 'OK', close: 'Schließen', back: 'Zurück' },
+  savedNames: { hint: 'Letzten Namen laden?', load: 'Namen laden', dismiss: 'Nein' },
+  configs: { title: 'KONFIGURATIONEN', save: 'Aktuelle Konfiguration speichern', load: 'Laden', delete: 'Löschen', namePrompt: 'Name der Konfiguration', placeholder: 'z.B. Großes Spiel 10er', empty: 'Noch keine gespeichert.', saved: 'Gespeichert!', confirmDelete: 'Löschen?' },
+};
