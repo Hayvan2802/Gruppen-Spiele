@@ -1,10 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.36';
-export const BUILD_HASH = 'wbi-cardseen-update-btn';
+export const BUILD      = '0.37';
+export const BUILD_HASH = 'wbi-nextcard-return-fix';
 
 export const CHANGELOG = [
   {
-    version: '0.36',
+    version: '0.37',
+    date: '27.06.2026',
+    changes: [
+      'WBI: wbiNextCard im setup() return ergänzt — Button funktioniert jetzt',
+      'Lokal getestet: Karte aufdecken → schließen → Weiter ✓',
+    ],
+  },
+  {
+    version: '0.37',
     date: '27.06.2026',
     changes: [
       'WBI: Weiter-Button erst sichtbar nach Aufdecken + Schließen der Karte',
@@ -12,7 +20,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.36',
+    version: '0.37',
     date: '27.06.2026',
     changes: [
       'WBI: Weiter-Button funktioniert jetzt (wbiNextCard nicht exportiert)',
@@ -20,7 +28,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.36',
+    version: '0.37',
     date: '27.06.2026',
     changes: [
       '"Weiter zu Spieler X" Button Fix — war beim ersten Spieler nicht sichtbar',
