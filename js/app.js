@@ -187,7 +187,7 @@ function registerSW() {
         nw.addEventListener('statechange', () => promote(nw));
       });
       // Alle 60 Sek auf Updates prüfen (wie Werwolf)
-      setInterval(() => { if (window._swReg) window._swReg.update().catch(() => {}); }, 60000);
+      setInterval(() => { if (window._swReg) window._swReg.update().catch(() => {}); }, 30000);
 
     }).catch(e => log('sw', 'SW-Registrierung fehlgeschlagen', e));
   });
@@ -661,13 +661,17 @@ const App = {
     </div>
 
     <!-- ── UPDATE BANNER (Bottom-Sheet, immer sichtbar) ── -->
-    <div v-if="state.updateReady && !state.showWhatsNew" class="update-sheet-overlay" @click.self="state.updateReady=false">
+    <div v-if="state.updateReady && !state.showWhatsNew" class="update-sheet-overlay">
       <div class="update-sheet">
         <div class="sheet-handle"></div>
         <span class="uc-badge" style="margin-bottom:.8rem">✦ UPDATE VERFÜGBAR</span>
-        <div class="uc-title" style="font-size:1.1rem;margin-bottom:.4rem">v{{ state.updateVersion || BUILD }} ist bereit!</div>
-        <div class="uc-desc" style="font-size:.82rem;margin-bottom:1rem">Neue Version verfügbar — jetzt installieren</div>
+        <div class="uc-title" style="font-size:1.1rem;margin-bottom:.5rem">v{{ state.updateVersion || BUILD }} ist bereit!</div>
+        <div class="uc-desc" style="font-size:.82rem;margin-bottom:1.2rem;line-height:1.5">
+          Eine neue Version steht bereit.<br>
+          <span style="font-size:.75rem;color:var(--txt3)">Exportiere zuerst dein Diagnoseprotokoll falls nötig.</span>
+        </div>
         <button class="uc-btn-primary" @click="applyUpdate">⬆ Aktualisieren & neu starten</button>
+        <button class="uc-btn-export" @click="exportLogToFile">📋 Protokoll exportieren</button>
         <button class="uc-btn-later" @click="state.updateReady=false">Später</button>
       </div>
     </div>
