@@ -1,7 +1,7 @@
-// Gruppen-Spiele Service Worker v0.0.9
-// Kein self.skipWaiting() im install — neuer SW wartet bis Nutzer
-// aktiv auf "Aktualisieren & neu starten" tippt (exakt wie Werwolf-App).
-const CACHE = 'gruppen-spiele-v0.0.9';
+// Gruppen-Spiele Service Worker v0.0.10
+// EINMALIG: skipWaiting im install um alten gecachten kaputten State zu überwinden.
+// Ab v0.0.11 wieder normales Verhalten (Banner).
+const CACHE = 'gruppen-spiele-v0.0.10';
 const ASSETS = [
   './index.html', './css/styles.css',
   './js/app.js', './js/buildinfo.js', './js/config.js', './js/storage.js',
@@ -17,16 +17,21 @@ const ASSETS = [
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).catch(() => {}));
+  // EINMALIG skipWaiting um kaputten Cache zu überwinden
+  self.skipWaiting();
 });
+
 self.addEventListener('message', e => {
   if (e.data && e.data.type === 'skipWaiting') self.skipWaiting();
 });
+
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(keys =>
     Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
   ));
   self.clients.claim();
 });
+
 self.addEventListener('fetch', e => {
   if (e.request.url.includes('/icons/')) {
     e.respondWith(caches.match(e.request).then(c => c || fetch(e.request)));
