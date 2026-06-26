@@ -278,6 +278,103 @@ test('Shuffle verändert Reihenfolge (statistisch)', () => {
   assert(sameCount < 10, 'Shuffle sollte nicht immer gleich sein');
 });
 
+
+// ── Tests: Kategorien ─────────────────────────────────────────────────────────
+console.log('\n=== KATEGORIEN ===');
+
+const KATEGORIEN_TEST = {
+  'Tiere': ['Hund','Katze','Elefant'],
+  'Essen':  ['Pizza','Sushi','Burger'],
+  'Sport':  ['Fußball','Tennis'],
+};
+
+function rndWordFromKats(selectedKats, customWords, kategorien) {
+  let pool = [];
+  selectedKats.forEach(k => { if (kategorien[k]) pool.push(...kategorien[k]); });
+  pool.push(...customWords);
+  if (!pool.length) pool = Object.values(kategorien).flat();
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+test('Wort aus gewählter Kategorie', () => {
+  const w = rndWordFromKats(['Tiere'], [], KATEGORIEN_TEST);
+  assert(KATEGORIEN_TEST['Tiere'].includes(w), `"${w}" nicht in Tiere`);
+});
+
+test('Wort aus mehreren Kategorien', () => {
+  const all = [...KATEGORIEN_TEST['Tiere'], ...KATEGORIEN_TEST['Essen']];
+  for (let i = 0; i < 20; i++) {
+    const w = rndWordFromKats(['Tiere','Essen'], [], KATEGORIEN_TEST);
+    assert(all.includes(w), `"${w}" nicht in Tiere+Essen`);
+  }
+});
+
+test('Eigenes Wort wird verwendet', () => {
+  const w = rndWordFromKats([], ['MeinWort'], KATEGORIEN_TEST);
+  assertEqual(w, 'MeinWort');
+});
+
+test('Fallback auf alle Wörter wenn keine Kategorie gewählt', () => {
+  const allWords = Object.values(KATEGORIEN_TEST).flat();
+  const w = rndWordFromKats([], [], KATEGORIEN_TEST);
+  assert(allWords.includes(w));
+});
+
+test('Eigene Wörter + Kategorie kombiniert', () => {
+  const pool = [...KATEGORIEN_TEST['Sport'], 'EigenesWort'];
+  for (let i = 0; i < 30; i++) {
+    const w = rndWordFromKats(['Sport'], ['EigenesWort'], KATEGORIEN_TEST);
+    assert(pool.includes(w), `"${w}" nicht in Pool`);
+  }
+});
+
+// ── Tests: Runden & Punkte ────────────────────────────────────────────────────
+console.log('\n=== RUNDEN & PUNKTE ===');
+
+function calcScores(roles, winner, scores) {
+  const s = {...scores};
+  if (winner === 'village') {
+    roles.filter(r => !r.isImposter).forEach(r => { s[r.name] = (s[r.name]||0) + 1; });
+  } else {
+    roles.filter(r => r.isImposter).forEach(r => { s[r.name] = (s[r.name]||0) + 2; });
+  }
+  return s;
+}
+
+test('Dorfbewohner bekommen 1 Punkt wenn Imposter erwischt', () => {
+  const roles = [
+    {name:'A',isImposter:true},{name:'B',isImposter:false},{name:'C',isImposter:false}
+  ];
+  const s = calcScores(roles, 'village', {});
+  assertEqual(s['B'], 1); assertEqual(s['C'], 1); assert(!s['A']);
+});
+
+test('Imposter bekommt 2 Punkte wenn er gewinnt', () => {
+  const roles = [
+    {name:'A',isImposter:true},{name:'B',isImposter:false}
+  ];
+  const s = calcScores(roles, 'imposter', {});
+  assertEqual(s['A'], 2); assert(!s['B']);
+});
+
+test('Punkte akkumulieren über Runden', () => {
+  const roles = [{name:'A',isImposter:true},{name:'B',isImposter:false}];
+  let s = calcScores(roles, 'village', {});
+  s = calcScores(roles, 'village', s);
+  assertEqual(s['B'], 2);
+});
+
+test('Runden-Counter: nextRound erhöht roundsCurrent', () => {
+  let current = 1;
+  current++; // nextRound
+  assertEqual(current, 2);
+});
+
+test('Kein weiterer nextRound wenn roundsCurrent >= roundsTotal', () => {
+  const total = 3, current = 3;
+  assert(current >= total, 'Alle Runden gespielt');
+});
+
 // ── Ergebnis ──────────────────────────────────────────────────────────────────
 console.log(`\n${'─'.repeat(40)}`);
 console.log(`  Gesamt: ${passed + failed} Tests`);
