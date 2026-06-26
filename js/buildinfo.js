@@ -1,8 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '1.0.0';
-export const BUILD_HASH = 'initial-release';
+export const BUILD      = '1.0.1';
+export const BUILD_HASH = 'fix-swipe-update-check';
 
 export const CHANGELOG = [
+  {
+    version: '1.0.1',
+    date: '26.06.2026',
+    changes: [
+      'Seitwärts-Wischen auf iOS behoben',
+      'Einstellungen: Auf Update prüfen Button hinzugefügt',
+    ],
+  },
+
   {
     version: '1.0.0',
     date: '26.06.2026',
