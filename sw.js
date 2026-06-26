@@ -1,5 +1,5 @@
-// Gruppen-Spiele Service Worker v0.17
-const CACHE = 'gruppen-spiele-v0.17';
+// Gruppen-Spiele Service Worker v0.18
+const CACHE = 'gruppen-spiele-v0.18';
 const ASSETS = [
   './index.html', './css/styles.css',
   './js/app.js', './js/buildinfo.js', './js/config.js', './js/storage.js',
@@ -20,6 +20,11 @@ self.addEventListener('install', e => {
 
 self.addEventListener('message', e => {
   if (e.data && e.data.type === 'skipWaiting') self.skipWaiting();
+  // Version zurückmelden damit der Banner die richtige Versionsnummer zeigt
+  if (e.data && e.data.type === 'getVersion') {
+    const version = CACHE.replace('gruppen-spiele-v', '');
+    e.ports[0]?.postMessage({ version });
+  }
 });
 
 self.addEventListener('activate', e => {
