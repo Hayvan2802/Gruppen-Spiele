@@ -1,10 +1,22 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.19';
-export const BUILD_HASH = 'buildinfo-no-cache';
+export const BUILD      = '0.20';
+export const BUILD_HASH = 'phase1-features';
 
 export const CHANGELOG = [
   {
-    version: '0.19',
+    version: '0.20',
+    date: '26.06.2026',
+    changes: [
+      'Phase 1: 13 Kategorien mit 300+ Wörtern — ein-/ausklappbar',
+      'Kategorien auswählen: Alle, Keine, oder beliebige Kombination',
+      'Eigene Wörter hinzufügen und verwalten',
+      'Runden-Modus: 1–10 Runden wählbar mit Punktestand',
+      'Neon-Theme als viertes Theme',
+      '40 automatische Tests — alle grün',
+    ],
+  },
+  {
+    version: '0.20',
     date: '26.06.2026',
     changes: [
       'buildinfo.js wird nie gecacht — Version stimmt immer nach Update',
@@ -12,7 +24,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.19',
+    version: '0.20',
     date: '26.06.2026',
     changes: [
       'Update-Banner zeigt korrekte Version des neuen SW',
@@ -20,7 +32,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.19',
+    version: '0.20',
     date: '26.06.2026',
     changes: [
       'Multiplayer Host: Zufallscode entfernt — Code selbst eintippen',
@@ -29,7 +41,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.19',
+    version: '0.20',
     date: '26.06.2026',
     changes: [
       'Toast-Nachricht korrekt sichtbar — z-index erhöht, über allen Ebenen',
@@ -37,7 +49,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.19',
+    version: '0.20',
     date: '26.06.2026',
     changes: [
       'Versionsnummern korrigiert — Format 0.X statt 0.0.X',
