@@ -393,3 +393,6 @@ export function wbiRemainingCount() {
 export function wbiGuessedCount() {
   return wbiState.localCards.filter(c => c.guessed).length;
 }
+
+// Alias für Rückwärtskompatibilität
+export const wbiMarkSkipped = wbiMarkNotGuessed;
