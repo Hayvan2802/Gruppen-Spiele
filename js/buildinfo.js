@@ -1,10 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.0.7';
-export const BUILD_HASH = 'sw-update-timer-fix';
+export const BUILD      = '0.0.8';
+export const BUILD_HASH = 'fix-state-before-init';
 
 export const CHANGELOG = [
   {
-    version: '0.0.7',
+    version: '0.0.8',
+    date: '26.06.2026',
+    changes: [
+      'Crash behoben: state vor Initialisierung zugegriffen',
+      'SW-Block korrekt nach state-Definition verschoben',
+    ],
+  },
+  {
+    version: '0.0.8',
     date: '26.06.2026',
     changes: [
       'Fehler TIMER_SECONDS behoben — App startet wieder',
@@ -13,7 +21,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.7',
+    version: '0.0.8',
     date: '26.06.2026',
     changes: [
       'Timer pausiert jetzt korrekt bei Pause',
