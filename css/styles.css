@@ -552,3 +552,19 @@ body.light .glog{background:var(--sur);}
   -webkit-tap-highlight-color: transparent;
 }
 .btn-next-reveal:active { transform: scale(.97); opacity: .9; }
+
+/* ── Coop: Raum erstellen Button ─────────────────────────────────────────── */
+.btn-create-room {
+  display: block; width: 100%; margin-top: .5rem;
+  padding: 1.05rem; border-radius: 14px; border: none;
+  background: linear-gradient(135deg, var(--pri), var(--pri2));
+  color: #fff; font-size: 1.05rem; font-weight: 800;
+  letter-spacing: .03em; cursor: pointer;
+  box-shadow: 0 4px 20px rgba(124,58,237,.4);
+  transition: all .15s; -webkit-tap-highlight-color: transparent;
+}
+.btn-create-room:active { transform: scale(.97); opacity: .9; }
+.btn-create-room:disabled {
+  opacity: .35; cursor: not-allowed; box-shadow: none;
+  background: var(--sur); color: var(--txt3); border: 1px solid var(--bdr2);
+}
