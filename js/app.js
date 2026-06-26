@@ -785,7 +785,7 @@ const App = {
           Eine neue Version steht bereit.<br>
           <span style="font-size:.75rem;color:var(--txt3)">Exportiere zuerst dein Protokoll falls nötig.</span>
         </div>
-        <button class="uc-btn-primary" @click="applyUpdate">⬆ Aktualisieren & neu starten</button>
+        <button class="btn-start" style="margin-bottom:.6rem" @click="applyUpdate">⬆ Aktualisieren & neu starten</button>
         <button class="uc-btn-export" @click="exportLogToFile">📋 Protokoll exportieren</button>
         <button class="uc-btn-later" @click="state.updateReady=false">Später</button>
       </div>
@@ -1263,10 +1263,14 @@ const App = {
             </div>
 
             <!-- Weiter: nur wenn Karte geschlossen -->
-            <button v-if="!wbiState.showCard"
+            <!-- Weiter nur wenn Karte gesehen UND wieder geschlossen -->
+            <button v-if="wbiState.cardSeen && !wbiState.showCard"
               class="btn-start" style="margin-top:1rem" @click="wbiNextCard()">
               {{ wbiState.currentIdx + 1 >= wbiState.localCards.length ? '▶ Diskussion starten' : '➡ Weiter zu ' + (wbiState.localCards[wbiState.currentIdx+1]?.playerName || '') }}
             </button>
+            <div v-if="!wbiState.cardSeen" style="text-align:center;margin-top:.8rem;font-size:.82rem;color:var(--txt3)">
+              👆 Erst Karte aufdecken
+            </div>
           </div>
         </template>
 
