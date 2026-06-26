@@ -5,7 +5,7 @@ import { BUILD, CHANGELOG } from './buildinfo.js';
 import {
   wbiState, WBI_KATEGORIEN, WBI_DEFAULT_KATEGORIEN,
   wbiStartLocal, wbiShowCard, wbiHideCard, wbiMarkGuessed, wbiMarkNotGuessed,
-  wbiMarkSkipped, wbiToggleDiscussCard, wbiStartResolve,
+  wbiMarkSkipped, wbiNextCard, wbiToggleDiscussCard, wbiStartResolve,
   wbiRestart, wbiSelectMode, wbiShowHostSetup, wbiCreateRoom,
   wbiShowJoinSetup, wbiJoinRoom, wbiStartCoopGame, wbiCancelCoop,
   wbiShareLink, wbiSendGuess, wbiCurrentCard, wbiRemainingCount, wbiGuessedCount,
