@@ -410,3 +410,114 @@ body.light .glog{background:var(--sur);}
   animation: slideUp .28s ease;
   padding-bottom: max(2.5rem, calc(env(safe-area-inset-bottom) + 1.5rem));
 }
+
+/* ── Timer Screen (neu) ──────────────────────────────────────────────────── */
+.timer-screen {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 1rem 1.5rem 3rem; max-width: 480px; margin: 0 auto;
+  min-height: calc(100vh - 60px); justify-content: center;
+}
+.timer-title {
+  font-size: 1.4rem; font-weight: 900; color: var(--txt);
+  margin-bottom: .4rem; text-align: center;
+}
+.timer-subtitle {
+  font-size: .88rem; color: var(--txt2); text-align: center;
+  line-height: 1.6; margin-bottom: 1.8rem;
+}
+.timer-ring-wrap {
+  position: relative; width: 200px; height: 200px; margin-bottom: 1.5rem;
+}
+.timer-svg { width: 200px; height: 200px; }
+.timer-inner {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.timer-big-num {
+  font-size: 3.5rem; font-weight: 900; line-height: 1;
+  transition: color .4s;
+}
+.timer-sec-label {
+  font-size: .65rem; letter-spacing: .2em; color: var(--txt3); margin-top: .2rem;
+}
+.timer-players {
+  display: flex; gap: .5rem; flex-wrap: wrap; justify-content: center;
+  max-width: 320px; margin-bottom: 1.5rem;
+}
+.timer-player-dot {
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .78rem; font-weight: 700; color: var(--txt);
+  border: 1px solid var(--bdr2);
+}
+.timer-skip-btn {
+  background: var(--sur); border: 1px solid var(--bdr2); border-radius: 12px;
+  color: var(--txt2); font-size: .9rem; padding: .85rem 1.8rem;
+  cursor: pointer; transition: all .15s; width: 100%; max-width: 300px;
+}
+.timer-skip-btn:hover { background: var(--sur2); color: var(--txt); }
+
+/* ── Voting Screen (neu) ─────────────────────────────────────────────────── */
+.voting-screen {
+  padding: 1rem 1.2rem 5rem; max-width: 480px; margin: 0 auto;
+}
+.voting-header {
+  text-align: center; margin: .8rem 0 1.2rem; padding: 1rem;
+  background: var(--sur); border: 1px solid var(--bdr); border-radius: 16px;
+}
+.voting-avatar {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--pri), var(--pri2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; font-weight: 900; color: #fff;
+  margin: 0 auto .6rem;
+}
+.voting-voter-name { font-size: 1.2rem; font-weight: 900; color: var(--txt); }
+.voting-voter-sub  { font-size: .8rem; color: var(--txt2); margin-top: .2rem; }
+.voting-counter    { font-size: .72rem; color: var(--txt3); margin-top: .4rem; }
+.voting-title {
+  font-size: 1rem; font-weight: 700; color: var(--txt);
+  margin-bottom: .8rem; text-align: center;
+}
+.voting-options { display: flex; flex-direction: column; gap: .5rem; margin-bottom: 1rem; }
+.voting-option {
+  display: flex; align-items: center; gap: .9rem;
+  padding: .9rem 1.1rem; border-radius: 14px;
+  border: 2px solid var(--bdr); background: var(--sur);
+  cursor: pointer; transition: all .15s; text-align: left;
+  width: 100%; -webkit-tap-highlight-color: transparent;
+}
+.voting-option:active { transform: scale(.98); }
+.voting-option-selected {
+  border-color: var(--gold) !important;
+  background: rgba(124,58,237,.15) !important;
+}
+.voting-option-avatar {
+  width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+  background: var(--bg3); border: 1px solid var(--bdr2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; font-weight: 700; color: var(--gold);
+}
+.voting-option-name { flex: 1; font-size: 1rem; font-weight: 600; color: var(--txt); }
+.voting-option-check {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--pri), var(--pri2));
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: .85rem; font-weight: 900; flex-shrink: 0;
+}
+.voting-confirm-wrap {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  padding: 1rem 1.2rem max(1.2rem, env(safe-area-inset-bottom));
+  background: var(--bg); border-top: 1px solid var(--bdr);
+  max-width: 480px; margin: 0 auto;
+}
+.voting-confirm-btn {
+  width: 100%; padding: 1rem; border-radius: 14px; border: none;
+  background: linear-gradient(135deg, var(--pri), var(--pri2));
+  color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer;
+  transition: all .15s; letter-spacing: .02em;
+}
+.voting-confirm-btn:disabled {
+  opacity: .35; cursor: not-allowed;
+  background: var(--sur); color: var(--txt3); border: 1px solid var(--bdr2);
+}
