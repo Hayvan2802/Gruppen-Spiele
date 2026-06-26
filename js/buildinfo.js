@@ -1,10 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.38';
-export const BUILD_HASH = 'wbi-pause-menu';
+export const BUILD      = '0.39';
+export const BUILD_HASH = 'fix-double-pause-menu';
 
 export const CHANGELOG = [
   {
-    version: '0.38',
+    version: '0.39',
+    date: '27.06.2026',
+    changes: [
+      'Imposter: doppeltes Pause-Menü behoben',
+      'Nur noch ein einziges Spielmenü-Modal beim Pausieren',
+    ],
+  },
+  {
+    version: '0.39',
     date: '27.06.2026',
     changes: [
       'WBI: Zurück-Pfeil nur im Setup sichtbar',
@@ -14,7 +22,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.38',
+    version: '0.39',
     date: '27.06.2026',
     changes: [
       'WBI: wbiNextCard im setup() return ergänzt — Button funktioniert jetzt',
@@ -22,7 +30,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.38',
+    version: '0.39',
     date: '27.06.2026',
     changes: [
       'WBI: Weiter-Button erst sichtbar nach Aufdecken + Schließen der Karte',
@@ -30,7 +38,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.38',
+    version: '0.39',
     date: '27.06.2026',
     changes: [
       'WBI: Weiter-Button funktioniert jetzt (wbiNextCard nicht exportiert)',
@@ -38,7 +46,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.38',
+    version: '0.39',
     date: '27.06.2026',
     changes: [
       '"Weiter zu Spieler X" Button Fix — war beim ersten Spieler nicht sichtbar',
