@@ -51,8 +51,12 @@ export const wbiState = reactive({
 
   // Lokales Spiel
   localCards: [],      // [{ word, category, playerName, guessed, skipped }]
-  currentIdx: 0,       // aktueller Spieler (Stirn-Karte)
+  currentIdx: 0,       // aktueller Spieler beim Kartenverteilen
   showCard: false,     // Karte sichtbar für anderen Spieler
+  localPhase: 'distribute', // distribute | discuss | resolve
+  // Diskussionsphase: welche Karte gerade sichtbar
+  discussIdx: 0,
+  discussCardVisible: false,
 
   // Coop
   coop: {
@@ -98,44 +102,72 @@ export function wbiStartLocal() {
     skipped:    false,
   }));
 
-  wbiState.currentIdx = 0;
-  wbiState.showCard   = false;
-  wbiState.results    = [];
-  wbiState.scores     = {};
-  wbiState.phase      = 'local-reveal';
+  wbiState.currentIdx      = 0;
+  wbiState.showCard         = false;
+  wbiState.localPhase       = 'distribute';
+  wbiState.discussIdx       = 0;
+  wbiState.discussCardVisible = false;
+  wbiState.results          = [];
+  wbiState.scores           = {};
+  wbiState.phase            = 'local-reveal';
   haptic('success');
 }
 
 export function wbiShowCard()  { wbiState.showCard = true; haptic('medium'); }
 export function wbiHideCard()  { wbiState.showCard = false; }
+export { wbiMarkNotGuessed, wbiToggleDiscussCard, wbiStartResolve };
 
 export function wbiMarkGuessed(idx) {
   wbiState.localCards[idx].guessed = true;
   wbiState.scores[wbiState.localCards[idx].playerName] =
     (wbiState.scores[wbiState.localCards[idx].playerName] || 0) + 1;
   haptic('success');
-  wbiNextCard();
+  if (wbiState.localPhase === 'distribute') wbiNextCard();
+  else wbiCheckResolveDone();
 }
 
-export function wbiMarkSkipped(idx) {
+export function wbiMarkNotGuessed(idx) {
   wbiState.localCards[idx].skipped = true;
   haptic('light');
-  wbiNextCard();
+  wbiCheckResolveDone();
+}
+
+function wbiCheckResolveDone() {
+  const done = wbiState.localCards.every(c => c.guessed || c.skipped);
+  if (done) wbiFinishLocal();
+}
+
+// Diskussionsphase: Karte kurz aufdecken/zuklappen
+export function wbiToggleDiscussCard(idx) {
+  if (wbiState.discussIdx === idx && wbiState.discussCardVisible) {
+    wbiState.discussCardVisible = false;
+  } else {
+    wbiState.discussIdx = idx;
+    wbiState.discussCardVisible = true;
+  }
+  haptic('light');
+}
+
+// Zur Auflösungsphase wechseln
+export function wbiStartResolve() {
+  wbiState.localPhase = 'resolve';
+  haptic('medium');
 }
 
 function wbiNextCard() {
-  const remaining = wbiState.localCards.filter(c => !c.guessed && !c.skipped);
-  if (!remaining.length) {
-    wbiFinishLocal();
-    return;
+  if (wbiState.localPhase === 'distribute') {
+    // Nächster Spieler bekommt Karte
+    if (wbiState.currentIdx + 1 >= wbiState.localCards.length) {
+      // Alle haben ihre Karte — Diskussion starten
+      wbiState.localPhase = 'discuss';
+      wbiState.discussIdx = 0;
+      wbiState.discussCardVisible = false;
+      wbiState.showCard = false;
+    } else {
+      wbiState.currentIdx++;
+      wbiState.showCard = false;
+    }
   }
-  // Nächsten nicht erledigten finden
-  let next = (wbiState.currentIdx + 1) % wbiState.localCards.length;
-  while (wbiState.localCards[next].guessed || wbiState.localCards[next].skipped) {
-    next = (next + 1) % wbiState.localCards.length;
-  }
-  wbiState.currentIdx = next;
-  wbiState.showCard   = false;
 }
 
 function wbiFinishLocal() {
@@ -151,12 +183,15 @@ function wbiFinishLocal() {
 }
 
 export function wbiRestart() {
-  wbiState.phase      = 'setup';
-  wbiState.localCards = [];
-  wbiState.currentIdx = 0;
-  wbiState.showCard   = false;
-  wbiState.results    = [];
-  wbiState.scores     = {};
+  wbiState.phase            = 'setup';
+  wbiState.localCards        = [];
+  wbiState.currentIdx        = 0;
+  wbiState.showCard          = false;
+  wbiState.localPhase        = 'distribute';
+  wbiState.discussIdx        = 0;
+  wbiState.discussCardVisible = false;
+  wbiState.results           = [];
+  wbiState.scores            = {};
 }
 
 // ── Coop ──────────────────────────────────────────────────────────────────────
