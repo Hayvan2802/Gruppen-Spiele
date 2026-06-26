@@ -115,6 +115,7 @@ const state = reactive({
   // Abstimmung
   stimmIdx: 0,
   votes: {},
+  voteSelection: null, // Vorauswahl vor Bestätigung
 
   // Ergebnis
   winner: null,      // 'village' | 'imposter'
@@ -297,10 +298,16 @@ function skipTimer() {
   state.stimmIdx = 0;
 }
 
-function castVote(target) {
-  const voter = state.roles[state.stimmIdx].name;
-  state.votes[voter] = target;
+function selectVote(target) {
+  state.voteSelection = target;
   haptic('light');
+}
+function confirmVote() {
+  if (!state.voteSelection) return;
+  const voter = state.roles[state.stimmIdx].name;
+  state.votes[voter] = state.voteSelection;
+  state.voteSelection = null;
+  haptic('medium');
   if (state.stimmIdx + 1 >= state.roles.length) {
     calcResult();
   } else {
@@ -457,10 +464,8 @@ const App = {
   setup() {
     const timerPct = computed(() => state.timerSeconds / getTimerSeconds(state.roles.length || state.playerCount) * 100);
     // Dynamische Imposter-Optionen: 1 per 4 Spieler, min 1, max 4
-    const maxImposterOptions = computed(() => {
-      const max = Math.max(1, Math.floor(state.playerCount / 4));
-      return Array.from({length: max}, (_, i) => i + 1);
-    });
+    // Frei wählbar 1–5 Imposter, unabhängig von Spielerzahl
+    const maxImposterOptions = computed(() => [1, 2, 3, 4, 5]);
     const revealPlayer = computed(() => state.roles[state.revealIdx]);
     const currentVoter = computed(() => state.roles[state.stimmIdx]);
     const voteOptions  = computed(() => state.roles.filter(r => r.name !== currentVoter.value?.name));
@@ -475,7 +480,7 @@ const App = {
       loadLastNamesIntoSetup, dismissNamesHint,
       saveCurrentConfig, loadConfig, removeConfig,
       openGameMenu, closeGameMenu, pauseGame, resumeGame, confirmEndGame,
-      startLocalGame, revealCard, nextReveal, skipTimer, castVote, newGame,
+      startLocalGame, revealCard, nextReveal, skipTimer, selectVote, confirmVote, newGame,
       showHostSetup, createRoom, startCoopGame,
       showJoinSetup, joinRoom, toggleReady, cancelCoop,
       getInviteLink, shareInviteLink,
@@ -804,12 +809,19 @@ const App = {
           </div>
 
           <div class="sec">
-            <h2>🕵️ {{ t('setup.imposter') }}</h2>
-            <div style="display:flex;gap:.6rem">
-              <button v-for="n in maxImposterOptions" :key="n"
+            <h2>🕵️ Imposter</h2>
+            <div style="font-size:.8rem;color:var(--txt3);margin-bottom:.6rem">Wie viele Imposter soll es geben?</div>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+              <button v-for="n in [1,2,3,4,5]" :key="n"
                 class="imposter-btn"
                 :class="{ 'imposter-btn-active': state.imposterCount===n }"
-                @click="state.imposterCount=n">{{ n }}</button>
+                @click="state.imposterCount=n">
+                {{ n }}
+                <span style="display:block;font-size:.62rem;font-weight:500;opacity:.75">{{ n === 1 ? 'Imposter' : 'Imposter' }}</span>
+              </button>
+            </div>
+            <div v-if="state.imposterCount >= state.playerCount" style="font-size:.75rem;color:#f59e0b;margin-top:.5rem">
+              ⚠ Mehr Imposter als Dorfbewohner!
             </div>
           </div>
 
@@ -851,38 +863,52 @@ const App = {
         <button class="icon-btn" @click="openGameMenu" title="Spielmenü">⏸</button>
       </div>
       <div class="reveal-inner">
-        <div style="width:100%;max-width:360px">
+        <div style="width:100%;max-width:380px;margin-bottom:.5rem">
           <div class="prog-bar"><div class="prog-fill" :style="{width: (state.revealIdx / state.roles.length * 100) + '%'}"></div></div>
+          <div style="font-size:.72rem;color:var(--txt3);text-align:right;margin-top:.2rem">{{ state.revealIdx + 1 }} / {{ state.roles.length }}</div>
         </div>
         <div class="rev-head">
-          <div class="for">{{ t('reveal.for') }}</div>
+          <div class="for">Karte für</div>
           <div class="pname">{{ revealPlayer?.name }}</div>
+          <div style="font-size:.8rem;color:var(--txt3);margin-top:.3rem">
+            {{ !state.revealFlipped ? 'Alle anderen wegschauen! 👀' : '' }}
+          </div>
         </div>
-        <div class="rev-card" :class="{ flipped: state.revealFlipped, imposter: state.revealFlipped && revealPlayer?.isImposter }">
+
+        <!-- Karte: komplett klickbar zum Aufdecken -->
+        <div class="rev-card"
+          :class="{ flipped: state.revealFlipped, imposter: state.revealFlipped && revealPlayer?.isImposter }"
+          @click="!state.revealFlipped && revealCard()"
+          :style="{ cursor: !state.revealFlipped ? 'pointer' : 'default' }">
           <div v-if="!state.revealFlipped" class="card-back">
-            <span class="cbi">🃏</span>
-            <span class="cbt">{{ t('reveal.tap') }}</span>
+            <span class="cbi" style="font-size:3rem">🃏</span>
+            <span class="cbt" style="font-size:.85rem;margin-top:.8rem;display:block">👆 ANTIPPEN ZUM AUFDECKEN</span>
           </div>
           <div v-else class="card-front">
             <template v-if="revealPlayer?.isImposter">
-              <span class="cfi">🕵️</span>
-              <div class="cft" style="color:var(--blood2)">IMPOSTER!</div>
-              <div class="cfa">Du kennst das Wort nicht. Tu so als ob — lass dich nicht erwischen!</div>
-              <div class="cfg">Beobachte die anderen genau und passe dich an.</div>
+              <span class="cfi" style="font-size:3.5rem">🕵️</span>
+              <div style="display:inline-block;background:rgba(176,32,32,.25);border:1px solid rgba(176,32,32,.5);border-radius:8px;padding:.3rem .9rem;font-size:.75rem;font-weight:700;color:#f87171;letter-spacing:.08em;margin:.4rem 0">IMPOSTER</div>
+              <div class="cfa" style="margin-top:.6rem">Du kennst das Wort nicht.<br>Tu so als ob — lass dich nicht erwischen!</div>
+              <div class="cfg" style="margin-top:.5rem">Beobachte die anderen und passe dich an 🎭</div>
             </template>
             <template v-else>
-              <span class="cfi">💬</span>
-              <div class="cft">Dein Wort:</div>
-              <div style="font-size:2rem;font-weight:900;color:var(--gold);margin:.3rem 0">{{ revealPlayer?.word }}</div>
-              <div class="cfg">Beschreibe es ohne das Wort zu nennen!</div>
+              <span class="cfi" style="font-size:3.5rem">💬</span>
+              <div style="font-size:.75rem;letter-spacing:.15em;color:var(--txt3);text-transform:uppercase;margin-bottom:.3rem">Dein Wort</div>
+              <div style="font-size:2.2rem;font-weight:900;color:var(--gold);letter-spacing:-.5px;margin:.2rem 0">{{ revealPlayer?.word }}</div>
+              <div class="cfg" style="margin-top:.5rem">Beschreibe es ohne das Wort zu nennen! 🗣</div>
             </template>
           </div>
         </div>
-        <button v-if="!state.revealFlipped" class="btn-rev" @click="revealCard">👁 {{ t('reveal.show') }}</button>
-        <button v-else class="btn-nxt" @click="nextReveal">
-          {{ state.revealIdx + 1 >= state.roles.length ? '▶ Diskussion starten' : '➡ ' + t('reveal.next') }}
+
+        <template v-if="!state.revealFlipped">
+          <div style="font-size:.8rem;color:var(--txt3);margin-top:.6rem;text-align:center">oder</div>
+          <button class="btn-rev" style="margin-top:.4rem;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border:none;padding:.8rem 2rem;border-radius:12px;font-size:.9rem;font-weight:700;cursor:pointer" @click="revealCard">
+            👁 Karte aufdecken
+          </button>
+        </template>
+        <button v-else class="btn-nxt" style="background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border:none;padding:.85rem 2.2rem;border-radius:12px;font-size:.95rem;font-weight:700;cursor:pointer;margin-top:.8rem" @click="nextReveal">
+          {{ state.revealIdx + 1 >= state.roles.length ? '▶ Diskussion starten' : '➡ Weiter' }}
         </button>
-        <div class="rev-prog">{{ state.revealIdx + 1 }} / {{ state.roles.length }}</div>
       </div>
     </template>
 
@@ -893,26 +919,45 @@ const App = {
       <div class="top-bar">
         <button class="icon-btn" @click="openGameMenu" title="Spielmenü">⏸</button>
       </div>
-      <div class="timer-wrap">
-        <div style="font-size:1.1rem;font-weight:700;color:var(--txt);margin-bottom:.4rem">{{ t('timer.title') }}</div>
-        <div class="timer-desc">{{ t('timer.desc') }}</div>
-        <div class="timer-ring-outer">
-          <svg width="140" height="140" viewBox="0 0 140 140">
-            <circle class="timer-track" cx="70" cy="70" r="54"/>
-            <circle class="timer-fill" cx="70" cy="70" r="54"
+      <div class="timer-screen">
+        <!-- Titel -->
+        <div class="timer-title">💬 Jetzt diskutieren!</div>
+        <div class="timer-subtitle">Wer verhält sich verdächtig?<br>Redet über das Wort — ohne es zu sagen!</div>
+
+        <!-- Ring -->
+        <div class="timer-ring-wrap">
+          <svg class="timer-svg" viewBox="0 0 200 200">
+            <!-- Hintergrund -->
+            <circle cx="100" cy="100" r="85" fill="none" stroke="var(--bdr2)" stroke-width="10"/>
+            <!-- Fortschritt -->
+            <circle cx="100" cy="100" r="85" fill="none"
               :stroke="state.timerSeconds <= 10 ? '#ef4444' : state.timerSeconds <= 20 ? '#f59e0b' : 'var(--gold)'"
-              :style="{
-                strokeDasharray: 2 * Math.PI * 54,
-                strokeDashoffset: 2 * Math.PI * 54 * (1 - timerPct / 100),
-                transition: 'stroke-dashoffset 1s linear, stroke .5s'
-              }"/>
+              stroke-width="10" stroke-linecap="round"
+              :stroke-dasharray="2 * Math.PI * 85"
+              :stroke-dashoffset="2 * Math.PI * 85 * (1 - timerPct / 100)"
+              style="transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset 1s linear,stroke .4s"/>
           </svg>
-          <div class="timer-num" :style="{color: state.timerSeconds <= 10 ? '#ef4444' : state.timerSeconds <= 20 ? '#f59e0b' : 'var(--gold)'}">
-            {{ state.timerSeconds }}
+          <!-- Zahl innen -->
+          <div class="timer-inner">
+            <div class="timer-big-num"
+              :style="{color: state.timerSeconds <= 10 ? '#ef4444' : state.timerSeconds <= 20 ? '#f59e0b' : 'var(--gold)'}">
+              {{ state.timerSeconds }}
+            </div>
+            <div class="timer-sec-label">SEK</div>
           </div>
         </div>
-        <div class="timer-label">{{ t('timer.seconds') }}</div>
-        <button class="btn-sec" style="max-width:300px;width:100%" @click="skipTimer">{{ t('timer.skip') }}</button>
+
+        <!-- Spieler-Icons -->
+        <div class="timer-players">
+          <div v-for="r in state.roles" :key="r.name" class="timer-player-dot"
+            :style="{background: r.isImposter ? 'rgba(176,32,32,.3)' : 'rgba(124,58,237,.25)'}">
+            {{ r.name[0].toUpperCase() }}
+          </div>
+        </div>
+
+        <button class="timer-skip-btn" @click="skipTimer">
+          Abstimmung jetzt starten →
+        </button>
       </div>
     </template>
 
@@ -923,17 +968,40 @@ const App = {
       <div class="top-bar">
         <button class="icon-btn" @click="openGameMenu" title="Spielmenü">⏸</button>
       </div>
-      <div style="padding:1.2rem;max-width:480px;margin:0 auto">
+      <div class="voting-screen">
+        <!-- Progress -->
         <div class="prog-bar"><div class="prog-fill" :style="{width: (state.stimmIdx / state.roles.length * 100) + '%'}"></div></div>
-        <div style="text-align:center;margin-bottom:1.5rem">
-          <div style="font-size:2rem;margin-bottom:.5rem">🗳</div>
-          <div style="font-size:1.1rem;font-weight:900;color:var(--txt);margin-bottom:.2rem">{{ t('voting.title') }}</div>
-          <div style="color:var(--gold);font-weight:700;font-size:1rem">{{ currentVoter?.name }} {{ t('voting.sub') }}</div>
-          <div style="font-size:.75rem;color:var(--txt3);margin-top:.2rem">{{ state.stimmIdx + 1 }} {{ t('voting.of') }} {{ state.roles.length }}</div>
+
+        <!-- Wer stimmt ab -->
+        <div class="voting-header">
+          <div class="voting-avatar">{{ currentVoter?.name?.[0]?.toUpperCase() }}</div>
+          <div class="voting-voter-name">{{ currentVoter?.name }}</div>
+          <div class="voting-voter-sub">wählt den Imposter</div>
+          <div class="voting-counter">{{ state.stimmIdx + 1 }} von {{ state.roles.length }}</div>
         </div>
-        <button v-for="r in voteOptions" :key="r.name" class="vote-btn" @click="castVote(r.name)">
-          <span>👤</span> {{ r.name }}
-        </button>
+
+        <div class="voting-title">🕵️ Wer ist der Imposter?</div>
+
+        <!-- Kandidaten -->
+        <div class="voting-options">
+          <button v-for="r in voteOptions" :key="r.name"
+            class="voting-option"
+            :class="{ 'voting-option-selected': state.voteSelection === r.name }"
+            @click="selectVote(r.name)">
+            <div class="voting-option-avatar">{{ r.name[0].toUpperCase() }}</div>
+            <div class="voting-option-name">{{ r.name }}</div>
+            <div class="voting-option-check" v-if="state.voteSelection === r.name">✓</div>
+          </button>
+        </div>
+
+        <!-- Bestätigen -->
+        <div class="voting-confirm-wrap">
+          <button class="voting-confirm-btn"
+            :disabled="!state.voteSelection"
+            @click="confirmVote">
+            {{ state.voteSelection ? '✓ ' + state.voteSelection + ' beschuldigen' : 'Spieler auswählen…' }}
+          </button>
+        </div>
       </div>
     </template>
 
