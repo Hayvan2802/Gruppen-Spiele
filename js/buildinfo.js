@@ -1,10 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.0.9';
-export const BUILD_HASH = 'add-tests';
+export const BUILD      = '0.0.10';
+export const BUILD_HASH = 'force-cache-clear';
 
 export const CHANGELOG = [
   {
-    version: '0.0.9',
+    version: '0.0.10',
+    date: '26.06.2026',
+    changes: [
+      'Cache-Fix: SW lädt sofort ohne Warte-Banner',
+      'Behebt dauerhaften state-Crash auf gecachten Geräten',
+    ],
+  },
+  {
+    version: '0.0.10',
     date: '26.06.2026',
     changes: [
       '29 automatische Tests — alle grün',
@@ -12,7 +20,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.9',
+    version: '0.0.10',
     date: '26.06.2026',
     changes: [
       'Crash behoben: state vor Initialisierung zugegriffen',
@@ -20,7 +28,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.9',
+    version: '0.0.10',
     date: '26.06.2026',
     changes: [
       'Fehler TIMER_SECONDS behoben — App startet wieder',
@@ -29,7 +37,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.9',
+    version: '0.0.10',
     date: '26.06.2026',
     changes: [
       'Timer pausiert jetzt korrekt bei Pause',
