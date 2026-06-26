@@ -1261,3 +1261,12 @@ body.neon .btn-start {
   border-radius: 6px; transition: color .15s;
 }
 .game-select-hint-btn:hover { color: var(--gold); }
+
+/* ── Spielauswahl: echte Icon-Bilder ────────────────────────────────────── */
+.game-select-img {
+  width: 80px; height: 80px;
+  border-radius: 18px;
+  display: block; margin: 0 auto .6rem;
+  object-fit: cover;
+  box-shadow: 0 4px 20px rgba(0,0,0,.4);
+}
