@@ -396,3 +396,17 @@ body.light .glog{background:var(--sur);}
   max-width: 420px;
   margin: 0 auto;
 }
+
+/* ── Update Bottom-Sheet ─────────────────────────────────────────────────── */
+.update-sheet-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5);
+  z-index: 9000; display: flex; align-items: flex-end; justify-content: center;
+  animation: fadeInBg .2s ease;
+}
+.update-sheet {
+  background: var(--bg2); border-radius: 20px 20px 0 0;
+  width: 100%; max-width: 500px;
+  padding: 0 1.4rem 2.5rem;
+  animation: slideUp .28s ease;
+  padding-bottom: max(2.5rem, calc(env(safe-area-inset-bottom) + 1.5rem));
+}
