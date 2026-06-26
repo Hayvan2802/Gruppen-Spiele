@@ -85,6 +85,7 @@ const state = reactive({
   roundsTotal: 1,
   roundsCurrent: 1,
   scores: {},            // { name: punkte }
+  lobbyHistory: [],      // [{ round, word, winner, imposters, eliminated, tally, roles }]
   // Theme
   activeTheme: 'dark',  // 'dark'|'light'|'auto'|'neon'
   settings: loadSettings(),
@@ -326,6 +327,7 @@ function startLocalGame() {
   state.scores       = {};
   state.roundsCurrent = 1;
   state.voteSelection = null;
+  state.lobbyHistory  = [];
   state.timerSeconds = getTimerSeconds(state.playerCount);
   clearInterval(state.timerInterval);
   state.screen = 'reveal';
@@ -398,16 +400,25 @@ function calcResult() {
   state.tally           = tally;
   // Punkte vergeben
   if (state.winner === 'village') {
-    // Dorfbewohner bekommen 1 Punkt, Imposter 0
     state.roles.filter(r => !r.isImposter).forEach(r => {
       state.scores[r.name] = (state.scores[r.name] || 0) + 1;
     });
   } else {
-    // Imposter gewinnt: Imposter bekommt 2 Punkte
     state.roles.filter(r => r.isImposter).forEach(r => {
       state.scores[r.name] = (state.scores[r.name] || 0) + 2;
     });
   }
+  // Runde in Lobby-History speichern
+  state.lobbyHistory.push({
+    round:     state.roundsCurrent,
+    word:      state.roles[0]?.word || '',
+    winner:    state.winner,
+    imposters: imposters,
+    eliminated,
+    tally:     { ...tally },
+    roles:     state.roles.map(r => ({ name: r.name, isImposter: r.isImposter })),
+    ts:        Date.now(),
+  });
   state.screen = 'result';
   haptic(state.winner === 'village' ? 'success' : 'error');
 }
@@ -431,7 +442,7 @@ function nextRound() {
   haptic('success');
 }
 function resetGame() {
-  state.roundsCurrent = 1; state.scores = {};
+  state.roundsCurrent = 1; state.scores = {}; state.lobbyHistory = [];
   state.screen = 'home';
 }
 
@@ -939,6 +950,85 @@ const App = {
     </template>
 
     <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- ── LOBBY HISTORY SCREEN ── -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <template v-if="state.screen === 'lobbyHistory'">
+      <div class="top-bar">
+        <button class="icon-btn" @click="state.screen='result'">←</button>
+      </div>
+      <div style="padding:0 1.2rem 3rem;max-width:480px;margin:0 auto">
+        <div style="padding:1.2rem 0 .8rem;font-size:1.1rem;font-weight:900;color:var(--txt)">
+          📋 Rundenhistorie
+        </div>
+
+        <!-- Gesamtpunktestand -->
+        <div v-if="state.roundsTotal > 1 || state.lobbyHistory.length > 1" class="scores-box" style="margin-bottom:1.2rem">
+          <div style="font-size:.68rem;letter-spacing:.15em;color:var(--gold);text-transform:uppercase;margin-bottom:.7rem">
+            🏆 Gesamtpunktestand
+          </div>
+          <div v-for="(pts, name) in Object.fromEntries(Object.entries(state.scores).sort(([,a],[,b])=>b-a))"
+            :key="name" class="score-row">
+            <span style="font-weight:600">{{ name }}</span>
+            <span class="score-val">{{ pts }} Pkt</span>
+          </div>
+          <div v-if="!Object.keys(state.scores).length" style="font-size:.82rem;color:var(--txt3)">
+            Noch keine Punkte
+          </div>
+        </div>
+
+        <!-- Runden-Karten -->
+        <div v-for="entry in [...state.lobbyHistory].reverse()" :key="entry.round"
+          class="history-card">
+          <!-- Header -->
+          <div class="history-card-head">
+            <span class="history-round-badge">Runde {{ entry.round }}</span>
+            <span class="history-winner-badge"
+              :style="{background: entry.winner==='village' ? 'rgba(16,163,74,.25)' : 'rgba(220,38,38,.25)',
+                       color: entry.winner==='village' ? '#4ade80' : '#f87171'}">
+              {{ entry.winner === 'village' ? '🎉 Dorf gewinnt' : '🕵️ Imposter gewinnt' }}
+            </span>
+          </div>
+
+          <!-- Wort -->
+          <div style="margin:.6rem 0;font-size:.82rem;color:var(--txt2)">
+            Wort: <strong style="color:var(--txt)">{{ entry.word }}</strong>
+          </div>
+
+          <!-- Imposter -->
+          <div style="font-size:.78rem;color:var(--txt2);margin-bottom:.5rem">
+            Imposter:
+            <span v-for="n in entry.imposters" :key="n"
+              style="background:rgba(176,32,32,.25);color:#f87171;border-radius:20px;padding:1px 8px;margin-left:4px;font-size:.72rem">
+              {{ n }}
+            </span>
+          </div>
+
+          <!-- Stimmen -->
+          <div style="border-top:1px solid var(--bdr);padding-top:.5rem;margin-top:.3rem">
+            <div style="font-size:.65rem;letter-spacing:.12em;color:var(--txt3);text-transform:uppercase;margin-bottom:.4rem">
+              Stimmen
+            </div>
+            <div v-for="r in entry.roles" :key="r.name"
+              style="display:flex;justify-content:space-between;font-size:.8rem;padding:.2rem 0;border-bottom:1px solid var(--bdr)">
+              <span>{{ r.name }}{{ r.isImposter ? ' 🕵️' : '' }}</span>
+              <div style="display:flex;align-items:center;gap:.4rem">
+                <span style="color:var(--gold);font-weight:700">{{ entry.tally[r.name] || 0 }}×</span>
+                <span v-if="entry.eliminated.includes(r.name)"
+                  style="background:rgba(124,58,237,.25);color:#c4b5fd;border-radius:20px;padding:1px 7px;font-size:.67rem">
+                  Raus
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn-sec" style="margin-top:1.2rem" @click="state.screen='result'">
+          ← Zurück
+        </button>
+      </div>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
     <!-- ── HOME SCREEN ── -->
     <!-- ══════════════════════════════════════════════════════════════════ -->
     <div v-if="!state.showWhatsNew && !state.showHistory && !state.showSettingsModal">
@@ -1430,6 +1520,10 @@ const App = {
             🎉 Alle {{ state.roundsTotal }} Runden gespielt!
           </div>
           <button class="btn-start" @click="startLocalGame">🔄 {{ t('result.newGame') }}</button>
+          <button v-if="state.lobbyHistory.length > 0" class="btn-sec" style="margin-top:.5rem"
+            @click="state.screen='lobbyHistory'">
+            📋 Rundenhistorie ({{ state.lobbyHistory.length }})
+          </button>
           <button class="btn-sec" style="margin-top:.5rem" @click="newGame">{{ t('result.backHome') }}</button>
         </template>
       </div>
