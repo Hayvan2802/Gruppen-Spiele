@@ -158,7 +158,7 @@ function registerSW() {
         nw.addEventListener('statechange', () => promote(nw));
       });
       // Alle 60 Sek auf Updates prüfen (wie Werwolf)
-      setInterval(() => reg.update(), 60000);
+      setInterval(() => { if (window._swReg) window._swReg.update().catch(() => {}); }, 60000);
 
     }).catch(e => log('sw', 'SW-Registrierung fehlgeschlagen', e));
   });
@@ -938,7 +938,7 @@ const App = {
             👁 Karte aufdecken
           </button>
         </template>
-        <button v-else class="btn-nxt" style="background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border:none;padding:.85rem 2.2rem;border-radius:12px;font-size:.95rem;font-weight:700;cursor:pointer;margin-top:.8rem" @click="nextReveal">
+        <button v-else class="btn-next-reveal" @click="nextReveal">
           {{ state.revealIdx + 1 >= state.roles.length ? '▶ Diskussion starten' : '➡ Weiter' }}
         </button>
       </div>
