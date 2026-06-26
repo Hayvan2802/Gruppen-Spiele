@@ -7,7 +7,7 @@ export default {
   mode: { title: 'Spielmodus', local: 'Ein Gerät', localSub: 'Alle spielen auf einem Handy', coop: 'Multiplayer', coopSub: 'Jeder auf eigenem Handy' },
   setup: { players: 'Spieleranzahl', playerUnit: 'Spieler', names: 'Spielernamen', imposter: 'Imposter', startBtn: 'Spiel starten' },
   coop: { host: 'Host erstellen', join: 'Beitreten', code: 'Raumcode', codeSub: 'Teile diesen Code mit deinen Mitspielern', codeHint: '6-stellige Zahl eingeben', codeTaken: 'Code bereits vergeben!', codeWrong: 'Raum nicht gefunden!', roomFull: 'Raum ist voll!', yourName: 'Dein Name', namePlaceholder: 'Name eingeben...', joinBtn: 'Beitreten', cancel: 'Abbrechen', leave: 'Verlassen', waiting: 'Warte auf Spieler...', readyBtn: 'Bereit erklären', readyDone: 'Bereit!', startBtn: 'Spiel starten', host: 'Host', ready: 'Bereit', notReady: 'Wartet', errorTimeout: 'Verbindungs-Timeout. Erneut versuchen.', errorGeneric: 'Verbindungsfehler.' },
-  reveal: { for: 'Karte für', tap: 'TIPPEN ZUM AUFDECKEN', show: 'Karte anzeigen', next: 'Weiter' },
+  reveal: { for: 'Karte für', tap: 'ANTIPPEN ZUM AUFDECKEN', show: 'Karte aufdecken', next: 'Weiter' },
   timer: { title: 'Jetzt diskutieren!', desc: 'Wer verhält sich verdächtig? Redet über das Wort — ohne es zu sagen!', skip: 'Abstimmung jetzt starten →', seconds: 'SEKUNDEN' },
   voting: { title: 'Wer ist der Imposter?', sub: 'stimmt ab', of: 'von' },
   result: { caught: 'Imposter erwischt!', caughtSub: 'Die Gruppe hat gewonnen 🥳', wins: 'Imposter gewinnt!', winsSub: 'Der Imposter hat alle getäuscht 😈', word: 'Das Wort war', imposter: 'Imposter', votes: 'Stimmen', out: 'Raus', newGame: 'Neues Spiel', backHome: 'Zurück zum Menü' },
