@@ -1,10 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.17';
-export const BUILD_HASH = 'coop-host-ui';
+export const BUILD      = '0.18';
+export const BUILD_HASH = 'update-banner-version-fix';
 
 export const CHANGELOG = [
   {
-    version: '0.17',
+    version: '0.18',
+    date: '26.06.2026',
+    changes: [
+      'Update-Banner zeigt korrekte Version des neuen SW',
+      'SW meldet eigene Version per MessageChannel zurück',
+    ],
+  },
+  {
+    version: '0.18',
     date: '26.06.2026',
     changes: [
       'Multiplayer Host: Zufallscode entfernt — Code selbst eintippen',
@@ -13,7 +21,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.17',
+    version: '0.18',
     date: '26.06.2026',
     changes: [
       'Toast-Nachricht korrekt sichtbar — z-index erhöht, über allen Ebenen',
@@ -21,7 +29,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.17',
+    version: '0.18',
     date: '26.06.2026',
     changes: [
       'Versionsnummern korrigiert — Format 0.X statt 0.0.X',
