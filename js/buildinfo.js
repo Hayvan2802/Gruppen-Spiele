@@ -1,10 +1,20 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.0.12';
-export const BUILD_HASH = 'update-poll-menu-fixes';
+export const BUILD      = '0.0.13';
+export const BUILD_HASH = 'sw-werwolf-pattern';
 
 export const CHANGELOG = [
   {
-    version: '0.0.12',
+    version: '0.0.13',
+    date: '26.06.2026',
+    changes: [
+      'SW-Registrierung 1:1 nach Werwolf-Pattern — Update-Banner funktioniert jetzt korrekt',
+      'promote()-Funktion: prüft ob SW aktiv ist vor Banner-Anzeige',
+      'reloadingAfterUpdate-Guard verhindert Doppel-Reload',
+      'Update-Polling alle 60 Sekunden wie Werwolf',
+    ],
+  },
+  {
+    version: '0.0.13',
     date: '26.06.2026',
     changes: [
       'Update-Banner erscheint automatisch ohne Neustart (alle 30s Polling)',
@@ -14,7 +24,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.12',
+    version: '0.0.13',
     date: '26.06.2026',
     changes: [
       'Karte antippen zum Aufdecken jetzt klickbar',
@@ -26,7 +36,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.12',
+    version: '0.0.13',
     date: '26.06.2026',
     changes: [
       'Cache-Fix: SW lädt sofort ohne Warte-Banner',
@@ -34,7 +44,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.12',
+    version: '0.0.13',
     date: '26.06.2026',
     changes: [
       '29 automatische Tests — alle grün',
@@ -42,7 +52,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.12',
+    version: '0.0.13',
     date: '26.06.2026',
     changes: [
       'Crash behoben: state vor Initialisierung zugegriffen',
@@ -50,7 +60,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.12',
+    version: '0.0.13',
     date: '26.06.2026',
     changes: [
       'Fehler TIMER_SECONDS behoben — App startet wieder',
@@ -59,7 +69,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.12',
+    version: '0.0.13',
     date: '26.06.2026',
     changes: [
       'Timer pausiert jetzt korrekt bei Pause',
