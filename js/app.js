@@ -169,44 +169,33 @@ function registerSW() {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').then(reg => {
       window._swReg = reg;
-      log('sw', 'Service Worker registriert');
+      log('sw', 'SW registriert');
 
-      // Wenn neuer SW übernimmt → Seite neu laden
+      // Neuer SW übernimmt → reload (lädt neue buildinfo.js mit neuer Version)
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         if (reloadingAfterUpdate) return;
         reloadingAfterUpdate = true;
-        log('sw', 'Neuer SW aktiv — lade neu');
         window.location.reload();
       });
 
       const promote = (w) => {
         if (!w) return;
-        // Nur als Update werten wenn bereits ein SW aktiv ist (nicht Erst-Installation)
         if (w.state === 'installed' && navigator.serviceWorker.controller) {
           waitingWorker = w;
-          // Version aus SW-Cache-Name lesen via MessageChannel
-          try {
-            const mc = new MessageChannel();
-            mc.port1.onmessage = (e) => {
-              if (e.data && e.data.version) state.updateVersion = e.data.version;
-            };
-            w.postMessage({ type: 'getVersion' }, [mc.port2]);
-          } catch(e) {}
-          // Fallback: aktuelle BUILD-Version
-          if (!state.updateVersion) state.updateVersion = BUILD;
           state.updateReady = true;
-          log('sw', 'Update verfügbar — zeige Banner');
+          log('sw', 'Update bereit');
         }
       };
       promote(reg.waiting);
       reg.addEventListener('updatefound', () => {
-        const nw = reg.installing; if (!nw) return;
+        const nw = reg.installing;
+        if (!nw) return;
         nw.addEventListener('statechange', () => promote(nw));
       });
-      // Alle 60 Sek auf Updates prüfen (wie Werwolf)
-      setInterval(() => { if (window._swReg) window._swReg.update().catch(() => {}); }, 30000);
+      // Alle 30 Sek auf Updates prüfen
+      setInterval(() => reg.update(), 30000);
 
-    }).catch(e => log('sw', 'SW-Registrierung fehlgeschlagen', e));
+    }).catch(e => log('sw', 'SW Fehler', e));
   });
 }
 
