@@ -8,6 +8,7 @@ import {
   wbiRestart, wbiSelectMode, wbiShowHostSetup, wbiCreateRoom,
   wbiShowJoinSetup, wbiJoinRoom, wbiStartCoopGame, wbiCancelCoop,
   wbiShareLink, wbiSendGuess, wbiCurrentCard, wbiRemainingCount, wbiGuessedCount,
+  wbiMarkNotGuessed, wbiToggleDiscussCard, wbiStartResolve,
 } from './games/werbinich.js';
 import { ALL_WORDS, KATEGORIEN, DEFAULT_KATEGORIEN, DONATE_URL, COOP_MAX_PLAYERS } from './config.js';
 import * as Coop from './coop.js';
@@ -683,6 +684,7 @@ const App = {
       // Wer bin ich
       wbiState, WBI_KATEGORIEN, WBI_DEFAULT_KATEGORIEN,
       wbiStartLocal, wbiShowCard, wbiHideCard, wbiMarkGuessed, wbiMarkSkipped,
+      wbiMarkNotGuessed, wbiToggleDiscussCard, wbiStartResolve,
       wbiRestart, wbiSelectMode, wbiShowHostSetup, wbiCreateRoom,
       wbiShowJoinSetup, wbiJoinRoom, wbiStartCoopGame, wbiCancelCoop,
       wbiShareLink, wbiSendGuess, wbiCurrentCard, wbiRemainingCount, wbiGuessedCount,
@@ -1217,38 +1219,127 @@ const App = {
           </template>
         </template>
 
-        <!-- LOKAL: KARTE ZEIGEN -->
-        <template v-if="wbiState.phase === 'local-reveal'">
-          <div style="text-align:center;margin-bottom:1rem">
-            <div style="font-size:.72rem;color:var(--txt3);letter-spacing:.12em;text-transform:uppercase">Noch {{ wbiRemainingCount() }} übrig · {{ wbiGuessedCount() }} erraten</div>
+        <!-- LOKAL: PHASE 1 — KARTEN VERTEILEN -->
+        <template v-if="wbiState.phase === 'local-reveal' && wbiState.localPhase === 'distribute'">
+          <div style="text-align:center;margin-bottom:.8rem">
+            <div style="font-size:.72rem;color:var(--txt3);letter-spacing:.12em;text-transform:uppercase">
+              Schritt 1: Karten verteilen — {{ wbiState.currentIdx + 1 }} / {{ wbiState.localCards.length }}
+            </div>
             <div class="prog-bar" style="margin-top:.5rem">
-              <div class="prog-fill" :style="{width: (wbiGuessedCount()/wbiState.localCards.length*100)+'%'}"></div>
+              <div class="prog-fill" :style="{width: ((wbiState.currentIdx)/wbiState.localCards.length*100)+'%'}"></div>
             </div>
           </div>
 
-          <div v-if="wbiCurrentCard()" class="wbi-card-wrap">
+          <div class="wbi-card-wrap">
             <div class="wbi-for-label">Karte für</div>
-            <div class="wbi-player-name">{{ wbiCurrentCard().playerName }}</div>
-            <div class="wbi-hint">Nur der nächste Spieler schaut — haltet das Handy gegen die Stirn von {{ wbiCurrentCard().playerName }}!</div>
+            <div class="wbi-player-name">{{ wbiState.localCards[wbiState.currentIdx]?.playerName }}</div>
+            <div class="wbi-hint" v-if="!wbiState.showCard">
+              📱 Gib das Handy an <strong>{{ wbiState.localCards[wbiState.currentIdx]?.playerName }}</strong>.<br>
+              Alle anderen schauen weg! Dann Antippen zum Aufdecken.
+            </div>
+            <div class="wbi-hint" v-else style="color:var(--gold)">
+              👀 Merke dir den Begriff! Tippt nochmals um die Karte zu schließen.
+            </div>
 
-            <!-- Karte -->
-            <div class="wbi-card" :class="{'wbi-card-visible': wbiState.showCard}">
-              <div v-if="!wbiState.showCard" class="wbi-card-back" @click="wbiShowCard">
+            <!-- Karte: Antippen öffnet/schließt -->
+            <div class="wbi-card" :class="{'wbi-card-visible': wbiState.showCard}"
+              @click="wbiState.showCard ? wbiHideCard() : wbiShowCard()"
+              style="cursor:pointer;width:100%;max-width:340px">
+              <div v-if="!wbiState.showCard" class="wbi-card-back">
                 <div style="font-size:3rem;margin-bottom:.6rem">🤔</div>
-                <div style="font-size:.85rem;letter-spacing:.1em;color:var(--txt2);text-transform:uppercase">Antippen zum Aufdecken</div>
+                <div style="font-size:.85rem;letter-spacing:.1em;color:var(--txt2);text-transform:uppercase">
+                  Antippen zum Aufdecken
+                </div>
               </div>
               <div v-else class="wbi-card-front">
-                <div style="font-size:.75rem;letter-spacing:.12em;color:var(--txt3);text-transform:uppercase;margin-bottom:.4rem">{{ wbiCurrentCard().category }}</div>
-                <div class="wbi-word">{{ wbiCurrentCard().word }}</div>
-                <div style="font-size:.82rem;color:var(--txt2);margin-top:.6rem">Halt das Handy gegen die Stirn — nur die anderen sehen die Karte!</div>
+                <div style="font-size:.75rem;letter-spacing:.12em;color:var(--txt3);text-transform:uppercase;margin-bottom:.4rem">
+                  {{ wbiState.localCards[wbiState.currentIdx]?.category }}
+                </div>
+                <div class="wbi-word">{{ wbiState.localCards[wbiState.currentIdx]?.word }}</div>
+                <div style="font-size:.8rem;color:var(--txt3);margin-top:.8rem">
+                  Nochmals antippen zum Schließen 👆
+                </div>
               </div>
             </div>
 
-            <template v-if="wbiState.showCard">
-              <button class="btn-start" style="margin-top:1rem" @click="wbiMarkGuessed(wbiState.currentIdx)">✓ Erraten!</button>
-              <button class="btn-sec" style="margin-top:.5rem" @click="wbiMarkSkipped(wbiState.currentIdx)">→ Überspringen</button>
-              <button class="btn-sec" style="margin-top:.4rem;font-size:.8rem" @click="wbiHideCard">🙈 Karte verbergen</button>
-            </template>
+            <!-- Weiter: nur wenn Karte geschlossen -->
+            <button v-if="!wbiState.showCard && wbiState.currentIdx > 0 || wbiState.localCards.length === 1"
+              class="btn-start" style="margin-top:1rem" @click="wbiNextCard()">
+              {{ wbiState.currentIdx + 1 >= wbiState.localCards.length ? '▶ Diskussion starten' : '➡ Weiter zu ' + (wbiState.localCards[wbiState.currentIdx+1]?.playerName || '') }}
+            </button>
+            <button v-else-if="!wbiState.showCard" class="btn-start" style="margin-top:1rem" @click="wbiNextCard()">
+              ➡ Weiter zu {{ wbiState.localCards[wbiState.currentIdx + 1]?.playerName || 'Diskussion' }}
+            </button>
+          </div>
+        </template>
+
+        <!-- LOKAL: PHASE 2 — DISKUSSION -->
+        <template v-if="wbiState.phase === 'local-reveal' && wbiState.localPhase === 'discuss'">
+          <div style="text-align:center;margin-bottom:.8rem">
+            <div style="font-size:.9rem;font-weight:700;color:var(--txt)">💬 Schritt 2: Diskutieren!</div>
+            <div style="font-size:.8rem;color:var(--txt2);margin-top:.3rem">
+              Stellt euch gegenseitig Ja/Nein-Fragen. Tippt auf euren Namen um eure Karte kurz zu sehen.
+            </div>
+          </div>
+
+          <!-- Alle Spieler-Karten -->
+          <div v-for="(card, idx) in wbiState.localCards" :key="idx" style="margin-bottom:.7rem">
+            <!-- Spieler-Header: Antippen öffnet/schließt Karte -->
+            <div class="wbi-discuss-player"
+              @click="wbiToggleDiscussCard(idx)"
+              :class="{'wbi-discuss-player-active': wbiState.discussIdx===idx && wbiState.discussCardVisible}">
+              <div class="wbi-discuss-avatar">{{ card.playerName[0].toUpperCase() }}</div>
+              <div class="wbi-discuss-name">{{ card.playerName }}</div>
+              <div style="margin-left:auto;font-size:.8rem;color:var(--txt3)">
+                {{ wbiState.discussIdx===idx && wbiState.discussCardVisible ? '🙈 zuklappen' : '👆 meine Karte' }}
+              </div>
+            </div>
+
+            <!-- Karte aufgeklappt -->
+            <div v-if="wbiState.discussIdx===idx && wbiState.discussCardVisible"
+              class="wbi-discuss-card" @click="wbiToggleDiscussCard(idx)">
+              <div style="font-size:.7rem;color:var(--txt3);margin-bottom:.3rem">{{ card.category }}</div>
+              <div class="wbi-word" style="font-size:1.8rem">{{ card.word }}</div>
+              <div style="font-size:.75rem;color:var(--txt3);margin-top:.4rem">Antippen zum Schließen 👆</div>
+            </div>
+          </div>
+
+          <button class="btn-start" style="margin-top:1rem" @click="wbiStartResolve">
+            ✓ Auflösung — Wer hat's erraten?
+          </button>
+        </template>
+
+        <!-- LOKAL: PHASE 3 — AUFLÖSUNG -->
+        <template v-if="wbiState.phase === 'local-reveal' && wbiState.localPhase === 'resolve'">
+          <div style="text-align:center;margin-bottom:1rem">
+            <div style="font-size:.9rem;font-weight:700;color:var(--txt)">🎯 Schritt 3: Auflösung</div>
+            <div style="font-size:.8rem;color:var(--txt2);margin-top:.3rem">Wer hat seinen Begriff erraten?</div>
+          </div>
+
+          <div v-for="(card, idx) in wbiState.localCards" :key="idx" class="wbi-resolve-row">
+            <div class="wbi-resolve-player">
+              <div class="wbi-discuss-avatar" style="width:44px;height:44px;font-size:1.1rem">
+                {{ card.playerName[0].toUpperCase() }}
+              </div>
+              <div style="flex:1">
+                <div style="font-weight:700;font-size:.95rem">{{ card.playerName }}</div>
+                <div style="font-size:.78rem;color:var(--txt3)">{{ card.word }}</div>
+              </div>
+              <!-- Noch nicht bewertet -->
+              <template v-if="!card.guessed && !card.skipped">
+                <button class="wbi-resolve-yes" @click="wbiMarkGuessed(idx)">✓ Ja</button>
+                <button class="wbi-resolve-no"  @click="wbiMarkNotGuessed(idx)">✗ Nein</button>
+              </template>
+              <!-- Bewertet -->
+              <span v-else-if="card.guessed"
+                style="background:rgba(16,163,74,.2);color:#4ade80;border-radius:20px;padding:4px 12px;font-size:.8rem;font-weight:700">
+                ✓ Erraten
+              </span>
+              <span v-else
+                style="background:rgba(220,38,38,.15);color:#f87171;border-radius:20px;padding:4px 12px;font-size:.8rem;font-weight:700">
+                ✗ Nicht erraten
+              </span>
+            </div>
           </div>
         </template>
 
