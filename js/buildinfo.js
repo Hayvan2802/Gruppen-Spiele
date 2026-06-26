@@ -1,10 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.35';
-export const BUILD_HASH = 'wbi-nextcard-stars-fix';
+export const BUILD      = '0.36';
+export const BUILD_HASH = 'wbi-cardseen-update-btn';
 
 export const CHANGELOG = [
   {
-    version: '0.35',
+    version: '0.36',
+    date: '27.06.2026',
+    changes: [
+      'WBI: Weiter-Button erst sichtbar nach Aufdecken + Schließen der Karte',
+      'Update-Banner: Button jetzt lila wie Los geht\'s',
+    ],
+  },
+  {
+    version: '0.36',
     date: '27.06.2026',
     changes: [
       'WBI: Weiter-Button funktioniert jetzt (wbiNextCard nicht exportiert)',
@@ -12,7 +20,7 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.35',
+    version: '0.36',
     date: '27.06.2026',
     changes: [
       '"Weiter zu Spieler X" Button Fix — war beim ersten Spieler nicht sichtbar',
