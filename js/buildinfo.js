@@ -1,10 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.0.14';
-export const BUILD_HASH = 'reg-scope-fix';
+export const BUILD      = '0.15';
+export const BUILD_HASH = 'version-rename';
 
 export const CHANGELOG = [
   {
-    version: '0.0.14',
+    version: '0.15',
+    date: '26.06.2026',
+    changes: [
+      'Versionsnummern korrigiert — Format 0.X statt 0.0.X',
+      'Komplette Versionshistorie sauber neu aufgebaut',
+    ],
+  },
+  {
+    version: '0.14',
     date: '26.06.2026',
     changes: [
       'Crash behoben: reg nicht gefunden im setInterval',
@@ -12,100 +20,89 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.14',
+    version: '0.13',
     date: '26.06.2026',
     changes: [
-      'SW-Registrierung 1:1 nach Werwolf-Pattern — Update-Banner funktioniert jetzt korrekt',
-      'promote()-Funktion: prüft ob SW aktiv ist vor Banner-Anzeige',
-      'reloadingAfterUpdate-Guard verhindert Doppel-Reload',
-      'Update-Polling alle 60 Sekunden wie Werwolf',
+      'SW-Registrierung 1:1 nach Werwolf-Pattern',
+      'Update-Banner erscheint automatisch ohne Neustart',
+      'promote()-Funktion mit korrektem SW-Controller-Check',
+      'Update-Polling alle 60 Sekunden',
     ],
   },
   {
-    version: '0.0.14',
+    version: '0.12',
     date: '26.06.2026',
     changes: [
-      'Update-Banner erscheint automatisch ohne Neustart (alle 30s Polling)',
       'Spielmenü: Timer pausiert sofort beim Öffnen',
-      'Spielmenü: kein extra Pausieren-Button, stattdessen Einstellungen',
+      'Spielmenü: Einstellungen direkt erreichbar',
       'Imposter-Warnung: Text korrigiert',
     ],
   },
   {
-    version: '0.0.14',
+    version: '0.11',
     date: '26.06.2026',
     changes: [
-      'Karte antippen zum Aufdecken jetzt klickbar',
+      'Karte antippen zum Aufdecken — komplett klickbar',
       'Timer: neues Design mit großem Ring und Spieler-Avataren',
       'Abstimmung: Vorauswahl + Bestätigungsbutton, große Felder',
-      'Imposter frei wählbar 1–5 unabhängig von Spielerzahl',
-      'SW: normales Update-Banner wieder aktiv (kein Auto-Skip)',
-      '30 automatische Tests — alle grün',
+      'Imposter frei wählbar 1–5, unabhängig von Spielerzahl',
     ],
   },
   {
-    version: '0.0.14',
+    version: '0.10',
     date: '26.06.2026',
     changes: [
-      'Cache-Fix: SW lädt sofort ohne Warte-Banner',
+      'Cache-Fix: SW erzwingt sofortigen Cache-Reset',
       'Behebt dauerhaften state-Crash auf gecachten Geräten',
     ],
   },
   {
-    version: '0.0.14',
+    version: '0.9',
     date: '26.06.2026',
     changes: [
-      '29 automatische Tests — alle grün',
-      'Tests: Rollenzuteilung, Abstimmung, Timer, Imposter-Optionen, Shuffle',
+      '30 automatische Tests — alle grün',
+      'Tests: Rollenzuteilung, Abstimmung, Timer, Shuffle',
     ],
   },
   {
-    version: '0.0.14',
+    version: '0.8',
     date: '26.06.2026',
     changes: [
-      'Crash behoben: state vor Initialisierung zugegriffen',
+      'Crash behoben: state vor Initialisierung',
       'SW-Block korrekt nach state-Definition verschoben',
     ],
   },
   {
-    version: '0.0.14',
+    version: '0.7',
     date: '26.06.2026',
     changes: [
-      'Fehler TIMER_SECONDS behoben — App startet wieder',
-      'Update-Banner als Bottom-Sheet — erscheint auf allen Screens',
-      'SW-Registrierung nach State-Init — Banner reagiert sofort',
+      'Fehler TIMER_SECONDS behoben',
+      'Update-Banner als Bottom-Sheet auf allen Screens',
     ],
   },
   {
-    version: '0.0.14',
+    version: '0.6',
     date: '26.06.2026',
     changes: [
-      'Timer pausiert jetzt korrekt bei Pause',
-      'Timer-Dauer dynamisch nach Spieleranzahl (45s–120s)',
-      'Sound bei 30s, 15s und Countdown ab 15s',
-      'Imposter-Anzahl dynamisch (1 pro 4 Spieler)',
-      'Imposter-Buttons: aktiver Zustand jetzt klar sichtbar',
+      'Timer pausiert bei Pause, dynamisch nach Spieleranzahl (45s–120s)',
+      'Sound bei 30s und 15s, Countdown ab 15s',
+      'Imposter-Buttons: aktiver Zustand sichtbar',
       'Versionshistorie als eigene scrollbare Seite',
     ],
   },
   {
-    version: '0.0.5',
+    version: '0.5',
     date: '26.06.2026',
     changes: [
       'Kompletter Neuaufbau nach Werwolf-Muster',
-      'Vue 3 Composition API — wie im Werwolf-Projekt',
-      'Coop-Modus mit Firebase — Einladungslink, Lobby, Rollen-Broadcast',
-      'Dark / Light / Auto System-Theme',
-      'Splash Screen, Service Worker, Offline-Support',
-      'Update-Banner + Auf Update prüfen Button',
-      'Versionshistorie in den Einstellungen',
-      'Spielernamen & Konfigurationen speichern (bis zu 8)',
-      '45-Sek Diskussions-Timer mit animiertem Ring',
-      'Seitwärts-Wischen komplett gesperrt',
+      'Vue 3, Firebase Coop-Modus, Einladungslink',
+      'Dark / Light / Auto Theme, Splash Screen',
+      'Service Worker, Offline-Support',
+      'Spielernamen & Konfigurationen speichern',
     ],
   },
   {
-    version: '0.0.4',
+    version: '0.4',
     date: '26.06.2026',
     changes: [
       'Auf Update prüfen Button in Einstellungen',
@@ -113,31 +110,25 @@ export const CHANGELOG = [
     ],
   },
   {
-    version: '0.0.3',
+    version: '0.3',
     date: '26.06.2026',
     changes: [
-      'Ordnerstruktur komplett neu nach Werwolf-Muster',
-      'Service Worker — App funktioniert offline',
-      'Dark/Light/Auto Theme, Splash Screen, PWA Icon',
-      'Spielernamen & Konfigurationen speichern',
-      '45-Sekunden Timer mit animiertem Ring',
+      'Ordnerstruktur neu nach Werwolf-Muster',
+      'Service Worker, PWA Icon, Dark/Light/Auto Theme',
     ],
   },
   {
-    version: '0.0.2',
+    version: '0.2',
     date: '26.06.2026',
     changes: [
-      'Timer (45 Sekunden) zwischen Karten und Abstimmung',
-      'Weiße Ränder oben/unten behoben',
-      'PWA Icon für Safari Homescreen',
+      'Timer (45 Sekunden), weiße Ränder behoben, PWA Icon',
     ],
   },
   {
-    version: '0.0.1',
+    version: '0.1',
     date: '26.06.2026',
     changes: [
       'Imposter Game — Erstveröffentlichung',
-      'Spieler hinzufügen, Karten aufdecken, Abstimmung, Ergebnis',
       '60+ Wörter in 7 Kategorien',
     ],
   },
