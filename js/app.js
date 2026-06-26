@@ -4,7 +4,7 @@ import { createApp, reactive, computed } from './vue.esm-browser.prod.js';
 import { BUILD, CHANGELOG } from './buildinfo.js';
 import {
   wbiState, WBI_KATEGORIEN, WBI_DEFAULT_KATEGORIEN,
-  wbiStartLocal, wbiShowCard, wbiHideCard, wbiMarkGuessed, wbiMarkSkipped,
+  wbiStartLocal, wbiShowCard, wbiHideCard, wbiMarkGuessed, wbiMarkNotGuessed,
   wbiRestart, wbiSelectMode, wbiShowHostSetup, wbiCreateRoom,
   wbiShowJoinSetup, wbiJoinRoom, wbiStartCoopGame, wbiCancelCoop,
   wbiShareLink, wbiSendGuess, wbiCurrentCard, wbiRemainingCount, wbiGuessedCount,
@@ -683,7 +683,7 @@ const App = {
       KATEGORIEN, DEFAULT_KATEGORIEN,
       // Wer bin ich
       wbiState, WBI_KATEGORIEN, WBI_DEFAULT_KATEGORIEN,
-      wbiStartLocal, wbiShowCard, wbiHideCard, wbiMarkGuessed, wbiMarkSkipped,
+      wbiStartLocal, wbiShowCard, wbiHideCard, wbiMarkGuessed, wbiMarkNotGuessed,
       wbiMarkNotGuessed, wbiToggleDiscussCard, wbiStartResolve,
       wbiRestart, wbiSelectMode, wbiShowHostSetup, wbiCreateRoom,
       wbiShowJoinSetup, wbiJoinRoom, wbiStartCoopGame, wbiCancelCoop,
