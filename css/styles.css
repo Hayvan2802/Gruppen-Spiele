@@ -409,9 +409,11 @@ body.light .glog{background:var(--sur);}
 
 /* ── Update Bottom-Sheet ─────────────────────────────────────────────────── */
 .update-sheet-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,.5);
+  position: fixed; inset: 0; background: rgba(0,0,0,.65);
   z-index: 9000; display: flex; align-items: flex-end; justify-content: center;
   animation: fadeInBg .2s ease;
+  /* Kein Klick-durch — nur Später-Button schließt den Banner */
+  pointer-events: all;
 }
 .update-sheet {
   background: var(--bg2); border-radius: 20px 20px 0 0;
@@ -639,3 +641,14 @@ body.neon .btn-start {
 }
 .score-row:last-child { border-bottom: none; }
 .score-val { font-weight: 700; color: var(--gold); }
+
+/* ── Update Banner: Export Button ────────────────────────────────────────── */
+.uc-btn-export {
+  display: block; width: 100%; padding: .7rem;
+  border-radius: 12px; border: 1px solid var(--bdr2);
+  background: var(--sur); color: var(--txt2);
+  font-size: .88rem; font-weight: 600;
+  cursor: pointer; text-align: center;
+  transition: all .15s; margin-bottom: .5rem;
+}
+.uc-btn-export:hover { background: var(--sur2); color: var(--txt); }
