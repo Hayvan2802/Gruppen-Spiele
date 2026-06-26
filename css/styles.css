@@ -683,3 +683,23 @@ body.neon .btn-start {
 /* WhatsNew Modal: fadeIn Animation sicherstellen */
 .modal-bg { animation: fadeInBg .2s ease; }
 .modal { animation: fadeIn .25s ease; }
+
+/* ── Lobby History ───────────────────────────────────────────────────────── */
+.history-card {
+  background: var(--sur); border: 1px solid var(--bdr);
+  border-radius: 14px; padding: .9rem 1rem;
+  margin-bottom: .8rem;
+}
+.history-card-head {
+  display: flex; align-items: center; gap: .6rem;
+  flex-wrap: wrap; margin-bottom: .3rem;
+}
+.history-round-badge {
+  font-size: .72rem; font-weight: 700; letter-spacing: .08em;
+  color: var(--gold); text-transform: uppercase;
+}
+.history-winner-badge {
+  font-size: .72rem; font-weight: 700;
+  border-radius: 20px; padding: 2px 10px;
+  margin-left: auto;
+}
