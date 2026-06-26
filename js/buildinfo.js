@@ -1,10 +1,20 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.41';
-export const BUILD_HASH = 'version-history-i18n-fix';
+export const BUILD      = '0.42';
+export const BUILD_HASH = 'new-icons';
 
 export const CHANGELOG = [
   {
-    version: '0.41',
+    version: '0.42',
+    date: '27.06.2026',
+    changes: [
+      'Neues App-Icon — Gamepad-Design mit Gruppen-Spiele Branding',
+      'Imposter-Icon — Astronauten-Figur mit Messer und Visier',
+      'Wer bin ich?-Icon — Spielkarte mit verdecktem Gesicht',
+      'Icons im Hauptmenü und in den Anleitungs-Modals',
+    ],
+  },
+  {
+    version: '0.42',
     date: '27.06.2026',
     changes: [
       'Versionshistorie bereinigt — alle Versionen 0.1 bis 0.41',
