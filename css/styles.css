@@ -1150,3 +1150,55 @@ body.neon .btn-start {
   text-align: center; transition: all .15s; min-height: 44px;
 }
 .uc-btn-later:hover { background: var(--sur); color: var(--txt2); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   WER BIN ICH? — Game Styles
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.wbi-card-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  padding: .5rem 0 1rem;
+}
+.wbi-for-label {
+  font-size: .75rem; letter-spacing: .2em; color: var(--txt2);
+  text-transform: uppercase; margin-bottom: .3rem;
+}
+.wbi-player-name {
+  font-size: 1.9rem; font-weight: 900; color: var(--gold); margin-bottom: .5rem;
+}
+.wbi-hint {
+  font-size: .82rem; color: var(--txt2); text-align: center;
+  line-height: 1.5; margin-bottom: 1rem; max-width: 320px;
+}
+.wbi-card {
+  width: 100%; max-width: 340px;
+  background: var(--sur); border: 2px solid var(--bdr);
+  border-radius: 18px; overflow: hidden;
+  transition: border-color .3s; min-height: 180px;
+  display: flex; align-items: center; justify-content: center;
+}
+.wbi-card.wbi-card-visible { border-color: var(--gold); }
+.wbi-card-back {
+  padding: 2rem 1.5rem; text-align: center; cursor: pointer; width: 100%;
+  background: radial-gradient(ellipse at center, rgba(124,58,237,.07) 0%, transparent 70%);
+}
+.wbi-card-front {
+  padding: 1.8rem 1.5rem; text-align: center; width: 100%;
+}
+.wbi-word {
+  font-size: 2.2rem; font-weight: 900; color: var(--txt);
+  letter-spacing: -.5px; line-height: 1.2; margin: .4rem 0;
+}
+
+/* ── Spiel-Auswahl Karten im Hauptmenü ───────────────────────────────── */
+.game-select-card {
+  background: var(--sur); border: 2px solid var(--bdr);
+  border-radius: 14px; padding: 1.1rem 1.2rem;
+  cursor: pointer; transition: all .2s; text-align: center;
+  -webkit-tap-highlight-color: transparent; margin-bottom: .7rem;
+}
+.game-select-card.active,
+.game-select-card:hover { border-color: var(--gold); background: rgba(124,58,237,.1); }
+.game-select-icon { font-size: 2rem; display: block; margin-bottom: .35rem; }
+.game-select-name { font-size: 1rem; font-weight: 700; color: var(--txt); }
+.game-select-desc { font-size: .78rem; color: var(--txt2); margin-top: .2rem; }
