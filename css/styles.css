@@ -1270,3 +1270,117 @@ body.neon .btn-start {
   object-fit: cover;
   box-shadow: 0 4px 20px rgba(0,0,0,.4);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CODENAMES — Game Styles
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Status Bar ───────────────────────────────────────────────────────────── */
+.cn-status-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: .5rem; margin-bottom: .8rem; flex-wrap: wrap;
+}
+.cn-team-badge {
+  font-size: .8rem; font-weight: 700;
+  padding: .35rem .75rem; border-radius: 20px;
+}
+.cn-team-red  { background: rgba(248,113,113,.2); color: #f87171; border: 1px solid rgba(248,113,113,.3); }
+.cn-team-blue { background: rgba(96,165,250,.2);  color: #60a5fa; border: 1px solid rgba(96,165,250,.3); }
+.cn-turn-indicator {
+  font-size: .82rem; font-weight: 800; padding: .4rem 1rem;
+  border-radius: 20px; flex: 1; text-align: center;
+}
+.cn-turn-red  { background: rgba(248,113,113,.25); color: #f87171; }
+.cn-turn-blue { background: rgba(96,165,250,.25);  color: #60a5fa; }
+
+/* ── Hinweis Display ─────────────────────────────────────────────────────── */
+.cn-hint-display {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .8rem 1.1rem; border-radius: 12px; margin-bottom: .8rem;
+  flex-wrap: wrap;
+}
+.cn-hint-red  { background: rgba(248,113,113,.15); border: 1px solid rgba(248,113,113,.3); }
+.cn-hint-blue { background: rgba(96,165,250,.15);  border: 1px solid rgba(96,165,250,.3); }
+.cn-hint-word  { font-size: 1.3rem; font-weight: 900; color: var(--txt); }
+.cn-hint-count { font-size: 1.1rem; font-weight: 700; color: var(--gold); }
+.cn-hint-left  { font-size: .75rem; color: var(--txt2); margin-left: auto; }
+.cn-waiting-hint {
+  padding: .7rem 1rem; border-radius: 12px; margin-bottom: .8rem;
+  font-size: .85rem; color: var(--txt2); text-align: center;
+  border: 1px dashed var(--bdr2);
+}
+
+/* ── Spymaster Panel ─────────────────────────────────────────────────────── */
+.cn-spymaster-panel {
+  background: var(--sur); border: 1px solid var(--bdr);
+  border-radius: 14px; padding: 1rem; margin-bottom: .8rem;
+}
+
+/* ── 5×5 Grid ────────────────────────────────────────────────────────────── */
+.cn-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: .35rem;
+  margin-bottom: .6rem;
+}
+.cn-card {
+  aspect-ratio: 1.6 / 1;
+  border-radius: 8px; border: 1.5px solid var(--bdr);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: default; transition: all .15s;
+  padding: .2rem; text-align: center;
+  -webkit-tap-highlight-color: transparent;
+  background: var(--sur);
+}
+.cn-card-word {
+  font-size: clamp(.52rem, 1.8vw, .78rem);
+  font-weight: 700; color: var(--txt);
+  line-height: 1.2; hyphens: auto;
+}
+.cn-card-icon { font-size: .7rem; margin-top: .1rem; }
+
+/* Farben unaufgedeckt (nur Spymaster sieht Typ) */
+.cn-card-red     { background: rgba(248,113,113,.18); border-color: rgba(248,113,113,.4); }
+.cn-card-blue    { background: rgba(96,165,250,.18);  border-color: rgba(96,165,250,.4); }
+.cn-card-black   { background: rgba(0,0,0,.6);        border-color: rgba(255,255,255,.2); }
+.cn-card-black .cn-card-word { color: #94a3b8; }
+.cn-card-neutral { background: var(--bg3); border-color: var(--bdr2); }
+.cn-card-neutral-hidden { background: var(--sur); border-color: var(--bdr); }
+
+/* Aufgedeckt */
+.cn-card-revealed { opacity: .55; }
+.cn-card-revealed.cn-card-red   { background: rgba(248,113,113,.35); border-color: #f87171; }
+.cn-card-revealed.cn-card-blue  { background: rgba(96,165,250,.35);  border-color: #60a5fa; }
+.cn-card-revealed.cn-card-black { background: #1a0a0a; border-color: #7f1d1d; }
+
+/* Klickbar -->Hover -->Tap -->Scale -->Highlight -->lass dich nieder -->Effekt */
+.cn-card-clickable {
+  cursor: pointer;
+}
+.cn-card-clickable:active { transform: scale(.95); }
+.cn-card-clickable.cn-card-neutral-hidden:hover {
+  border-color: var(--gold); background: rgba(124,58,237,.12);
+}
+
+/* ── Rollen-Buttons ───────────────────────────────────────────────────────── */
+.cn-role-btn {
+  padding: .7rem .5rem; border-radius: 10px; border: 2px solid var(--bdr);
+  background: var(--sur); cursor: pointer; font-size: .82rem; font-weight: 700;
+  color: var(--txt); transition: all .15s; line-height: 1.4;
+  -webkit-tap-highlight-color: transparent; min-height: 56px;
+}
+.cn-role-btn small { font-size: .72rem; font-weight: 500; opacity: .8; }
+.cn-role-btn-red:hover,
+.cn-role-btn-red.cn-role-btn-active {
+  background: rgba(248,113,113,.2); border-color: #f87171; color: #f87171;
+}
+.cn-role-btn-blue:hover,
+.cn-role-btn-blue.cn-role-btn-active {
+  background: rgba(96,165,250,.2); border-color: #60a5fa; color: #60a5fa;
+}
+.cn-role-red  { background: rgba(248,113,113,.2); color: #f87171; }
+.cn-role-blue { background: rgba(96,165,250,.2);  color: #60a5fa; }
+
+/* ── Pass Area ────────────────────────────────────────────────────────────── */
+.cn-pass-area { margin-top: .3rem; }
