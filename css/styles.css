@@ -1433,3 +1433,23 @@ body.neon .btn-start {
 .cn-card-clickable:not(.cn-card-revealed):active {
   transform: scale(0.97);
 }
+
+/* ── Codenames Lobby ─────────────────────────────────────────────────────── */
+.cn-lobby-player {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .65rem .3rem; border-bottom: 1px solid var(--bdr);
+  min-height: 44px;
+}
+.cn-lobby-player:last-child { border-bottom: none; }
+
+.cn-role-mini {
+  width: 34px; height: 34px; border-radius: 8px;
+  border: 1.5px solid var(--bdr2); background: var(--sur);
+  font-size: .72rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .12s; -webkit-tap-highlight-color: transparent;
+  padding: 0;
+}
+.cn-role-mini:active { transform: scale(.93); }
+.cn-role-mini-active-red  { background: rgba(248,113,113,.25); border-color: #f87171 !important; }
+.cn-role-mini-active-blue { background: rgba(96,165,250,.25);  border-color: #60a5fa !important; }
