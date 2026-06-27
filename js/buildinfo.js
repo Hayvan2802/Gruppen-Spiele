@@ -1,8 +1,15 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.45';
-export const BUILD_HASH = 'codenames';
+export const BUILD      = '0.46';
+export const BUILD_HASH = 'cn-return-fix';
 
 export const CHANGELOG = [
+  {
+    version: '0.46',
+    date: '27.06.2026',
+    changes: [
+      'Codenames: Blank-Screen-Fix — CN-Funktionen im setup() return ergänzt',
+    ],
+  },
   {
     version: '0.45',
     date: '27.06.2026',
