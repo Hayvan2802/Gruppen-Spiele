@@ -23,7 +23,7 @@ async function ensureDb() {
   return fb;
 }
 
-const TIMEOUT_MS = 15000;
+const TIMEOUT_MS = 20000; // Erhöht für iCloud Private Relay (blockiert manchmal WebSocket)
 function withTimeout(promise) {
   return Promise.race([
     promise,
