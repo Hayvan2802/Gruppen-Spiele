@@ -3,6 +3,12 @@
 import { createApp, reactive, computed } from './vue.esm-browser.prod.js';
 import { BUILD, CHANGELOG } from './buildinfo.js';
 import {
+  cnState, cnStartLocal, cnGiveHint, cnRevealCard, cnPassTurn, cnReset,
+  cnShowHostSetup, cnCreateRoom, cnShowJoinSetup, cnJoinRoom,
+  cnStartCoopGame, cnCancelCoop, cnShareLink, cnSetRole,
+  cnIsSpymaster, cnMyTeam, cnCardColor,
+} from './games/codenames.js';
+import {
   wbiState, WBI_KATEGORIEN, WBI_DEFAULT_KATEGORIEN,
   wbiStartLocal, wbiShowCard, wbiHideCard, wbiMarkGuessed, wbiMarkNotGuessed,
   wbiMarkSkipped, wbiNextCard, wbiToggleDiscussCard, wbiStartResolve,
@@ -633,6 +639,12 @@ function init() {
     state.coop.codeDraft = inviteCode;
     log('coop', `Einladungslink erkannt: Code ${inviteCode}`);
   }
+  const cnCode = params.get('cn');
+  if (cnCode && /^[0-9]{6}$/.test(cnCode)) {
+    state.screen = 'cn';
+    cnState.coop.phase = 'joining';
+    cnState.coop.codeDraft = cnCode;
+  }
   const wbiCode = params.get('wbi');
   if (wbiCode && /^[0-9]{6}$/.test(wbiCode)) {
     state.screen = 'wbi';
@@ -715,6 +727,18 @@ const App = {
             <div class="rules-step">2️⃣ <strong>Fragen stellen</strong><br>Jeder Spieler stellt reihum Ja/Nein-Fragen über sich selbst. z.B. „Bin ich ein Mensch?" „Bin ich berühmt?"</div>
             <div class="rules-step">3️⃣ <strong>Erraten</strong><br>Wer glaubt zu wissen wer er ist, tippt auf ✓ Erraten. Wer es noch nicht weiß stellt weiter Fragen.</div>
             <div class="rules-step">🏆 <strong>Wer gewinnt?</strong><br>Wer seinen Begriff als erstes errät gewinnt die Runde. Alle können weiterspielen bis alle fertig sind.</div>
+          </div>
+        </template>
+        <!-- Codenames Anleitung -->
+        <template v-if="state.showRulesGame==='cn'">
+          <img src='./icons/games/codenames.png' style='width:72px;height:72px;display:block;margin:0 auto .5rem;border-radius:16px'/>
+          <h3 style="text-align:center;margin-bottom:1rem">Codenames — Anleitung</h3>
+          <div class="rules-section">
+            <div class="rules-step">1️⃣ <strong>Teams bilden</strong><br>2 Teams (Rot & Blau). Jedes Team wählt einen Spymaster — der sieht die geheime Karte auf seinem Handy.</div>
+            <div class="rules-step">2️⃣ <strong>Hinweis geben</strong><br>Der Spymaster gibt einen Ein-Wort-Hinweis + Zahl (z.B. „Tier, 3"). Die Zahl zeigt wie viele Wörter gemeint sind.</div>
+            <div class="rules-step">3️⃣ <strong>Wörter erraten</strong><br>Das Team tippt auf Wörter die sie für richtig halten. Richtige Farbe = weiter raten. Falsche Farbe = Zug vorbei.</div>
+            <div class="rules-step">☠️ <strong>Achtung: Schwarze Karte</strong><br>Wer die schwarze Karte aufdeckt verliert sofort das Spiel!</div>
+            <div class="rules-step">🏆 <strong>Wer gewinnt?</strong><br>Das Team das alle seine Wörter zuerst aufdeckt gewinnt. Rot startet und hat eine Karte mehr.</div>
           </div>
         </template>
         <button class="btn-start" style="margin-top:1rem" @click="state.showRulesGame=null">Verstanden ✓</button>
@@ -1449,6 +1473,303 @@ const App = {
       </div>
     </template>
 
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- ── CODENAMES SCREEN ── -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <template v-if="state.screen === 'cn'">
+      <div class="top-bar">
+        <button v-if="cnState.phase === 'setup'" class="icon-btn"
+          @click="state.screen='home';cnReset()" title="Zurück">←</button>
+        <button v-else class="icon-btn" @click="cnState.cnMenu=true" title="Spielmenü">⏸</button>
+        <button class="icon-btn" @click="state.showSettingsModal=true">⚙️</button>
+      </div>
+
+      <!-- CN Spielmenü -->
+      <div v-if="cnState.cnMenu" class="modal-bg" @click.self="cnState.cnMenu=false">
+        <div class="modal">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.1rem">
+            <span style="font-size:.9rem;letter-spacing:.15em;color:var(--gold);font-weight:700">SPIELMENÜ</span>
+            <button class="icon-btn" @click="cnState.cnMenu=false">✕</button>
+          </div>
+          <button class="btn btn-primary" style="margin-bottom:.6rem" @click="cnState.cnMenu=false">▶ Fortsetzen</button>
+          <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="state.showSettingsModal=true;cnState.cnMenu=false">⚙️ Einstellungen</button>
+          <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="state.showRulesGame='cn';cnState.cnMenu=false">❓ Anleitung</button>
+          <div style="height:1px;background:var(--bdr);margin:.4rem 0 .9rem"></div>
+          <button class="btn btn-ghost" style="color:#e07070;border-color:#e07070"
+            @click="cnState.cnEndConfirm=true;cnState.cnMenu=false">🚪 Spiel beenden</button>
+        </div>
+      </div>
+
+      <!-- CN Beenden-Bestätigung -->
+      <div v-if="cnState.cnEndConfirm" class="modal-bg" style="z-index:510">
+        <div class="modal">
+          <div class="whatsnew-badge" style="background:var(--red2)">⚠ Beenden</div>
+          <h3>Spiel wirklich beenden?</h3>
+          <p class="confirm-msg">Der aktuelle Spielstand geht verloren.</p>
+          <button class="btn btn-ghost" style="color:#e07070;border-color:#e07070;margin-bottom:.6rem"
+            @click="cnState.cnEndConfirm=false;cnCancelCoop();cnReset();state.screen='home'">
+            Ja, beenden
+          </button>
+          <button class="btn btn-primary" @click="cnState.cnEndConfirm=false">Weiterspielen</button>
+        </div>
+      </div>
+
+      <div style="padding:0 1rem 5rem;max-width:600px;margin:0 auto">
+        <div style="padding:1rem 0 .6rem;font-size:1.2rem;font-weight:900;color:var(--txt)">🗺 Codenames</div>
+
+        <!-- ── SETUP ── -->
+        <template v-if="cnState.phase === 'setup'">
+          <!-- Sprache -->
+          <div class="sec">
+            <h2>🌍 Sprache</h2>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+              <button v-for="(label, lang) in {de:'🇩🇪 Deutsch', en:'🇬🇧 English', tr:'🇹🇷 Türkçe', fr:'🇫🇷 Français', es:'🇪🇸 Español'}"
+                :key="lang" class="imposter-btn"
+                :class="{'imposter-btn-active': cnState.lang===lang}"
+                @click="cnState.lang=lang" style="flex:unset;padding:.55rem 1rem;font-size:.82rem">
+                {{ label }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Spielmodus -->
+          <div class="sec">
+            <h2>📱 Spielmodus</h2>
+            <div class="mode-grid">
+              <div class="mode-card" @click="cnStartLocal">
+                <span class="mode-icon">📱</span>
+                <div class="mode-name">Ein Gerät</div>
+                <div class="mode-desc">Host sieht geheime Karte, alle anderen tippen auf dem selben Handy</div>
+              </div>
+              <div class="mode-card" :class="{active: cnState.coop.phase!=='idle'}"
+                @click="cnState.coop.phase === 'idle' && cnShowHostSetup()">
+                <span class="mode-icon">🌐</span>
+                <div class="mode-name">Multiplayer</div>
+                <div class="mode-desc">Spymasters sehen Karte auf eigenem Handy (empfohlen)</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Coop Setup -->
+          <div v-if="cnState.coop.phase !== 'idle'" class="coop-box">
+            <!-- Hosting -->
+            <div v-if="cnState.coop.phase==='hosting'">
+              <div class="coop-hint">Dein Name</div>
+              <input class="name-input-big" v-model="cnState.coop.myName" placeholder="Name eingeben..."/>
+              <div class="coop-hint" style="margin-top:.8rem">Raumcode (6 Ziffern)</div>
+              <input class="code-input" v-model="cnState.coop.codeDraft" maxlength="6" type="tel"
+                inputmode="numeric" placeholder="z.B. 123456"
+                style="font-size:1.6rem;letter-spacing:.3em;text-align:center;padding:.8rem"/>
+              <div v-if="cnState.coop.error" class="coop-error">{{ cnState.coop.error }}</div>
+              <button class="btn-create-room"
+                :disabled="cnState.coop.codeDraft.replace(/\D/g,'').length!==6||!cnState.coop.myName.trim()"
+                @click="cnCreateRoom">🏠 Raum erstellen</button>
+              <button class="btn-sec" style="margin-top:.5rem" @click="cnState.coop.phase='idle'">Abbrechen</button>
+            </div>
+
+            <!-- Lobby -->
+            <div v-if="cnState.coop.phase==='lobby'">
+              <div class="invite-box">
+                <span class="invite-code">{{ cnState.coop.code }}</span>
+                <button class="btn-sec btn-sm" @click="cnShareLink">🔗 Link teilen</button>
+              </div>
+              <div class="coop-hint">Rollen vergeben</div>
+              <div style="font-size:.78rem;color:var(--txt2);margin-bottom:.8rem">
+                Jedes Team braucht einen Spymaster. Operatives raten die Wörter.
+              </div>
+              <ul class="lobby-list">
+                <li v-for="p in cnState.coop.players" :key="p.uid" class="lobby-item">
+                  <span class="li-icon">{{ p.isHost ? '👑' : '👤' }}</span>
+                  <span class="li-name">{{ p.name }}</span>
+                  <span v-if="p.role" class="li-ready"
+                    :class="p.role.includes('red') ? 'cn-role-red' : p.role.includes('blue') ? 'cn-role-blue' : 'yes'"
+                    style="font-size:.68rem">
+                    {{ p.role === 'spymaster-red' ? '🔴 Spym.' : p.role === 'spymaster-blue' ? '🔵 Spym.' : p.role === 'operative-red' ? '🔴 Oper.' : '🔵 Oper.' }}
+                  </span>
+                </li>
+              </ul>
+              <!-- Eigene Rolle wählen -->
+              <div v-if="cnState.coop.isHost || cnState.coop.myRole === null" style="margin-top:.8rem">
+                <div class="coop-hint">Meine Rolle</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+                  <button class="cn-role-btn cn-role-btn-red"
+                    :class="{'cn-role-btn-active': cnState.coop.myRole==='spymaster-red'}"
+                    @click="cnSetRole('spymaster-red')">🔴 Spymaster<br><small>Rot</small></button>
+                  <button class="cn-role-btn cn-role-btn-blue"
+                    :class="{'cn-role-btn-active': cnState.coop.myRole==='spymaster-blue'}"
+                    @click="cnSetRole('spymaster-blue')">🔵 Spymaster<br><small>Blau</small></button>
+                  <button class="cn-role-btn cn-role-btn-red"
+                    :class="{'cn-role-btn-active': cnState.coop.myRole==='operative-red'}"
+                    @click="cnSetRole('operative-red')">🔴 Operative<br><small>Rot</small></button>
+                  <button class="cn-role-btn cn-role-btn-blue"
+                    :class="{'cn-role-btn-active': cnState.coop.myRole==='operative-blue'}"
+                    @click="cnSetRole('operative-blue')">🔵 Operative<br><small>Blau</small></button>
+                </div>
+              </div>
+              <button v-if="cnState.coop.isHost" class="btn-create-room"
+                style="margin-top:.8rem"
+                :disabled="cnState.coop.players.length < 2"
+                @click="cnStartCoopGame">
+                ▶ Spiel starten ({{ cnState.coop.players.length }} Spieler)
+              </button>
+              <button class="btn-sec" style="margin-top:.5rem" @click="cnCancelCoop">Verlassen</button>
+            </div>
+
+            <!-- Joining -->
+            <div v-if="cnState.coop.phase==='joining'">
+              <div class="coop-hint">Dein Name</div>
+              <input class="name-input-big" v-model="cnState.coop.myName" placeholder="Name eingeben..."/>
+              <div class="coop-hint" style="margin-top:.8rem">Raumcode (6 Ziffern)</div>
+              <input class="code-input" v-model="cnState.coop.codeDraft" maxlength="6" type="tel"
+                inputmode="numeric" placeholder="z.B. 123456"
+                style="font-size:1.6rem;letter-spacing:.3em;text-align:center;padding:.8rem"/>
+              <div v-if="cnState.coop.error" class="coop-error">{{ cnState.coop.error }}</div>
+              <button class="btn-create-room"
+                :disabled="cnState.coop.codeDraft.replace(/\D/g,'').length!==6||!cnState.coop.myName.trim()"
+                @click="cnJoinRoom">🚪 Beitreten</button>
+              <button class="btn-sec" style="margin-top:.5rem" @click="cnState.coop.phase='idle'">Abbrechen</button>
+            </div>
+
+            <!-- Joined: Warten + Rolle wählen -->
+            <div v-if="cnState.coop.phase==='joined'" style="text-align:center;padding:.5rem 0">
+              <div style="font-size:1.5rem;margin-bottom:.5rem">⏳</div>
+              <p style="color:var(--txt2);font-size:.9rem">Warte auf den Host…</p>
+              <div style="font-size:1.4rem;font-weight:900;color:var(--gold);letter-spacing:.2em;margin:.6rem 0">{{ cnState.coop.code }}</div>
+              <!-- Rolle wählen -->
+              <div style="margin-top:.8rem;text-align:left">
+                <div class="coop-hint">Meine Rolle wählen</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
+                  <button class="cn-role-btn cn-role-btn-red"
+                    :class="{'cn-role-btn-active': cnState.coop.myRole==='spymaster-red'}"
+                    @click="cnSetRole('spymaster-red')">🔴 Spymaster<br><small>Rot</small></button>
+                  <button class="cn-role-btn cn-role-btn-blue"
+                    :class="{'cn-role-btn-active': cnState.coop.myRole==='spymaster-blue'}"
+                    @click="cnSetRole('spymaster-blue')">🔵 Spymaster<br><small>Blau</small></button>
+                  <button class="cn-role-btn cn-role-btn-red"
+                    :class="{'cn-role-btn-active': cnState.coop.myRole==='operative-red'}"
+                    @click="cnSetRole('operative-red')">🔴 Operative<br><small>Rot</small></button>
+                  <button class="cn-role-btn cn-role-btn-blue"
+                    :class="{'cn-role-btn-active': cnState.coop.myRole==='operative-blue'}"
+                    @click="cnSetRole('operative-blue')">🔵 Operative<br><small>Blau</small></button>
+                </div>
+              </div>
+              <button class="btn-sec" style="margin-top:.8rem" @click="cnCancelCoop">Verlassen</button>
+            </div>
+          </div>
+        </template>
+
+        <!-- ── SPIELFELD ── -->
+        <template v-if="cnState.phase === 'playing'">
+          <!-- Status-Bar -->
+          <div class="cn-status-bar">
+            <div class="cn-team-badge cn-team-red">
+              🔴 Rot: {{ cnState.redLeft }} übrig
+            </div>
+            <div class="cn-turn-indicator"
+              :class="cnState.currentTeam === 'red' ? 'cn-turn-red' : 'cn-turn-blue'">
+              {{ cnState.currentTeam === 'red' ? '🔴 Rot' : '🔵 Blau' }} ist dran
+            </div>
+            <div class="cn-team-badge cn-team-blue">
+              🔵 Blau: {{ cnState.blueLeft }} übrig
+            </div>
+          </div>
+
+          <!-- Hinweis-Anzeige -->
+          <div v-if="cnState.hint" class="cn-hint-display"
+            :class="cnState.currentTeam === 'red' ? 'cn-hint-red' : 'cn-hint-blue'">
+            <span class="cn-hint-word">{{ cnState.hint }}</span>
+            <span class="cn-hint-count">× {{ cnState.hintCount }}</span>
+            <span class="cn-hint-left" v-if="cnState.guessesLeft > 0">
+              noch {{ cnState.guessesLeft }} Versuch{{ cnState.guessesLeft !== 1 ? 'e' : '' }}
+            </span>
+          </div>
+          <div v-else class="cn-waiting-hint"
+            :class="cnState.currentTeam === 'red' ? 'cn-hint-red' : 'cn-hint-blue'">
+            ⏳ Warte auf Hinweis von {{ cnState.currentTeam === 'red' ? 'Rot' : 'Blau' }}…
+          </div>
+
+          <!-- Spymaster: Hinweis-Eingabe -->
+          <div v-if="cnState.phase2 === 'hint' && (cnIsSpymaster() && cnMyTeam() === cnState.currentTeam || (!cnState.coop.myRole && cnState.phase2==='hint'))"
+            class="cn-spymaster-panel">
+            <div class="coop-hint">Hinweis-Wort</div>
+            <input class="name-input-big" v-model="cnState.hintDraft"
+              placeholder="Ein Wort…" style="margin-bottom:.6rem"
+              @keydown.enter="cnGiveHint"/>
+            <div class="coop-hint">Anzahl gemeinter Wörter</div>
+            <div style="display:flex;gap:.5rem;margin-bottom:.8rem;flex-wrap:wrap">
+              <button v-for="n in [1,2,3,4,5,6,7,8,9]" :key="n"
+                class="imposter-btn"
+                :class="{'imposter-btn-active': cnState.hintCountDraft===n}"
+                style="flex:unset;width:44px;padding:.5rem 0;font-size:.9rem"
+                @click="cnState.hintCountDraft=n">{{ n }}</button>
+            </div>
+            <button class="btn-create-room" :disabled="!cnState.hintDraft.trim()" @click="cnGiveHint">
+              ✓ Hinweis geben
+            </button>
+          </div>
+
+          <!-- Operative: Karten-Grid -->
+          <div class="cn-grid">
+            <button v-for="(card, idx) in cnState.words" :key="idx"
+              class="cn-card"
+              :class="[
+                'cn-card-' + cnCardColor(card),
+                card.revealed ? 'cn-card-revealed' : '',
+                !card.revealed && cnState.phase2==='guess' ? 'cn-card-clickable' : ''
+              ]"
+              :disabled="card.revealed || cnState.phase2!=='guess'"
+              @click="cnRevealCard(idx)">
+              <span class="cn-card-word">{{ card.word }}</span>
+              <span v-if="card.revealed && card.type" class="cn-card-icon">
+                {{ card.type === 'red' ? '🔴' : card.type === 'blue' ? '🔵' : card.type === 'black' ? '☠️' : '⬜' }}
+              </span>
+            </button>
+          </div>
+
+          <!-- Zug abgeben -->
+          <div v-if="cnState.phase2 === 'guess'" class="cn-pass-area">
+            <button class="btn-sec" style="width:100%;margin-top:.6rem" @click="cnPassTurn">
+              ↩ Zug abgeben
+            </button>
+          </div>
+        </template>
+
+        <!-- ── GAME OVER ── -->
+        <template v-if="cnState.phase === 'gameover'">
+          <div class="go-inner" style="padding-top:1rem">
+            <div class="wicon">{{ cnState.winner === 'red' ? '🔴' : '🔵' }}</div>
+            <div class="wtitle"
+              :style="{color: cnState.winner === 'red' ? '#f87171' : '#60a5fa'}">
+              Team {{ cnState.winner === 'red' ? 'Rot' : 'Blau' }} gewinnt!
+            </div>
+            <div class="wsub">
+              {{ cnState.winReason === 'black-card' ? '☠️ Schwarze Karte aufgedeckt!' : '🎉 Alle Wörter gefunden!' }}
+            </div>
+            <div class="surv-box" style="width:100%;margin-bottom:1rem">
+              <h3>Endstand</h3>
+              <div class="surv-item">
+                <span>🔴 Rot</span>
+                <span :style="{color: cnState.redLeft===0 ? '#4ade80' : '#f87171'}">
+                  {{ cnState.redLeft }} übrig
+                </span>
+              </div>
+              <div class="surv-item">
+                <span>🔵 Blau</span>
+                <span :style="{color: cnState.blueLeft===0 ? '#4ade80' : '#60a5fa'}">
+                  {{ cnState.blueLeft }} übrig
+                </span>
+              </div>
+            </div>
+            <button class="btn-start" @click="cnReset();cnCancelCoop()">🔄 Neues Spiel</button>
+            <button class="btn-sec" style="margin-top:.5rem"
+              @click="cnReset();cnCancelCoop();state.screen='home'">🏠 Hauptmenü</button>
+          </div>
+        </template>
+
+      </div>
+    </template>
+
     <!-- ══════════════════════════════════════════════════════════════════ -->
     <!-- ── HOME SCREEN ── -->
     <!-- ══════════════════════════════════════════════════════════════════ -->
@@ -1488,6 +1809,14 @@ const App = {
             <div class="game-select-name">Wer bin ich?</div>
             <div class="game-select-desc">Errate deinen Begriff — 2 bis 16 Spieler</div>
             <div class="game-select-hint-btn" @click.stop="state.showRulesGame='wbi'">❓ Anleitung</div>
+          </div>
+          <!-- Codenames -->
+          <div class="game-select-card" :class="{active: state.screen==='cn'}"
+            @click="state.screen='cn'">
+            <img src="./icons/games/codenames.png" class="game-select-img" alt="Codenames"/>
+            <div class="game-select-name">Codenames</div>
+            <div class="game-select-desc">Teamspiel mit Geheimwörtern — 4 bis 16 Spieler</div>
+            <div class="game-select-hint-btn" @click.stop="state.showRulesGame='cn'">❓ Anleitung</div>
           </div>
         </div>
 
