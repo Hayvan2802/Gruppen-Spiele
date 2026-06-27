@@ -1,8 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.44';
-export const BUILD_HASH = 'sw-fix-clean';
+export const BUILD      = '0.45';
+export const BUILD_HASH = 'codenames';
 
 export const CHANGELOG = [
+  {
+    version: '0.45',
+    date: '27.06.2026',
+    changes: [
+      'Neues Spiel: Codenames — 5×5 Grid, 2 Teams, Spymaster auf eigenem Handy',
+      'Coop-Pflicht: Spymaster sieht geheime Karte nur bei sich',
+      'Sprachen: DE, EN, TR, FR, ES',
+      'Codenames-Icon, Anleitung im Hauptmenü',
+    ],
+  },
   {
     version: '0.44',
     date: '27.06.2026',
