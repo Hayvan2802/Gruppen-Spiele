@@ -1,6 +1,6 @@
-// Gruppen-Spiele Service Worker v0.47
+// Gruppen-Spiele Service Worker v0.48
 // Kein self.skipWaiting() im install — Nutzer entscheidet per Banner.
-const CACHE = 'gruppen-spiele-v0.47';
+const CACHE = 'gruppen-spiele-v0.48';
 const ASSETS = [
   './index.html', './css/styles.css',
   './js/app.js', './js/buildinfo.js',
@@ -24,7 +24,9 @@ self.addEventListener('install', e => {
 // Nutzer hat "Aktualisieren" getippt
 self.addEventListener('message', e => {
   if (e.data && e.data.type === 'skipWaiting')
-  // Kein skipWaiting im install
+  // EINMALIG v0.48: erzwingt Cache-Reset auf iOS
+  self.skipWaiting();
+  //
 });
 
 self.addEventListener('activate', e => {
