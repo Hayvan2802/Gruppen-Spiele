@@ -1,8 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.50';
-export const BUILD_HASH = 'dedup-fix';
+export const BUILD      = '0.51';
+export const BUILD_HASH = 'syntax-fix-tests';
 
 export const CHANGELOG = [
+  {
+    version: '0.51',
+    date: '27.06.2026',
+    changes: [
+      'Crash behoben: doppeltes async checkForUpdate + applyUpdate entfernt',
+      '6 automatische Syntax-Tests: Duplikate, loses async, imports, if-Blöcke',
+    ],
+  },
   {
     version: '0.50',
     date: '27.06.2026',
