@@ -1,8 +1,15 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.54';
-export const BUILD_HASH = 'force-cache-054';
+export const BUILD      = '0.55';
+export const BUILD_HASH = 'cn-return-final';
 
 export const CHANGELOG = [
+  {
+    version: '0.55',
+    date: '27.06.2026',
+    changes: [
+      'Codenames schwarzer Screen endgültig behoben — alle CN-Funktionen im return',
+    ],
+  },
   {
     version: '0.54',
     date: '27.06.2026',
