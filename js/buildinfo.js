@@ -1,8 +1,19 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.55';
-export const BUILD_HASH = 'cn-return-final';
+export const BUILD      = '0.56';
+export const BUILD_HASH = 'cn-gameplay';
 
 export const CHANGELOG = [
+  {
+    version: '0.56',
+    date: '27.06.2026',
+    changes: [
+      'Codenames: Sprachen aus Setup entfernt (kommen in Einstellungen)',
+      'Codenames: Einstellungs-Button nur im Setup, im Spiel nur Pause',
+      'Codenames: Spymaster-Sicht ein/ausklappbar mit Geheimkarten-Farben',
+      'Codenames: Karten-Farben korrekt — rot/blau/schwarz/neutral',
+      'Codenames: Zug weitergeben Button verbessert',
+    ],
+  },
   {
     version: '0.55',
     date: '27.06.2026',
