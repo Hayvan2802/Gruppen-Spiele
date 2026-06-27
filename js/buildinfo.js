@@ -1,8 +1,15 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.46';
-export const BUILD_HASH = 'cn-return-fix';
+export const BUILD      = '0.47';
+export const BUILD_HASH = 'cn-syntax-fix';
 
 export const CHANGELOG = [
+  {
+    version: '0.47',
+    date: '27.06.2026',
+    changes: [
+      'Codenames: Safari-SyntaxError behoben — if ohne {} vor push({})',
+    ],
+  },
   {
     version: '0.46',
     date: '27.06.2026',
