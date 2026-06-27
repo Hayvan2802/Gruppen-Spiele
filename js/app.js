@@ -1164,7 +1164,7 @@ const App = {
                 style="font-size:1.6rem;letter-spacing:.3em;text-align:center;padding:.8rem" />
               <div v-if="wbiState.coop.error" class="coop-error">{{ wbiState.coop.error }}</div>
               <button class="btn-create-room"
-                :disabled="wbiState.coop.codeDraft.replace(/\D/g,'').length!==6 || !wbiState.coop.myName.trim()"
+                :disabled="wbiState.coop.codeDraft.replace(/[^0-9]/g,'').length!==6 || !wbiState.coop.myName.trim()"
                 @click="wbiCreateRoom">🏠 Raum erstellen</button>
               <button class="btn-sec" style="margin-top:.5rem" @click="wbiState.coop.phase='idle'">Abbrechen</button>
             </div>
@@ -1196,7 +1196,7 @@ const App = {
                 style="font-size:1.6rem;letter-spacing:.3em;text-align:center;padding:.8rem" />
               <div v-if="wbiState.coop.error" class="coop-error">{{ wbiState.coop.error }}</div>
               <button class="btn-create-room"
-                :disabled="wbiState.coop.codeDraft.replace(/\D/g,'').length!==6 || !wbiState.coop.myName.trim()"
+                :disabled="wbiState.coop.codeDraft.replace(/[^0-9]/g,'').length!==6 || !wbiState.coop.myName.trim()"
                 @click="wbiJoinRoom">🚪 Beitreten</button>
               <button class="btn-sec" style="margin-top:.5rem" @click="wbiState.coop.phase='idle'">Abbrechen</button>
             </div>
@@ -1558,7 +1558,7 @@ const App = {
                 style="font-size:1.6rem;letter-spacing:.3em;text-align:center;padding:.8rem"/>
               <div v-if="cnState.coop.error" class="coop-error">{{ cnState.coop.error }}</div>
               <button class="btn-create-room"
-                :disabled="cnState.coop.codeDraft.replace(/\D/g,'').length!==6||!cnState.coop.myName.trim()"
+                :disabled="cnState.coop.codeDraft.replace(/[^0-9]/g,'').length!==6||!cnState.coop.myName.trim()"
                 @click="cnCreateRoom">🏠 Raum erstellen</button>
               <button class="btn-sec" style="margin-top:.5rem" @click="cnState.coop.phase='idle'">Abbrechen</button>
             </div>
@@ -1621,7 +1621,7 @@ const App = {
                 style="font-size:1.6rem;letter-spacing:.3em;text-align:center;padding:.8rem"/>
               <div v-if="cnState.coop.error" class="coop-error">{{ cnState.coop.error }}</div>
               <button class="btn-create-room"
-                :disabled="cnState.coop.codeDraft.replace(/\D/g,'').length!==6||!cnState.coop.myName.trim()"
+                :disabled="cnState.coop.codeDraft.replace(/[^0-9]/g,'').length!==6||!cnState.coop.myName.trim()"
                 @click="cnJoinRoom">🚪 Beitreten</button>
               <button class="btn-sec" style="margin-top:.5rem" @click="cnState.coop.phase='idle'">Abbrechen</button>
             </div>
@@ -1876,7 +1876,7 @@ const App = {
             <div v-if="state.coop.error" class="coop-error">{{ state.coop.error }}</div>
 
             <button class="btn-create-room"
-              :disabled="state.coop.codeDraft.replace(/\D/g,'').length !== 6 || !state.coop.myName.trim()"
+              :disabled="state.coop.codeDraft.replace(/[^0-9]/g,'').length !== 6 || !state.coop.myName.trim()"
               @click="createRoom">
               🏠 Raum erstellen
             </button>
@@ -1917,7 +1917,7 @@ const App = {
             <div v-if="state.coop.error" class="coop-error">{{ state.coop.error }}</div>
 
             <button class="btn-create-room"
-              :disabled="state.coop.codeDraft.replace(/\D/g,'').length !== 6 || !state.coop.myName.trim()"
+              :disabled="state.coop.codeDraft.replace(/[^0-9]/g,'').length !== 6 || !state.coop.myName.trim()"
               @click="joinRoom">
               🚪 Beitreten
             </button>
