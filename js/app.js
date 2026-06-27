@@ -1481,8 +1481,10 @@ const App = {
       <div class="top-bar">
         <button v-if="cnState.phase === 'setup'" class="icon-btn"
           @click="state.screen='home';cnReset()" title="Zurück">←</button>
-        <button v-else class="icon-btn" @click="cnState.cnMenu=true" title="Spielmenü">⏸</button>
-        <button class="icon-btn" @click="state.showSettingsModal=true">⚙️</button>
+        <button v-if="cnState.phase === 'setup'" class="icon-btn"
+          @click="state.showSettingsModal=true" title="Einstellungen">⚙️</button>
+        <button v-if="cnState.phase !== 'setup'" class="icon-btn"
+          @click="cnState.cnMenu=true" title="Spielmenü">⏸</button>
       </div>
 
       <!-- CN Spielmenü -->
@@ -1520,18 +1522,6 @@ const App = {
 
         <!-- ── SETUP ── -->
         <template v-if="cnState.phase === 'setup'">
-          <!-- Sprache -->
-          <div class="sec">
-            <h2>🌍 Sprache</h2>
-            <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-              <button class="imposter-btn" :class="{'imposter-btn-active': cnState.lang==='de'}" @click="cnState.lang='de'" style="flex:unset;padding:.55rem 1rem;font-size:.82rem">🇩🇪 Deutsch</button>
-              <button class="imposter-btn" :class="{'imposter-btn-active': cnState.lang==='en'}" @click="cnState.lang='en'" style="flex:unset;padding:.55rem 1rem;font-size:.82rem">🇬🇧 English</button>
-              <button class="imposter-btn" :class="{'imposter-btn-active': cnState.lang==='tr'}" @click="cnState.lang='tr'" style="flex:unset;padding:.55rem 1rem;font-size:.82rem">🇹🇷 Türkçe</button>
-              <button class="imposter-btn" :class="{'imposter-btn-active': cnState.lang==='fr'}" @click="cnState.lang='fr'" style="flex:unset;padding:.55rem 1rem;font-size:.82rem">🇫🇷 Français</button>
-              <button class="imposter-btn" :class="{'imposter-btn-active': cnState.lang==='es'}" @click="cnState.lang='es'" style="flex:unset;padding:.55rem 1rem;font-size:.82rem">🇪🇸 Español</button>
-            </div>
-          </div>
-
           <!-- Spielmodus -->
           <div class="sec">
             <h2>📱 Spielmodus</h2>
@@ -1660,78 +1650,94 @@ const App = {
 
         <!-- ── SPIELFELD ── -->
         <template v-if="cnState.phase === 'playing'">
-          <!-- Status-Bar -->
+
+          <!-- Status Bar -->
           <div class="cn-status-bar">
-            <div class="cn-team-badge cn-team-red">
-              🔴 Rot: {{ cnState.redLeft }} übrig
-            </div>
+            <div class="cn-team-badge cn-team-red">🔴 {{ cnState.redLeft }}</div>
             <div class="cn-turn-indicator"
-              :class="cnState.currentTeam === 'red' ? 'cn-turn-red' : 'cn-turn-blue'">
-              {{ cnState.currentTeam === 'red' ? '🔴 Rot' : '🔵 Blau' }} ist dran
+              :class="cnState.currentTeam==='red' ? 'cn-turn-red' : 'cn-turn-blue'">
+              {{ cnState.currentTeam==='red' ? '🔴 Rot' : '🔵 Blau' }} ist dran
             </div>
-            <div class="cn-team-badge cn-team-blue">
-              🔵 Blau: {{ cnState.blueLeft }} übrig
-            </div>
+            <div class="cn-team-badge cn-team-blue">🔵 {{ cnState.blueLeft }}</div>
           </div>
 
-          <!-- Hinweis-Anzeige -->
+          <!-- Hinweis -->
           <div v-if="cnState.hint" class="cn-hint-display"
-            :class="cnState.currentTeam === 'red' ? 'cn-hint-red' : 'cn-hint-blue'">
+            :class="cnState.currentTeam==='red' ? 'cn-hint-red' : 'cn-hint-blue'">
             <span class="cn-hint-word">{{ cnState.hint }}</span>
             <span class="cn-hint-count">× {{ cnState.hintCount }}</span>
-            <span class="cn-hint-left" v-if="cnState.guessesLeft > 0">
-              noch {{ cnState.guessesLeft }} Versuch{{ cnState.guessesLeft !== 1 ? 'e' : '' }}
-            </span>
+            <span class="cn-hint-left">noch {{ cnState.guessesLeft }}×</span>
           </div>
           <div v-else class="cn-waiting-hint"
-            :class="cnState.currentTeam === 'red' ? 'cn-hint-red' : 'cn-hint-blue'">
-            ⏳ Warte auf Hinweis von {{ cnState.currentTeam === 'red' ? 'Rot' : 'Blau' }}…
+            :class="cnState.currentTeam==='red' ? 'cn-hint-red' : 'cn-hint-blue'">
+            ⏳ {{ cnState.currentTeam==='red' ? '🔴 Rot' : '🔵 Blau' }} gibt einen Hinweis…
           </div>
 
-          <!-- Spymaster: Hinweis-Eingabe -->
-          <div v-if="cnState.phase2 === 'hint' && (cnIsSpymaster() && cnMyTeam() === cnState.currentTeam || (!cnState.coop.myRole && cnState.phase2==='hint'))"
+          <!-- Spymaster: Geheimkarte anzeigen / Hinweis eingeben -->
+          <div v-if="!cnState.coop.myRole || (cnIsSpymaster() && cnMyTeam()===cnState.currentTeam)"
             class="cn-spymaster-panel">
-            <div class="coop-hint">Hinweis-Wort</div>
-            <input class="name-input-big" v-model="cnState.hintDraft"
-              placeholder="Ein Wort…" style="margin-bottom:.6rem"
-              @keydown.enter="cnGiveHint"/>
-            <div class="coop-hint">Anzahl gemeinter Wörter</div>
-            <div style="display:flex;gap:.5rem;margin-bottom:.8rem;flex-wrap:wrap">
-              <button v-for="n in [1,2,3,4,5,6,7,8,9]" :key="n"
-                class="imposter-btn"
-                :class="{'imposter-btn-active': cnState.hintCountDraft===n}"
-                style="flex:unset;width:44px;padding:.5rem 0;font-size:.9rem"
-                @click="cnState.hintCountDraft=n">{{ n }}</button>
+
+            <!-- Geheimkarte ein/ausblenden -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
+              <span style="font-size:.72rem;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;font-weight:700">
+                🕵️ Spymaster-Sicht
+              </span>
+              <button class="btn-sec btn-sm" @click="cnState.showSecretMap=!cnState.showSecretMap">
+                {{ cnState.showSecretMap ? '🙈 Verbergen' : '👁 Karte zeigen' }}
+              </button>
             </div>
-            <button class="btn-create-room" :disabled="!cnState.hintDraft.trim()" @click="cnGiveHint">
-              ✓ Hinweis geben
-            </button>
+
+            <!-- Hinweis-Eingabe nur wenn dran -->
+            <div v-if="cnState.phase2==='hint'">
+              <input class="name-input-big" v-model="cnState.hintDraft"
+                placeholder="Hinweis-Wort eingeben…" style="margin-bottom:.5rem"
+                @keydown.enter="cnGiveHint"/>
+              <div style="display:flex;gap:.4rem;margin-bottom:.6rem;flex-wrap:wrap">
+                <button v-for="n in [1,2,3,4,5,6,7,8,9]" :key="n"
+                  class="imposter-btn"
+                  :class="{'imposter-btn-active': cnState.hintCountDraft===n}"
+                  style="flex:unset;width:42px;height:42px;padding:0;font-size:.88rem"
+                  @click="cnState.hintCountDraft=n">{{ n }}</button>
+              </div>
+              <button class="btn-create-room" :disabled="!cnState.hintDraft.trim()" @click="cnGiveHint">
+                ✓ Hinweis geben
+              </button>
+            </div>
+            <div v-else style="font-size:.82rem;color:var(--txt2);text-align:center;padding:.4rem 0">
+              Dein Team rät gerade — {{ cnState.guessesLeft }} Versuch{{ cnState.guessesLeft!==1?'e':'' }} übrig
+            </div>
           </div>
 
-          <!-- Operative: Karten-Grid -->
+          <!-- Karten-Grid -->
           <div class="cn-grid">
             <button v-for="(card, idx) in cnState.words" :key="idx"
               class="cn-card"
               :class="[
-                'cn-card-' + cnCardColor(card),
-                card.revealed ? 'cn-card-revealed' : '',
-                !card.revealed && cnState.phase2==='guess' ? 'cn-card-clickable' : ''
+                cnState.showSecretMap && !card.revealed ? 'cn-card-' + card.type : '',
+                !cnState.showSecretMap && card.revealed ? 'cn-card-' + card.type : '',
+                card.revealed ? 'cn-card-revealed' : 'cn-card-hidden',
+                cnState.phase2==='guess' && !card.revealed ? 'cn-card-clickable' : ''
               ]"
-              :disabled="card.revealed || cnState.phase2!=='guess'"
               @click="cnRevealCard(idx)">
               <span class="cn-card-word">{{ card.word }}</span>
-              <span v-if="card.revealed && card.type" class="cn-card-icon">
-                {{ card.type === 'red' ? '🔴' : card.type === 'blue' ? '🔵' : card.type === 'black' ? '☠️' : '⬜' }}
+              <!-- Spymaster: Typ-Indikator auf unaufgedeckten Karten -->
+              <span v-if="cnState.showSecretMap && !card.revealed" class="cn-card-type-dot"
+                :style="{background: card.type==='red'?'#f87171':card.type==='blue'?'#60a5fa':card.type==='black'?'#1e293b':'#94a3b8'}">
+              </span>
+              <!-- Aufgedeckte Karten -->
+              <span v-if="card.revealed" class="cn-card-icon">
+                {{ card.type==='red'?'🔴':card.type==='blue'?'🔵':card.type==='black'?'☠️':'⬜' }}
               </span>
             </button>
           </div>
 
           <!-- Zug abgeben -->
-          <div v-if="cnState.phase2 === 'guess'" class="cn-pass-area">
-            <button class="btn-sec" style="width:100%;margin-top:.6rem" @click="cnPassTurn">
-              ↩ Zug abgeben
+          <div v-if="cnState.phase2==='guess'" style="margin-top:.5rem">
+            <button class="btn-sec" style="width:100%" @click="cnPassTurn">
+              ↩ Zug weitergeben
             </button>
           </div>
+
         </template>
 
         <!-- ── GAME OVER ── -->
