@@ -1,8 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.52';
-export const BUILD_HASH = 'cn-escape-fix';
+export const BUILD      = '0.53';
+export const BUILD_HASH = 'cn-vfor-fix';
 
 export const CHANGELOG = [
+  {
+    version: '0.53',
+    date: '27.06.2026',
+    changes: [
+      'Codenames: Objekt-Literal in v-for entfernt — Safari-Bug behoben',
+      'Sprach-Buttons jetzt als einzelne Buttons statt v-for mit Objekt',
+    ],
+  },
   {
     version: '0.52',
     date: '27.06.2026',
