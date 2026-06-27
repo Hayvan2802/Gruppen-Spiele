@@ -462,3 +462,59 @@ test('WBI: Noch nicht vorbei wenn einer übrig', () => {
   const done = cards.every(c => c.guessed || c.skipped);
   assert(!done, 'Runde sollte noch laufen');
 });
+
+// ── Tests: app.js Syntax-Checks ──────────────────────────────────────────────
+console.log('\n=== APP.JS SYNTAX ===');
+
+const fs = require('fs');
+const appCode = fs.readFileSync('/home/claude/gs2/js/app.js', 'utf8');
+
+test('Keine doppelten Funktionsdefinitionen', () => {
+  const fns = ['applyUpdate','checkForUpdate','applyTheme','registerSW',
+                'startLocalGame','calcResult','cnRevealCard','wbiStartLocal'];
+  fns.forEach(fn => {
+    const count = (appCode.match(new RegExp(`function ${fn}\\(`, 'g')) || []).length;
+    assert(count <= 1, `${fn} ist ${count}x definiert!`);
+  });
+});
+
+test('Kein loses async-Keyword', () => {
+  const lines = appCode.split('\n');
+  const bad = lines.filter(l => l.trim() === 'async');
+  assert(bad.length === 0, `Loses 'async' auf ${bad.length} Zeile(n)`);
+});
+
+test('Kein doppelter import createApp', () => {
+  const count = (appCode.match(/import \{ createApp/g) || []).length;
+  assertEqual(count, 1, `createApp ${count}x importiert`);
+});
+
+test('template Backtick vorhanden', () => {
+  assert(appCode.includes('template: `'), 'template: ` fehlt');
+});
+
+test('if-Statement ohne {}: kein push({}) direkt danach', () => {
+  const lines = appCode.split('\n');
+  for (let i = 0; i < lines.length - 1; i++) {
+    const cur = lines[i].trim();
+    const next = lines[i+1]?.trim() || '';
+    if (/^if\s*\(.*\)\s*$/.test(cur) && next.startsWith('{')) {
+      assert(false, `Zeile ${i+1}: if ohne {} vor {-Ausdruck: ${cur}`);
+    }
+  }
+});
+
+// Codenames-spezifisch
+const cnCode = fs.existsSync('/home/claude/gs2/js/games/codenames.js')
+  ? fs.readFileSync('/home/claude/gs2/js/games/codenames.js', 'utf8') : '';
+
+test('codenames.js: keine doppelten Exports', () => {
+  if (!cnCode) return;
+  const exports = cnCode.match(/export (?:function|const) (\w+)/g) || [];
+  const names = exports.map(e => e.split(' ').pop());
+  const seen = new Set();
+  names.forEach(n => {
+    assert(!seen.has(n), `Doppelter Export in codenames.js: ${n}`);
+    seen.add(n);
+  });
+});
