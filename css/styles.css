@@ -1384,3 +1384,52 @@ body.neon .btn-start {
 
 /* ── Pass Area ────────────────────────────────────────────────────────────── */
 .cn-pass-area { margin-top: .3rem; }
+
+/* ── Codenames Grid Fixes ────────────────────────────────────────────────── */
+.cn-card-hidden {
+  background: var(--sur);
+  border-color: var(--bdr);
+}
+.cn-card-hidden .cn-card-word { color: var(--txt); }
+
+/* Spymaster-Dot oben rechts auf Karte */
+.cn-card { position: relative; }
+.cn-card-type-dot {
+  position: absolute; top: 4px; right: 4px;
+  width: 8px; height: 8px; border-radius: 50%;
+  opacity: 0.85;
+}
+
+/* Farben für Spymaster-Sicht (unaufgedeckt) */
+.cn-card-red.cn-card-hidden {
+  background: rgba(248,113,113,.2);
+  border-color: rgba(248,113,113,.5);
+}
+.cn-card-blue.cn-card-hidden {
+  background: rgba(96,165,250,.2);
+  border-color: rgba(96,165,250,.5);
+}
+.cn-card-black.cn-card-hidden {
+  background: rgba(15,15,15,.8);
+  border-color: rgba(100,100,100,.4);
+}
+.cn-card-black.cn-card-hidden .cn-card-word { color: #94a3b8; }
+.cn-card-neutral.cn-card-hidden {
+  background: var(--sur);
+  border-color: var(--bdr2);
+}
+
+/* Aufgedeckte Karten */
+.cn-card-red.cn-card-revealed    { background: rgba(248,113,113,.4); border-color: #f87171; }
+.cn-card-blue.cn-card-revealed   { background: rgba(96,165,250,.4);  border-color: #60a5fa; }
+.cn-card-black.cn-card-revealed  { background: #0f0f0f; border-color: #6b7280; }
+.cn-card-neutral.cn-card-revealed { background: rgba(148,163,184,.2); border-color: #94a3b8; }
+
+/* Clickable hover */
+.cn-card-clickable:not(.cn-card-revealed):hover {
+  transform: scale(1.03);
+  border-color: var(--gold);
+}
+.cn-card-clickable:not(.cn-card-revealed):active {
+  transform: scale(0.97);
+}
