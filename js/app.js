@@ -244,7 +244,6 @@ function maybeShowWhatsNew() {
 }
 function dismissWhatsNew() { state.showWhatsNew = false; saveSeenVersion(BUILD); }
 
-async 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 function changePlayerCount(d) {
   const n = Math.max(3, Math.min(16, state.playerCount + d));
