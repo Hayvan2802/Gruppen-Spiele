@@ -1,8 +1,15 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.47';
-export const BUILD_HASH = 'cn-syntax-fix';
+export const BUILD      = '0.48';
+export const BUILD_HASH = 'force-update';
 
 export const CHANGELOG = [
+  {
+    version: '0.48',
+    date: '27.06.2026',
+    changes: [
+      'Cache-Reset: erzwingt sofortiges Update auf iOS',
+    ],
+  },
   {
     version: '0.47',
     date: '27.06.2026',
