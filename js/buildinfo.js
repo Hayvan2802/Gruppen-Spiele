@@ -1,8 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.56';
-export const BUILD_HASH = 'cn-gameplay';
+export const BUILD      = '0.57';
+export const BUILD_HASH = 'coop-ui-relay-fix';
 
 export const CHANGELOG = [
+  {
+    version: '0.57',
+    date: '27.06.2026',
+    changes: [
+      'Codenames: Beitreten-Button wieder sichtbar',
+      'Alle Spiele: Host + Beitreten Buttons einheitlich groß',
+      'iCloud Private Relay Fix: Timeout 20s, Long Polling Fallback',
+    ],
+  },
   {
     version: '0.56',
     date: '27.06.2026',
