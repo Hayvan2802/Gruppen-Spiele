@@ -493,6 +493,13 @@ test('template Backtick vorhanden', () => {
   assert(appCode.includes('template: `'), 'template: ` fehlt');
 });
 
+test('Kein /\\D/g in Vue-Template (Safari-Bug)', () => {
+  // In Backtick-Templates muss /[^0-9]/g statt /\D/g verwendet werden
+  const templateStart = appCode.indexOf('template: `');
+  const templatePart = templateStart > -1 ? appCode.slice(templateStart) : '';
+  assert(!templatePart.includes('/\\D/g'), '/\\D/g in Vue-Template gefunden — Safari-Bug!');
+});
+
 test('if-Statement ohne {}: kein push({}) direkt danach', () => {
   const lines = appCode.split('\n');
   for (let i = 0; i < lines.length - 1; i++) {
