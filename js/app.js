@@ -244,26 +244,7 @@ function maybeShowWhatsNew() {
 }
 function dismissWhatsNew() { state.showWhatsNew = false; saveSeenVersion(BUILD); }
 
-async function checkForUpdate() {
-  if (window._swReg) {
-    showToast('Suche nach Updates…');
-    try {
-      await window._swReg.update();
-      await new Promise(r => setTimeout(r, 2000));
-    } catch(e) {}
-  }
-  if (state.updateReady || waitingWorker) {
-    state.updateReady = true;
-  } else {
-    showToast('Keine Updates verfügbar ✓');
-  }
-}
-
-function applyUpdate() {
-  if (!waitingWorker) { location.reload(); return; }
-  waitingWorker.postMessage({ type: 'skipWaiting' });
-}
-
+async 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 function changePlayerCount(d) {
   const n = Math.max(3, Math.min(16, state.playerCount + d));
