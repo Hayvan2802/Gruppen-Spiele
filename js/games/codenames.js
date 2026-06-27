@@ -1,193 +1,182 @@
-// codenames.js — Codenames Spiellogik
-// Sauber getrennt. Coop-Pflicht: Spymasters sehen Karte nur auf eigenem Handy.
-// Version: 0.45
+// codenames.js — Codenames Spiellogik v0.58
+// Coop: Host verteilt Rollen, Spymasters sehen Geheimkarte auf eigenem Handy.
+// Operatives tippen Karten auf eigenem Handy an.
+// WICHTIG: card.type ist bei Operatives null (unbekannt) bis aufgedeckt.
+//          Nur Spymasters und Host kennen alle Typen von Anfang an.
 
 import { reactive } from '../vue.esm-browser.prod.js';
 import { getCNWords } from './codenames-words.js';
 import * as Coop from '../coop.js';
 import { log } from '../debuglog.js';
 
-// ── Karten-Typen ─────────────────────────────────────────────────────────────
 export const CN_TYPE = { RED: 'red', BLUE: 'blue', BLACK: 'black', NEUTRAL: 'neutral' };
 
 // ── State ─────────────────────────────────────────────────────────────────────
 export const cnState = reactive({
-  phase: 'setup', // setup | playing | gameover
-
-  // Setup
+  phase: 'setup',   // setup | playing | gameover
   lang: 'de',
+
+  // Coop
   coop: {
-    phase: 'idle', // idle | hosting | lobby | joining | joined | playing | gameover
+    phase: 'idle',  // idle | hosting | lobby | joining | joined | playing | gameover
     code: '', codeDraft: '',
     myName: '', myUid: null,
     isHost: false,
-    players: [],
+    players: [],    // [{ uid, name, role, isHost }]
     error: null,
-    myRole: null,    // 'spymaster-red' | 'spymaster-blue' | 'operative'
-    myTeam: null,    // 'red' | 'blue'
+    myRole: null,   // 'spymaster-red'|'spymaster-blue'|'operative-red'|'operative-blue'
+    myTeam: null,   // 'red'|'blue'
   },
 
-  // Spielfeld
-  words: [],       // [{ word, type, revealed, highlight }] — 25 Karten
-  redCount: 0,     // Anzahl rote Karten gesamt
-  blueCount: 0,    // Anzahl blaue Karten gesamt
-  redLeft: 0,      // Noch nicht aufgedeckte rote Karten
-  blueLeft: 0,     // Noch nicht aufgedeckte blaue Karten
+  // Spielfeld — words[i].type ist null für Operatives bis aufgedeckt
+  words: [],
+  secretTypes: [],  // Nur Spymaster/Host: vollständige Typenliste [25]
+  redCount: 0,
+  blueCount: 0,
+  redLeft: 0,
+  blueLeft: 0,
 
   // Spielzug
-  currentTeam: 'red',          // 'red' | 'blue'
-  hint: '',                    // Aktueller Hinweis-Text
-  hintCount: 0,                // Anzahl zu ratender Wörter
-  hintDraft: '',               // Eingabe Spymaster
+  currentTeam: 'red',
+  hint: '',
+  hintCount: 0,
+  hintDraft: '',
   hintCountDraft: 1,
-  guessesLeft: 0,              // Noch mögliche Rateversuche
-  phase2: 'hint',              // 'hint' | 'guess' — innerhalb des Zugs
+  guessesLeft: 0,
+  phase2: 'hint',   // 'hint' | 'guess'
 
   // Ergebnis
-  winner: null,                // 'red' | 'blue'
-  winReason: '',               // 'all-found' | 'black-card'
+  winner: null,
+  winReason: '',
 
   // UI
-  showSecretMap: false,        // Spymaster-Sicht ein/aus (nur lokal zum Testen)
+  showSecretMap: false,
   cnMenu: false,
   cnEndConfirm: false,
-  highlightIdx: null,
 });
 
-// ── Hilfsfunktionen ───────────────────────────────────────────────────────────
+// ── Hilfs ─────────────────────────────────────────────────────────────────────
 function shuffle(arr) {
   const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+  for (let i = a.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i+1));
+    [a[i],a[j]] = [a[j],a[i]];
   }
   return a;
 }
-
-function haptic(style = 'light') {
-  try {
-    const p = { light:[10], medium:[20], success:[10,50,10], error:[50,10,50] };
-    if (navigator.vibrate) navigator.vibrate(p[style] || [10]);
-  } catch {}
+function haptic(s='light') {
+  try { if(navigator.vibrate) navigator.vibrate({light:[10],medium:[20],success:[10,50,10],error:[50,10,50]}[s]||[10]); } catch{}
 }
-
-function showToast(msg) {
+function toast(msg) {
   let el = document.getElementById('gs-toast');
-  if (!el) {
-    el = Object.assign(document.createElement('div'), { id:'gs-toast', className:'toast' });
-    document.body.appendChild(el);
-  }
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove('show'), 2600);
+  if (!el) { el = Object.assign(document.createElement('div'),{id:'gs-toast',className:'toast'}); document.body.appendChild(el); }
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t); el._t = setTimeout(()=>el.classList.remove('show'),2600);
 }
 
-// ── Grid erstellen ────────────────────────────────────────────────────────────
+// ── Grid erzeugen ─────────────────────────────────────────────────────────────
 function createGrid(lang) {
   const words = getCNWords(lang, 25);
-
-  // Rot startet → bekommt 9 Karten, Blau 8, Schwarz 1, Neutral 7
   const types = shuffle([
     ...Array(9).fill(CN_TYPE.RED),
     ...Array(8).fill(CN_TYPE.BLUE),
     CN_TYPE.BLACK,
     ...Array(7).fill(CN_TYPE.NEUTRAL),
   ]);
-
-  return words.map((word, i) => ({
-    word,
-    type:     types[i],
-    revealed: false,
-    highlight: false,
-  }));
+  return {
+    words: words.map((word, i) => ({ word, type: types[i], revealed: false })),
+    types,  // separater Array für sendTo
+  };
 }
 
-// ── Lokales Spiel (nur für Host zum Starten) ──────────────────────────────────
+// ── Lokales Spiel ─────────────────────────────────────────────────────────────
 export function cnStartLocal() {
-  const grid = createGrid(cnState.lang);
-  cnState.words       = grid;
-  cnState.redCount    = grid.filter(c => c.type === CN_TYPE.RED).length;
-  cnState.blueCount   = grid.filter(c => c.type === CN_TYPE.BLUE).length;
-  cnState.redLeft     = cnState.redCount;
-  cnState.blueLeft    = cnState.blueCount;
-  cnState.currentTeam = 'red';
-  cnState.hint        = '';
-  cnState.hintCount   = 0;
-  cnState.guessesLeft = 0;
-  cnState.phase2      = 'hint';
-  cnState.winner      = null;
-  cnState.winReason   = '';
-  cnState.phase       = 'playing';
+  const { words } = createGrid(cnState.lang);
+  cnState.words        = words;
+  cnState.secretTypes  = words.map(c => c.type);
+  cnState.redCount     = words.filter(c => c.type===CN_TYPE.RED).length;
+  cnState.blueCount    = words.filter(c => c.type===CN_TYPE.BLUE).length;
+  cnState.redLeft      = cnState.redCount;
+  cnState.blueLeft     = cnState.blueCount;
+  cnState.currentTeam  = 'red';
+  cnState.hint         = '';
+  cnState.hintCount    = 0;
+  cnState.guessesLeft  = 0;
+  cnState.phase2       = 'hint';
+  cnState.winner       = null;
+  cnState.winReason    = '';
+  cnState.showSecretMap = true; // Ein-Gerät: Spymaster sieht immer alles
+  cnState.phase        = 'playing';
   haptic('success');
 }
 
-// ── Hinweis geben (Spymaster) ─────────────────────────────────────────────────
+// ── Spielzug-Logik ────────────────────────────────────────────────────────────
 export function cnGiveHint() {
-  const hint  = cnState.hintDraft.trim();
-  const count = cnState.hintCountDraft;
+  const hint = cnState.hintDraft.trim();
   if (!hint) return;
-
   cnState.hint        = hint;
-  cnState.hintCount   = count;
-  cnState.guessesLeft = count + 1; // +1 Bonus-Rateversuch
+  cnState.hintCount   = cnState.hintCountDraft;
+  cnState.guessesLeft = cnState.hintCountDraft + 1; // +1 Bonus
   cnState.hintDraft   = '';
   cnState.phase2      = 'guess';
   haptic('medium');
-
   if (cnState.coop.phase === 'playing') {
-    Coop.send({ type: 'CN_HINT', hint, count, team: cnState.currentTeam });
+    Coop.send({ type:'CN_HINT', hint, count:cnState.hintCountDraft, team:cnState.currentTeam });
   }
 }
 
-// ── Karte antippen (Operative) ────────────────────────────────────────────────
 export function cnRevealCard(idx) {
   const card = cnState.words[idx];
   if (!card || card.revealed || cnState.phase2 !== 'guess') return;
   if (cnState.winner) return;
 
+  // Echter Typ: bei Coop via secretTypes (Spymaster/Host), sonst direkt
+  const realType = cnState.secretTypes[idx] || card.type;
+  if (!realType) return; // Sicherheit
+
   card.revealed = true;
+  card.type     = realType; // jetzt für alle sichtbar
+
   haptic('medium');
-
   if (cnState.coop.phase === 'playing') {
-    Coop.send({ type: 'CN_REVEAL', idx, team: cnState.currentTeam });
+    Coop.send({ type:'CN_REVEAL', idx, realType, team:cnState.currentTeam });
   }
-
-  cnCheckReveal(idx);
+  cnProcessReveal(idx, realType);
 }
 
-function cnCheckReveal(idx) {
-  const card = cnState.words[idx];
-
+function cnProcessReveal(idx, realType) {
   // Schwarze Karte → sofort verloren
-  if (card.type === CN_TYPE.BLACK) {
+  if (realType === CN_TYPE.BLACK) {
     cnState.winner    = cnState.currentTeam === 'red' ? 'blue' : 'red';
     cnState.winReason = 'black-card';
-    cnEndGame();
-    haptic('error');
-    return;
+    cnFinish(); haptic('error'); return;
   }
 
-  // Zähler aktualisieren
-  cnState.redLeft  = cnState.words.filter(c => c.type === CN_TYPE.RED  && !c.revealed).length;
-  cnState.blueLeft = cnState.words.filter(c => c.type === CN_TYPE.BLUE && !c.revealed).length;
+  // Zähler
+  cnState.redLeft  = cnState.words.filter(c => c.type===CN_TYPE.RED  && !c.revealed).length;
+  cnState.blueLeft = cnState.words.filter(c => c.type===CN_TYPE.BLUE && !c.revealed).length;
 
-  // Gewonnen?
-  if (cnState.redLeft  === 0) { cnState.winner = 'red';  cnState.winReason = 'all-found'; cnEndGame(); return; }
-  if (cnState.blueLeft === 0) { cnState.winner = 'blue'; cnState.winReason = 'all-found'; cnEndGame(); return; }
+  if (cnState.redLeft  === 0) { cnState.winner='red';  cnState.winReason='all-found'; cnFinish(); return; }
+  if (cnState.blueLeft === 0) { cnState.winner='blue'; cnState.winReason='all-found'; cnFinish(); return; }
 
-  // Falsche Farbe → Zug wechseln
-  if (card.type !== cnState.currentTeam) {
-    cnPassTurn();
-    return;
+  // Neutrale oder gegnerische Karte → Zug wechseln
+  if (realType !== cnState.currentTeam) {
+    cnPassTurn(); return;
   }
 
-  // Richtige Farbe → Rateversuche reduzieren
+  // Richtige Karte
   cnState.guessesLeft--;
   if (cnState.guessesLeft <= 0) cnPassTurn();
 }
 
-// ── Zug weitergeben ───────────────────────────────────────────────────────────
+function cnFinish() {
+  cnState.phase = 'gameover';
+  if (cnState.coop.phase === 'playing') {
+    Coop.send({ type:'CN_END', winner:cnState.winner, reason:cnState.winReason });
+  }
+  haptic(cnState.winner === cnState.coop.myTeam ? 'success' : 'error');
+}
+
 export function cnPassTurn() {
   cnState.currentTeam = cnState.currentTeam === 'red' ? 'blue' : 'red';
   cnState.hint        = '';
@@ -195,64 +184,59 @@ export function cnPassTurn() {
   cnState.guessesLeft = 0;
   cnState.phase2      = 'hint';
   haptic('light');
-
   if (cnState.coop.phase === 'playing') {
-    Coop.send({ type: 'CN_PASS', team: cnState.currentTeam });
+    Coop.send({ type:'CN_PASS', team:cnState.currentTeam });
   }
-}
-
-function cnEndGame() {
-  cnState.phase = 'gameover';
-  if (cnState.coop.phase === 'playing') {
-    Coop.send({ type: 'CN_END', winner: cnState.winner, reason: cnState.winReason });
-  }
-  haptic(cnState.winner === cnState.coop.myTeam ? 'success' : 'error');
 }
 
 export function cnReset() {
-  cnState.phase       = 'setup';
-  cnState.words       = [];
-  cnState.winner      = null;
-  cnState.hint        = '';
-  cnState.hintDraft   = '';
-  cnState.phase2      = 'hint';
+  cnState.phase        = 'setup';
+  cnState.words        = [];
+  cnState.secretTypes  = [];
+  cnState.winner       = null;
+  cnState.hint         = '';
+  cnState.hintDraft    = '';
+  cnState.phase2       = 'hint';
   cnState.showSecretMap = false;
-  cnState.cnMenu      = false;
+  cnState.cnMenu       = false;
   cnState.cnEndConfirm = false;
+  cnState.coop.myRole  = null;
+  cnState.coop.myTeam  = null;
 }
 
-// ── Coop ──────────────────────────────────────────────────────────────────────
+// ── COOP ──────────────────────────────────────────────────────────────────────
 export function cnShowHostSetup() {
   cnState.coop.phase    = 'hosting';
   cnState.coop.codeDraft = '';
   cnState.coop.error    = null;
   cnState.coop.isHost   = true;
   cnState.coop.players  = [];
+  cnState.coop.myRole   = null;
+  cnState.coop.myTeam   = null;
 }
 
 export async function cnCreateRoom() {
-  const code   = cnState.coop.codeDraft.replace(/\D/g, '').slice(0, 6);
+  const code   = cnState.coop.codeDraft.replace(/[^0-9]/g,'').slice(0,6);
   const myName = cnState.coop.myName.trim() || 'Host';
   if (code.length !== 6) { cnState.coop.error = '6-stelligen Code eingeben'; return; }
-
   cnState.coop.code  = code;
   cnState.coop.error = null;
   cnState.coop.phase = 'lobby';
-  cnState.coop.players = [{ uid: 'host', name: myName, role: null, isHost: true }];
+  cnState.coop.players = [{ uid:'host', name:myName, role:null, isHost:true }];
 
   await Coop.hostGame({
     code, name: myName,
     onOpen:    (uid) => { cnState.coop.myUid = uid; },
     onError:   (e)   => {
-      cnState.coop.error = e.type === 'code-taken' ? 'Code bereits vergeben!' : 'Verbindungsfehler.';
+      cnState.coop.error = e.type==='code-taken' ? 'Code bereits vergeben!' : 'Verbindungsfehler.';
       cnState.coop.phase = 'hosting';
     },
     onJoin:    (uid, data) => {
-      if (!cnState.coop.players.find(p => p.uid === uid)) {
-        cnState.coop.players.push({ uid, name: data?.name || uid, role: null, isHost: false });
-      }
+      const existing = cnState.coop.players.find(p => p.uid===uid);
+      if (existing) { existing.name=data?.name||uid; existing.role=data?.role||null; }
+      else cnState.coop.players.push({ uid, name:data?.name||uid, role:data?.role||null, isHost:false });
     },
-    onLeave:   (uid) => { cnState.coop.players = cnState.coop.players.filter(p => p.uid !== uid); },
+    onLeave:   (uid) => { cnState.coop.players = cnState.coop.players.filter(p=>p.uid!==uid); },
     onMessage: cnHandleCoopMsg,
   });
 }
@@ -263,128 +247,155 @@ export function cnShowJoinSetup() {
   cnState.coop.myName    = '';
   cnState.coop.error     = null;
   cnState.coop.isHost    = false;
+  cnState.coop.myRole    = null;
+  cnState.coop.myTeam    = null;
 }
 
 export async function cnJoinRoom() {
   const name = cnState.coop.myName.trim();
-  const code = cnState.coop.codeDraft.replace(/\D/g, '').slice(0, 6);
-  if (!name) { cnState.coop.error = 'Name eingeben'; return; }
-  if (code.length !== 6) { cnState.coop.error = '6-stelligen Code eingeben'; return; }
-
-  cnState.coop.code  = code;
+  const code = cnState.coop.codeDraft.replace(/[^0-9]/g,'').slice(0,6);
+  if (!name)          { cnState.coop.error='Name eingeben'; return; }
+  if (code.length!==6){ cnState.coop.error='6-stelligen Code eingeben'; return; }
   cnState.coop.error = null;
+  cnState.coop.code  = code;
 
   await Coop.joinGame({
     code, name,
-    onOpen:    (uid) => { cnState.coop.myUid = uid; cnState.coop.phase = 'joined'; },
+    onOpen:    (uid) => { cnState.coop.myUid=uid; cnState.coop.phase='joined'; },
     onError:   (e)   => {
       cnState.coop.error =
-        e.type === 'code-not-found' ? 'Raum nicht gefunden!' :
-        e.type === 'room-full'      ? 'Raum ist voll!'       :
-        e.type === 'timeout'        ? 'Verbindungs-Timeout.' : 'Verbindungsfehler.';
+        e.type==='code-not-found' ? 'Raum nicht gefunden!'   :
+        e.type==='room-full'      ? 'Raum ist voll!'         :
+        e.type==='timeout'        ? 'Timeout — Private Relay? VPN ausschalten und nochmal versuchen.' :
+        'Verbindungsfehler.';
     },
     onMessage: cnHandleCoopMsg,
-    onClose:   () => { cnState.coop.phase = 'idle'; },
+    onClose:   () => { cnState.coop.phase='idle'; },
   });
 }
 
-// Rolle wählen in der Lobby
-export async function cnSetRole(role) {
-  // role: 'spymaster-red' | 'spymaster-blue' | 'operative-red' | 'operative-blue'
-  const player = cnState.coop.players.find(p => p.uid === cnState.coop.myUid);
-  if (player) player.role = role;
-  cnState.coop.myRole = role;
-  cnState.coop.myTeam = role.includes('red') ? 'red' : 'blue';
-  await Coop.send({ type: 'CN_ROLE', role, uid: cnState.coop.myUid });
+// Host: Rolle eines Spielers setzen
+export async function cnHostSetRole(uid, role) {
+  const p = cnState.coop.players.find(p=>p.uid===uid);
+  if (p) p.role = role;
+  // Spieler informieren
+  await Coop.sendTo(uid, { type:'CN_ASSIGNED_ROLE', role });
+  // Eigene Rolle auch setzen wenn Host
+  if (uid === cnState.coop.myUid) {
+    cnState.coop.myRole = role;
+    cnState.coop.myTeam = role?.includes('red') ? 'red' : 'blue';
+  }
 }
 
 export async function cnStartCoopGame() {
-  const grid = createGrid(cnState.lang);
-  // Nur Spymasters bekommen den vollständigen Grid mit Typen
-  // Operatives bekommen Grid ohne Typen (type: null bis aufgedeckt)
+  if (!cnState.coop.isHost) return;
+  const { words, types } = createGrid(cnState.lang);
+  const players = cnState.coop.players;
 
-  const publicGrid  = grid.map(c => ({ word: c.word, type: null, revealed: false }));
-  const secretGrid  = grid; // mit types
+  // Zähler
+  const redCount  = types.filter(t=>t===CN_TYPE.RED).length;
+  const blueCount = types.filter(t=>t===CN_TYPE.BLUE).length;
 
-  // Spymasters identifizieren
-  const spymasters = cnState.coop.players.filter(p =>
-    p.role && p.role.startsWith('spymaster')
-  );
+  // Public Grid — alle Typen null (unbekannt)
+  const publicGrid = words.map(c=>({ word:c.word, type:null, revealed:false }));
+  // Secret Grid — Typen bekannt
+  const secretGrid = words;
 
-  // An alle: Public-Grid + Start
-  await Coop.send({
-    type: 'CN_START',
-    publicGrid,
-    redCount:  grid.filter(c => c.type === CN_TYPE.RED).length,
-    blueCount: grid.filter(c => c.type === CN_TYPE.BLUE).length,
-    lang: cnState.lang,
-  });
-
-  // An Spymasters: Secret Grid (per targeted message)
-  for (const sm of spymasters) {
-    await Coop.sendTo(sm.uid, { type: 'CN_SECRET', secretGrid });
-  }
-
-  // Host selbst
-  cnApplyStart({ publicGrid,
-    redCount:  grid.filter(c => c.type === CN_TYPE.RED).length,
-    blueCount: grid.filter(c => c.type === CN_TYPE.BLUE).length,
-  });
-  if (spymasters.find(s => s.uid === cnState.coop.myUid)) {
-    cnApplySecret({ secretGrid });
-  }
-}
-
-function cnApplyStart(msg) {
-  cnState.words       = msg.publicGrid.map(c => ({ ...c }));
-  cnState.redCount    = msg.redCount;
-  cnState.blueCount   = msg.blueCount;
-  cnState.redLeft     = msg.redCount;
-  cnState.blueLeft    = msg.blueCount;
+  // Host-State setzen
+  cnState.words       = secretGrid; // Host sieht alles
+  cnState.secretTypes = types;
+  cnState.redCount    = redCount;
+  cnState.blueCount   = blueCount;
+  cnState.redLeft     = redCount;
+  cnState.blueLeft    = blueCount;
   cnState.currentTeam = 'red';
   cnState.hint        = '';
   cnState.hintCount   = 0;
   cnState.guessesLeft = 0;
   cnState.phase2      = 'hint';
   cnState.winner      = null;
+  cnState.showSecretMap = false;
   cnState.coop.phase  = 'playing';
   cnState.phase       = 'playing';
-}
 
-function cnApplySecret(msg) {
-  // Spymaster: echte Typen einsetzen
-  msg.secretGrid.forEach((c, i) => {
-    cnState.words[i].type = c.type;
+  // Spymaster-UIDs
+  const spymasters = players.filter(p => p.role?.startsWith('spymaster'));
+
+  // An alle: Public Grid
+  await Coop.send({
+    type:'CN_START', publicGrid, types,
+    redCount, blueCount, players: players.map(p=>({ uid:p.uid, name:p.name, role:p.role }))
   });
+
+  // An Spymasters: Secret Types
+  for (const sm of spymasters) {
+    if (sm.uid === cnState.coop.myUid) continue; // Host selbst schon gesetzt
+    await Coop.sendTo(sm.uid, { type:'CN_SECRET', types });
+  }
 }
 
 function cnHandleCoopMsg(msg) {
   if (!msg) return;
 
-  if (msg.type === 'CN_ROLE') {
-    const p = cnState.coop.players.find(p => p.uid === msg.author);
+  if (msg.type === 'CN_ASSIGNED_ROLE') {
+    cnState.coop.myRole = msg.role;
+    cnState.coop.myTeam = msg.role?.includes('red') ? 'red' : 'blue';
+    toast(`Deine Rolle: ${msg.role}`);
+  }
+
+  if (msg.type === 'CN_ROLE_UPDATE') {
+    // Andere Spieler sehen Rollenvergabe in der Lobby
+    const p = cnState.coop.players.find(p=>p.uid===msg.uid);
     if (p) p.role = msg.role;
   }
 
-  if (msg.type === 'CN_START') cnApplyStart(msg);
+  if (msg.type === 'CN_START') {
+    // Operatives: Public Grid (keine Typen)
+    // Spymasters bekommen danach CN_SECRET
+    cnState.words       = msg.publicGrid.map(c=>({...c}));
+    cnState.secretTypes = []; // wird via CN_SECRET gefüllt
+    cnState.redCount    = msg.redCount;
+    cnState.blueCount   = msg.blueCount;
+    cnState.redLeft     = msg.redCount;
+    cnState.blueLeft    = msg.blueCount;
+    cnState.currentTeam = 'red';
+    cnState.hint        = '';
+    cnState.hintCount   = 0;
+    cnState.guessesLeft = 0;
+    cnState.phase2      = 'hint';
+    cnState.winner      = null;
+    cnState.showSecretMap = false;
+    cnState.coop.phase  = 'playing';
+    cnState.phase       = 'playing';
+    haptic('success');
+  }
 
-  if (msg.type === 'CN_SECRET' && msg.targetUid === cnState.coop.myUid) {
-    cnApplySecret(msg);
+  if (msg.type === 'CN_SECRET') {
+    // Spymaster: echte Typen laden
+    cnState.secretTypes = msg.types;
+    // Grid mit echten Typen anreichern (nur für Spymaster-Anzeige)
+    msg.types.forEach((t,i) => {
+      if (cnState.words[i]) cnState.words[i]._secretType = t;
+    });
+    toast('Du bist Spymaster — du siehst alle Karten!');
   }
 
   if (msg.type === 'CN_HINT') {
+    if (msg.team !== cnState.currentTeam) return; // Sicherheit
     cnState.hint        = msg.hint;
     cnState.hintCount   = msg.count;
     cnState.guessesLeft = msg.count + 1;
     cnState.phase2      = 'guess';
     haptic('light');
+    toast(`Hinweis: "${msg.hint}" (${msg.count})`);
   }
 
   if (msg.type === 'CN_REVEAL') {
     const card = cnState.words[msg.idx];
     if (card) {
       card.revealed = true;
-      cnCheckReveal(msg.idx);
+      card.type     = msg.realType; // echter Typ für alle sichtbar
+      cnProcessReveal(msg.idx, msg.realType);
     }
   }
 
@@ -394,6 +405,7 @@ function cnHandleCoopMsg(msg) {
     cnState.hintCount   = 0;
     cnState.guessesLeft = 0;
     cnState.phase2      = 'hint';
+    haptic('light');
   }
 
   if (msg.type === 'CN_END') {
@@ -417,24 +429,31 @@ export async function cnCancelCoop() {
 }
 
 export async function cnShareLink() {
-  const base = window.location.origin + window.location.pathname;
-  const url  = `${base}?cn=${cnState.coop.code}`;
+  const url = `${location.origin}${location.pathname}?cn=${cnState.coop.code}`;
   if (navigator.share) {
-    try { await navigator.share({ title: 'Codenames — Beitreten', text: `Code: ${cnState.coop.code}`, url }); return; }
-    catch(e) { if (e.name === 'AbortError') return; }
+    try { await navigator.share({ title:'Codenames', text:`Code: ${cnState.coop.code}`, url }); return; }
+    catch(e) { if(e.name==='AbortError') return; }
   }
-  try { await navigator.clipboard.writeText(url); showToast('Link kopiert!'); }
-  catch { showToast(url); }
+  try { await navigator.clipboard.writeText(url); toast('Link kopiert!'); }
+  catch { toast(url); }
 }
 
-// Hilfsfunktionen für Template
+// ── Template-Helfer ───────────────────────────────────────────────────────────
 export function cnIsSpymaster() {
   return cnState.coop.myRole?.startsWith('spymaster') ?? false;
 }
 export function cnMyTeam() {
   return cnState.coop.myTeam;
 }
+
+// Farbe einer Karte für Template
+// - Spymaster: sieht Farbe immer (via _secretType oder type)
+// - Operative: sieht Farbe nur nach Aufdecken
 export function cnCardColor(card) {
-  if (!card.revealed && !cnIsSpymaster()) return 'neutral-hidden';
-  return card.type || 'neutral';
+  if (card.revealed) return card.type || 'neutral';
+  const isSpyOrHost = cnIsSpymaster() || (!cnState.coop.myRole && cnState.coop.isHost);
+  if (isSpyOrHost || cnState.showSecretMap) {
+    return card._secretType || card.type || 'neutral';
+  }
+  return 'hidden'; // Operative: keine Farbe
 }
