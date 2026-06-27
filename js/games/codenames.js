@@ -85,20 +85,21 @@ function createGrid(lang) {
   ]);
   return {
     words: words.map((word, i) => ({ word, type: types[i], revealed: false })),
-    types,  // separater Array für sendTo
+    types,
+    startingTeam,
   };
 }
 
 // ── Lokales Spiel ─────────────────────────────────────────────────────────────
 export function cnStartLocal() {
-  const { words } = createGrid(cnState.lang);
+  const { words, startingTeam } = createGrid(cnState.lang);
   cnState.words        = words;
   cnState.secretTypes  = words.map(c => c.type);
   cnState.redCount     = words.filter(c => c.type===CN_TYPE.RED).length;
   cnState.blueCount    = words.filter(c => c.type===CN_TYPE.BLUE).length;
   cnState.redLeft      = cnState.redCount;
   cnState.blueLeft     = cnState.blueCount;
-  cnState.currentTeam  = 'red';
+  cnState.currentTeam  = startingTeam; // Team mit 9 Karten startet
   cnState.hint         = '';
   cnState.hintCount    = 0;
   cnState.guessesLeft  = 0;
@@ -289,7 +290,7 @@ export async function cnHostSetRole(uid, role) {
 
 export async function cnStartCoopGame() {
   if (!cnState.coop.isHost) return;
-  const { words, types } = createGrid(cnState.lang);
+  const { words, types, startingTeam } = createGrid(cnState.lang);
   const players = cnState.coop.players;
 
   // Zähler
@@ -308,7 +309,7 @@ export async function cnStartCoopGame() {
   cnState.blueCount   = blueCount;
   cnState.redLeft     = redCount;
   cnState.blueLeft    = blueCount;
-  cnState.currentTeam = 'red';
+  cnState.currentTeam = startingTeam;
   cnState.hint        = '';
   cnState.hintCount   = 0;
   cnState.guessesLeft = 0;
@@ -324,7 +325,8 @@ export async function cnStartCoopGame() {
   // An alle: Public Grid
   await Coop.send({
     type:'CN_START', publicGrid, types,
-    redCount, blueCount, players: players.map(p=>({ uid:p.uid, name:p.name, role:p.role }))
+    redCount, blueCount, startingTeam,
+    players: players.map(p=>({ uid:p.uid, name:p.name, role:p.role }))
   });
 
   // An Spymasters: Secret Types
@@ -358,7 +360,7 @@ function cnHandleCoopMsg(msg) {
     cnState.blueCount   = msg.blueCount;
     cnState.redLeft     = msg.redCount;
     cnState.blueLeft    = msg.blueCount;
-    cnState.currentTeam = 'red';
+    cnState.currentTeam = startingTeam;
     cnState.hint        = '';
     cnState.hintCount   = 0;
     cnState.guessesLeft = 0;
