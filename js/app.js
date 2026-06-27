@@ -5,7 +5,7 @@ import { BUILD, CHANGELOG } from './buildinfo.js';
 import {
   cnState, cnStartLocal, cnGiveHint, cnRevealCard, cnPassTurn, cnReset,
   cnShowHostSetup, cnCreateRoom, cnShowJoinSetup, cnJoinRoom,
-  cnStartCoopGame, cnCancelCoop, cnShareLink, cnSetRole,
+  cnStartCoopGame, cnCancelCoop, cnShareLink, cnHostSetRole,
   cnIsSpymaster, cnMyTeam, cnCardColor,
 } from './games/codenames.js';
 import {
@@ -694,7 +694,7 @@ const App = {
       // Codenames
       cnState, cnStartLocal, cnGiveHint, cnRevealCard, cnPassTurn, cnReset,
       cnShowHostSetup, cnCreateRoom, cnShowJoinSetup, cnJoinRoom,
-      cnStartCoopGame, cnCancelCoop, cnShareLink, cnSetRole,
+      cnStartCoopGame, cnCancelCoop, cnShareLink, cnHostSetRole,
       cnIsSpymaster, cnMyTeam, cnCardColor,
     };
   },
@@ -1565,45 +1565,64 @@ const App = {
                 <span class="invite-code">{{ cnState.coop.code }}</span>
                 <button class="btn-sec btn-sm" @click="cnShareLink">🔗 Link teilen</button>
               </div>
-              <div class="coop-hint">Rollen vergeben</div>
-              <div style="font-size:.78rem;color:var(--txt2);margin-bottom:.8rem">
-                Jedes Team braucht einen Spymaster. Operatives raten die Wörter.
+
+              <div class="coop-hint">Spieler & Rollen ({{ cnState.coop.players.length }})</div>
+              <div style="font-size:.75rem;color:var(--txt2);margin-bottom:.8rem;line-height:1.5">
+                Als Host weist du jedem Spieler eine Rolle zu.<br>
+                Jedes Team braucht einen <strong>Spymaster</strong> (gibt Hinweise) und <strong>Operatives</strong> (raten).
               </div>
-              <ul class="lobby-list">
-                <li v-for="p in cnState.coop.players" :key="p.uid" class="lobby-item">
-                  <span class="li-icon">{{ p.isHost ? '👑' : '👤' }}</span>
-                  <span class="li-name">{{ p.name }}</span>
-                  <span v-if="p.role" class="li-ready"
-                    :class="p.role.includes('red') ? 'cn-role-red' : p.role.includes('blue') ? 'cn-role-blue' : 'yes'"
-                    style="font-size:.68rem">
-                    {{ p.role === 'spymaster-red' ? '🔴 Spym.' : p.role === 'spymaster-blue' ? '🔵 Spym.' : p.role === 'operative-red' ? '🔴 Oper.' : '🔵 Oper.' }}
-                  </span>
-                </li>
-              </ul>
-              <!-- Eigene Rolle wählen -->
-              <div v-if="cnState.coop.isHost || cnState.coop.myRole === null" style="margin-top:.8rem">
-                <div class="coop-hint">Meine Rolle</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
-                  <button class="cn-role-btn cn-role-btn-red"
-                    :class="{'cn-role-btn-active': cnState.coop.myRole==='spymaster-red'}"
-                    @click="cnSetRole('spymaster-red')">🔴 Spymaster<br><small>Rot</small></button>
-                  <button class="cn-role-btn cn-role-btn-blue"
-                    :class="{'cn-role-btn-active': cnState.coop.myRole==='spymaster-blue'}"
-                    @click="cnSetRole('spymaster-blue')">🔵 Spymaster<br><small>Blau</small></button>
-                  <button class="cn-role-btn cn-role-btn-red"
-                    :class="{'cn-role-btn-active': cnState.coop.myRole==='operative-red'}"
-                    @click="cnSetRole('operative-red')">🔴 Operative<br><small>Rot</small></button>
-                  <button class="cn-role-btn cn-role-btn-blue"
-                    :class="{'cn-role-btn-active': cnState.coop.myRole==='operative-blue'}"
-                    @click="cnSetRole('operative-blue')">🔵 Operative<br><small>Blau</small></button>
+
+              <!-- Spielerliste mit Rollenvergabe durch Host -->
+              <div v-for="p in cnState.coop.players" :key="p.uid" class="cn-lobby-player">
+                <span class="li-icon">{{ p.isHost ? '👑' : '👤' }}</span>
+                <span class="li-name" style="flex:1">{{ p.name }}</span>
+                <!-- Host: Dropdown für Rollenvergabe -->
+                <div v-if="cnState.coop.isHost" style="display:flex;gap:.3rem">
+                  <button class="cn-role-mini"
+                    :class="{'cn-role-mini-active-red': p.role==='spymaster-red'}"
+                    @click="cnHostSetRole(p.uid,'spymaster-red')" title="Spymaster Rot">🔴S</button>
+                  <button class="cn-role-mini"
+                    :class="{'cn-role-mini-active-blue': p.role==='spymaster-blue'}"
+                    @click="cnHostSetRole(p.uid,'spymaster-blue')" title="Spymaster Blau">🔵S</button>
+                  <button class="cn-role-mini"
+                    :class="{'cn-role-mini-active-red': p.role==='operative-red'}"
+                    @click="cnHostSetRole(p.uid,'operative-red')" title="Operative Rot">🔴O</button>
+                  <button class="cn-role-mini"
+                    :class="{'cn-role-mini-active-blue': p.role==='operative-blue'}"
+                    @click="cnHostSetRole(p.uid,'operative-blue')" title="Operative Blau">🔵O</button>
+                </div>
+                <!-- Gast: zeigt eigene Rolle -->
+                <span v-else-if="p.uid===cnState.coop.myUid && p.role"
+                  class="li-ready" :class="p.role.includes('red')?'cn-role-red':'cn-role-blue'"
+                  style="font-size:.72rem">
+                  {{ p.role==='spymaster-red'?'🔴 Spymaster':p.role==='spymaster-blue'?'🔵 Spymaster':p.role==='operative-red'?'🔴 Operative':'🔵 Operative' }}
+                </span>
+                <span v-else-if="p.role" class="li-ready yes" style="font-size:.68rem">
+                  {{ p.role==='spymaster-red'?'🔴S':p.role==='spymaster-blue'?'🔵S':p.role==='operative-red'?'🔴O':'🔵O' }}
+                </span>
+              </div>
+
+              <!-- Rollenübersicht -->
+              <div style="margin:.8rem 0;padding:.6rem;background:var(--sur);border-radius:10px;font-size:.75rem;color:var(--txt2)">
+                🔴 Rot: {{ cnState.coop.players.filter(p=>p.role&&p.role.includes('red')).map(p=>p.name).join(', ') || '—' }}<br>
+                🔵 Blau: {{ cnState.coop.players.filter(p=>p.role&&p.role.includes('blue')).map(p=>p.name).join(', ') || '—' }}
+              </div>
+
+              <button v-if="cnState.coop.isHost" class="btn-create-room" style="margin-top:.5rem"
+                :disabled="cnState.coop.players.length < 2 || !cnState.coop.players.every(p=>p.role)"
+                @click="cnStartCoopGame">
+                ▶ Spiel starten
+              </button>
+              <div v-if="cnState.coop.isHost && !cnState.coop.players.every(p=>p.role)"
+                style="font-size:.72rem;color:var(--txt3);text-align:center;margin-top:.4rem">
+                Alle Spieler brauchen eine Rolle
+              </div>
+              <div v-if="!cnState.coop.isHost" style="text-align:center;padding:.8rem 0;color:var(--txt2);font-size:.85rem">
+                ⏳ Warte auf den Host…
+                <div v-if="cnState.coop.myRole" style="margin-top:.3rem;color:var(--gold);font-weight:700">
+                  Deine Rolle: {{ cnState.coop.myRole }}
                 </div>
               </div>
-              <button v-if="cnState.coop.isHost" class="btn-create-room"
-                style="margin-top:.8rem"
-                :disabled="cnState.coop.players.length < 2"
-                @click="cnStartCoopGame">
-                ▶ Spiel starten ({{ cnState.coop.players.length }} Spieler)
-              </button>
               <button class="btn-sec" style="margin-top:.5rem" @click="cnCancelCoop">Verlassen</button>
             </div>
 
@@ -1622,30 +1641,19 @@ const App = {
               <button class="btn-sec" style="margin-top:.5rem" @click="cnState.coop.phase='idle'">Abbrechen</button>
             </div>
 
-            <!-- Joined: Warten + Rolle wählen -->
-            <div v-if="cnState.coop.phase==='joined'" style="text-align:center;padding:.5rem 0">
-              <div style="font-size:1.5rem;margin-bottom:.5rem">⏳</div>
-              <p style="color:var(--txt2);font-size:.9rem">Warte auf den Host…</p>
-              <div style="font-size:1.4rem;font-weight:900;color:var(--gold);letter-spacing:.2em;margin:.6rem 0">{{ cnState.coop.code }}</div>
-              <!-- Rolle wählen -->
-              <div style="margin-top:.8rem;text-align:left">
-                <div class="coop-hint">Meine Rolle wählen</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem">
-                  <button class="cn-role-btn cn-role-btn-red"
-                    :class="{'cn-role-btn-active': cnState.coop.myRole==='spymaster-red'}"
-                    @click="cnSetRole('spymaster-red')">🔴 Spymaster<br><small>Rot</small></button>
-                  <button class="cn-role-btn cn-role-btn-blue"
-                    :class="{'cn-role-btn-active': cnState.coop.myRole==='spymaster-blue'}"
-                    @click="cnSetRole('spymaster-blue')">🔵 Spymaster<br><small>Blau</small></button>
-                  <button class="cn-role-btn cn-role-btn-red"
-                    :class="{'cn-role-btn-active': cnState.coop.myRole==='operative-red'}"
-                    @click="cnSetRole('operative-red')">🔴 Operative<br><small>Rot</small></button>
-                  <button class="cn-role-btn cn-role-btn-blue"
-                    :class="{'cn-role-btn-active': cnState.coop.myRole==='operative-blue'}"
-                    @click="cnSetRole('operative-blue')">🔵 Operative<br><small>Blau</small></button>
-                </div>
+            <!-- Joined: Warte auf Host-Rollenvergabe -->
+            <div v-if="cnState.coop.phase==='joined'" style="text-align:center;padding:.8rem 0">
+              <div style="font-size:2rem;margin-bottom:.5rem">⏳</div>
+              <p style="color:var(--txt2);font-size:.9rem">Erfolgreich beigetreten!</p>
+              <div style="font-size:1.6rem;font-weight:900;color:var(--gold);letter-spacing:.25em;margin:.6rem 0">
+                {{ cnState.coop.code }}
               </div>
-              <button class="btn-sec" style="margin-top:.8rem" @click="cnCancelCoop">Verlassen</button>
+              <p style="font-size:.82rem;color:var(--txt3)">Der Host vergibt gleich deine Rolle…</p>
+              <div v-if="cnState.coop.myRole" style="margin-top:.8rem;padding:.8rem;background:rgba(124,58,237,.1);border-radius:12px;border:1px solid rgba(124,58,237,.3)">
+                <div style="font-size:.72rem;color:var(--txt3);margin-bottom:.3rem">DEINE ROLLE</div>
+                <div style="font-size:1rem;font-weight:700;color:var(--gold)">{{ cnState.coop.myRole }}</div>
+              </div>
+              <button class="btn-sec" style="margin-top:1rem" @click="cnCancelCoop">Verlassen</button>
             </div>
           </div>
         </template>
