@@ -1,8 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.58';
-export const BUILD_HASH = 'cn-coop-logic';
+export const BUILD      = '0.59';
+export const BUILD_HASH = 'cn-random-start';
 
 export const CHANGELOG = [
+  {
+    version: '0.59',
+    date: '27.06.2026',
+    changes: [
+      'Codenames: Startteam zufällig — wie beim Original (9 Karten = startet)',
+      'Manchmal fängt Rot an, manchmal Blau — per Zufall',
+    ],
+  },
   {
     version: '0.58',
     date: '27.06.2026',
