@@ -1,8 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.48';
-export const BUILD_HASH = 'force-update';
+export const BUILD      = '0.49';
+export const BUILD_HASH = 'sw-toplevel-fix';
 
 export const CHANGELOG = [
+  {
+    version: '0.49',
+    date: '27.06.2026',
+    changes: [
+      'SW dauerhaft gefixt — top-level wie Werwolf, kein function wrapper',
+      'Update-Banner erscheint jetzt zuverlässig auf iOS',
+      'app.js Duplikat bereinigt, applyUpdate korrekt definiert',
+    ],
+  },
   {
     version: '0.48',
     date: '27.06.2026',
