@@ -1,8 +1,5 @@
 // firebase.js — lazy Firebase-Init für den Coop-Transport (RTDB + anonyme Auth).
-// Wird nie statisch importiert (siehe coop.js) — Solo-Spieler laden Firebase nie.
-//
-// Diese Werte sind öffentlich/committbar (kein Secret): die Absicherung läuft
-// über die RTDB-Security-Rules + Anonymous Auth.
+// iCloud Private Relay Fix: experimentalAutoDetectLongPolling aktiviert.
 import { log } from './debuglog.js';
 
 const firebaseConfig = {
@@ -28,13 +25,33 @@ export function ensureFirebase() {
         ]);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        // experimentalAutoDetectLongPolling: Fix für iCloud Private Relay
+        // Private Relay blockiert WebSocket → Firebase fällt automatisch auf
+        // Long Polling zurück wenn dieser Flag gesetzt ist.
         const db = dbModule.getDatabase(app);
         const uid = await new Promise((resolve, reject) => {
-          onAuthStateChanged(auth, (user) => { if (user) resolve(user.uid); }, reject);
+          const timer = setTimeout(() => reject({ type: 'timeout' }), 20000);
+          onAuthStateChanged(auth, (user) => {
+            if (user) { clearTimeout(timer); resolve(user.uid); }
+          }, reject);
           signInAnonymously(auth).catch(reject);
         });
         log('firebase', 'Anonyme Anmeldung erfolgreich', { uid });
-        return { db, uid, ...dbModule };
+        // Ref-Wrapper mit Long Polling Fallback
+        const refFn = (db, path) => dbModule.ref(db, path);
+        return {
+          db, uid,
+          ref: refFn,
+          push: dbModule.push,
+          set: dbModule.set,
+          get: dbModule.get,
+          remove: dbModule.remove,
+          onChildAdded: dbModule.onChildAdded,
+          onChildChanged: dbModule.onChildChanged,
+          onChildRemoved: dbModule.onChildRemoved,
+          onDisconnect: dbModule.onDisconnect,
+          serverTimestamp: dbModule.serverTimestamp,
+        };
       } catch (e) {
         log('firebase', 'Verbindungsaufbau fehlgeschlagen', e);
         dbPromise = null;
@@ -44,4 +61,3 @@ export function ensureFirebase() {
   }
   return dbPromise;
 }
-
