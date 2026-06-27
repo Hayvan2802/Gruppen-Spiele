@@ -1157,8 +1157,8 @@ const App = {
           <div v-if="wbiState.gameMode==='coop'" class="coop-box">
             <!-- Idle -->
             <div v-if="wbiState.coop.phase==='idle'" style="display:flex;gap:.6rem">
-              <button class="btn-pri" style="flex:1" @click="wbiShowHostSetup">🏠 Host erstellen</button>
-              <button class="btn-sec" style="flex:1" @click="wbiShowJoinSetup">🚪 Beitreten</button>
+              <button class="btn-create-room" style="flex:1;margin-top:0" @click="wbiShowHostSetup">🏠 Raum erstellen</button>
+              <button class="btn-create-room" style="flex:1;margin-top:0;background:linear-gradient(135deg,#0ea5e9,#0284c7)" @click="wbiShowJoinSetup">🚪 Beitreten</button>
             </div>
             <!-- Hosting -->
             <div v-if="wbiState.coop.phase==='hosting'">
@@ -1529,14 +1529,16 @@ const App = {
               <div class="mode-card" @click="cnStartLocal">
                 <span class="mode-icon">📱</span>
                 <div class="mode-name">Ein Gerät</div>
-                <div class="mode-desc">Host sieht geheime Karte, alle anderen tippen auf dem selben Handy</div>
+                <div class="mode-desc">Alle spielen auf einem Handy</div>
               </div>
-              <div class="mode-card" :class="{active: cnState.coop.phase!=='idle'}"
-                @click="cnState.coop.phase === 'idle' && cnShowHostSetup()">
-                <span class="mode-icon">🌐</span>
-                <div class="mode-name">Multiplayer</div>
-                <div class="mode-desc">Spymasters sehen Karte auf eigenem Handy (empfohlen)</div>
-              </div>
+            </div>
+            <div v-if="cnState.coop.phase==='idle'" style="display:flex;gap:.6rem;margin-top:.7rem">
+              <button class="btn-create-room" style="flex:1;margin-top:0" @click="cnShowHostSetup">
+                🏠 Raum erstellen
+              </button>
+              <button class="btn-create-room" style="flex:1;margin-top:0;background:linear-gradient(135deg,#0ea5e9,#0284c7)" @click="cnShowJoinSetup">
+                🚪 Beitreten
+              </button>
             </div>
           </div>
 
@@ -1865,8 +1867,8 @@ const App = {
 
           <!-- Idle -->
           <div v-if="state.coop.phase==='idle'" style="display:flex;gap:.6rem">
-            <button class="btn-pri" style="flex:1" @click="showHostSetup">🏠 {{ t('coop.host') }}</button>
-            <button class="btn-sec" style="flex:1" @click="showJoinSetup">🚪 {{ t('coop.join') }}</button>
+            <button class="btn-create-room" style="flex:1;margin-top:0" @click="showHostSetup">🏠 Raum erstellen</button>
+            <button class="btn-create-room" style="flex:1;margin-top:0;background:linear-gradient(135deg,#0ea5e9,#0284c7)" @click="showJoinSetup">🚪 Beitreten</button>
           </div>
 
           <!-- Hosting -->
