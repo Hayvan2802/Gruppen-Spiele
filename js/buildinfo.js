@@ -1,8 +1,15 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.53';
-export const BUILD_HASH = 'cn-vfor-fix';
+export const BUILD      = '0.54';
+export const BUILD_HASH = 'force-cache-054';
 
 export const CHANGELOG = [
+  {
+    version: '0.54',
+    date: '27.06.2026',
+    changes: [
+      'Cache-Reset: erzwingt sofortiges Update auf iOS (v0.52 → v0.54)',
+    ],
+  },
   {
     version: '0.53',
     date: '27.06.2026',
