@@ -248,8 +248,9 @@ export async function cnCreateRoom() {
       cnState.coop.phase = 'hosting';
     },
     onJoin:    (uid, data) => {
-      if (!cnState.coop.players.find(p => p.uid === uid))
+      if (!cnState.coop.players.find(p => p.uid === uid)) {
         cnState.coop.players.push({ uid, name: data?.name || uid, role: null, isHost: false });
+      }
     },
     onLeave:   (uid) => { cnState.coop.players = cnState.coop.players.filter(p => p.uid !== uid); },
     onMessage: cnHandleCoopMsg,
