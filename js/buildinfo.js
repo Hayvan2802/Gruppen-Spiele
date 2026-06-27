@@ -1,8 +1,15 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.49';
-export const BUILD_HASH = 'sw-toplevel-fix';
+export const BUILD      = '0.50';
+export const BUILD_HASH = 'dedup-fix';
 
 export const CHANGELOG = [
+  {
+    version: '0.50',
+    date: '27.06.2026',
+    changes: [
+      'Crash behoben: applyUpdate und checkForUpdate doppelt definiert',
+    ],
+  },
   {
     version: '0.49',
     date: '27.06.2026',
