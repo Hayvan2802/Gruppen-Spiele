@@ -1,8 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.51';
-export const BUILD_HASH = 'syntax-fix-tests';
+export const BUILD      = '0.52';
+export const BUILD_HASH = 'cn-escape-fix';
 
 export const CHANGELOG = [
+  {
+    version: '0.52',
+    date: '27.06.2026',
+    changes: [
+      'Codenames: schwarzer Screen behoben — /\\D/g Safari-Escape-Fix',
+      'replace(/[^0-9]/g) statt /\\D/g in Vue-Templates',
+    ],
+  },
   {
     version: '0.51',
     date: '27.06.2026',
