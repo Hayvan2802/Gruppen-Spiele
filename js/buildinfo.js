@@ -1,8 +1,20 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.57';
-export const BUILD_HASH = 'coop-ui-relay-fix';
+export const BUILD      = '0.58';
+export const BUILD_HASH = 'cn-coop-logic';
 
 export const CHANGELOG = [
+  {
+    version: '0.58',
+    date: '27.06.2026',
+    changes: [
+      'Codenames Kernlogik neu geschrieben — graue Punkte behoben',
+      'Codenames Coop: Host verteilt Rollen an alle Spieler',
+      'Operative sehen Karten-Typ erst nach Aufdecken',
+      'Spymaster sieht alle Farben auf eigenem Handy',
+      'Schwarze Karte, Züge, Gewinnbedingungen korrekt implementiert',
+      'Private Relay Fehlermeldung verbessert',
+    ],
+  },
   {
     version: '0.57',
     date: '27.06.2026',
