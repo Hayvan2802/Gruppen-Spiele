@@ -691,6 +691,11 @@ const App = {
       coopSelectVote, coopConfirmVote, startCoopVoting,
       dismissWhatsNew, applyUpdate, checkForUpdate,
       exportLogToFile,
+      // Codenames
+      cnState, cnStartLocal, cnGiveHint, cnRevealCard, cnPassTurn, cnReset,
+      cnShowHostSetup, cnCreateRoom, cnShowJoinSetup, cnJoinRoom,
+      cnStartCoopGame, cnCancelCoop, cnShareLink, cnSetRole,
+      cnIsSpymaster, cnMyTeam, cnCardColor,
     };
   },
   template: `
