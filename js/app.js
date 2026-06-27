@@ -1519,12 +1519,11 @@ const App = {
           <div class="sec">
             <h2>🌍 Sprache</h2>
             <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-              <button v-for="(label, lang) in {de:'🇩🇪 Deutsch', en:'🇬🇧 English', tr:'🇹🇷 Türkçe', fr:'🇫🇷 Français', es:'🇪🇸 Español'}"
-                :key="lang" class="imposter-btn"
-                :class="{'imposter-btn-active': cnState.lang===lang}"
-                @click="cnState.lang=lang" style="flex:unset;padding:.55rem 1rem;font-size:.82rem">
-                {{ label }}
-              </button>
+              <button class="imposter-btn" :class="{'imposter-btn-active': cnState.lang==='de'}" @click="cnState.lang='de'" style="flex:unset;padding:.55rem 1rem;font-size:.82rem">🇩🇪 Deutsch</button>
+              <button class="imposter-btn" :class="{'imposter-btn-active': cnState.lang==='en'}" @click="cnState.lang='en'" style="flex:unset;padding:.55rem 1rem;font-size:.82rem">🇬🇧 English</button>
+              <button class="imposter-btn" :class="{'imposter-btn-active': cnState.lang==='tr'}" @click="cnState.lang='tr'" style="flex:unset;padding:.55rem 1rem;font-size:.82rem">🇹🇷 Türkçe</button>
+              <button class="imposter-btn" :class="{'imposter-btn-active': cnState.lang==='fr'}" @click="cnState.lang='fr'" style="flex:unset;padding:.55rem 1rem;font-size:.82rem">🇫🇷 Français</button>
+              <button class="imposter-btn" :class="{'imposter-btn-active': cnState.lang==='es'}" @click="cnState.lang='es'" style="flex:unset;padding:.55rem 1rem;font-size:.82rem">🇪🇸 Español</button>
             </div>
           </div>
 
@@ -1558,7 +1557,7 @@ const App = {
                 style="font-size:1.6rem;letter-spacing:.3em;text-align:center;padding:.8rem"/>
               <div v-if="cnState.coop.error" class="coop-error">{{ cnState.coop.error }}</div>
               <button class="btn-create-room"
-                :disabled="cnState.coop.codeDraft.replace(/[^0-9]/g,'').length!==6||!cnState.coop.myName.trim()"
+                :disabled="cnState.coop.codeDraft.replace(/[^0-9]/g,'').length < 6 || !cnState.coop.myName.trim()"
                 @click="cnCreateRoom">🏠 Raum erstellen</button>
               <button class="btn-sec" style="margin-top:.5rem" @click="cnState.coop.phase='idle'">Abbrechen</button>
             </div>
@@ -1621,7 +1620,7 @@ const App = {
                 style="font-size:1.6rem;letter-spacing:.3em;text-align:center;padding:.8rem"/>
               <div v-if="cnState.coop.error" class="coop-error">{{ cnState.coop.error }}</div>
               <button class="btn-create-room"
-                :disabled="cnState.coop.codeDraft.replace(/[^0-9]/g,'').length!==6||!cnState.coop.myName.trim()"
+                :disabled="cnState.coop.codeDraft.replace(/[^0-9]/g,'').length < 6 || !cnState.coop.myName.trim()"
                 @click="cnJoinRoom">🚪 Beitreten</button>
               <button class="btn-sec" style="margin-top:.5rem" @click="cnState.coop.phase='idle'">Abbrechen</button>
             </div>
