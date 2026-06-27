@@ -205,4 +205,20 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// ── Update-Funktionen ────────────────────────────────────────────────────────
+function applyUpdate() {
+  if (!waitingWorker) { location.reload(); return; }
+  waitingWorker.postMessage({ type: 'skipWaiting' });
+}
+function checkForUpdate() {
+  if (!window._swReg) { showToast('Kein SW aktiv'); return; }
+  state.checkingUpdate = true;
+  window._swReg.update().then(() => {
+    setTimeout(() => {
+      state.checkingUpdate = false;
+      if (!state.updateReady) showToast('Keine Updates verfügbar ✓');
+    }, 2000);
+  }).catch(() => { state.checkingUpdate = false; });
+}
+
 init();
