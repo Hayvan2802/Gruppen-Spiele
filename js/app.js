@@ -767,6 +767,18 @@ const App = {
             <div class="rules-step">🏆 <strong>Wer gewinnt?</strong><br>Wer seinen Begriff als erstes errät gewinnt die Runde. Alle können weiterspielen bis alle fertig sind.</div>
           </div>
         </template>
+        <!-- Werwolf Anleitung -->
+        <template v-if="state.showRulesGame==='ww'">
+          <img src='./icons/games/werwolf.png' style='width:72px;height:72px;display:block;margin:0 auto .5rem;border-radius:16px'/>
+          <h3 style="text-align:center;margin-bottom:1rem">Werwolf — Anleitung</h3>
+          <div class="rules-section">
+            <div class="rules-step">1️⃣ <strong>Rollen verteilen</strong><br>Jeder Spieler bekommt heimlich eine Rolle: Dorfbewohner, Werwolf, Seherin, Hexe oder andere Sonderrollen.</div>
+            <div class="rules-step">🌙 <strong>Nachtphase</strong><br>Alle schließen die Augen. Der Spielleiter weckt die Werwölfe — sie wählen ein Opfer. Dann kommen Seherin und Hexe dran.</div>
+            <div class="rules-step">☀️ <strong>Tagphase</strong><br>Das Dorf diskutiert, wer ein Werwolf sein könnte. Am Ende stimmt das Dorf ab und eliminiert einen Spieler.</div>
+            <div class="rules-step">🔁 <strong>Rundenablauf</strong><br>Nacht und Tag wechseln sich ab bis das Dorf alle Werwölfe gefunden hat — oder die Werwölfe in der Mehrheit sind.</div>
+            <div class="rules-step">🏆 <strong>Wer gewinnt?</strong><br>Das Dorf gewinnt wenn alle Werwölfe eliminiert sind. Die Werwölfe gewinnen wenn sie gleich viele oder mehr Spieler sind als das Dorf.</div>
+          </div>
+        </template>
         <!-- Codenames Anleitung -->
         <template v-if="state.showRulesGame==='cn'">
           <img src='./icons/games/codenames.png' style='width:72px;height:72px;display:block;margin:0 auto .5rem;border-radius:16px'/>
