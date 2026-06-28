@@ -264,6 +264,11 @@ function loadLastNamesIntoSetup() {
 }
 function dismissNamesHint() { state.showSavedNamesHint = false; }
 
+// Werwolf läuft als eigenständige Unter-App unter ./werwolf/.
+// Wir navigieren dorthin — der Werwolf-Startbildschirm übernimmt dann komplett.
+// (Zurück führt der 🎮-Button im Werwolf-Topbar wieder hierher.)
+function openWerwolf() { window.location.href = './werwolf/'; }
+
 // ── Konfigurationen ───────────────────────────────────────────────────────────
 function saveCurrentConfig() {
   const name = state.configNameDraft.trim() || `${state.playerCount} Spieler`;
@@ -673,7 +678,7 @@ const App = {
       t, i18nState,
       setTheme, setLang,
       changePlayerCount, selectMode,
-      loadLastNamesIntoSetup, dismissNamesHint,
+      loadLastNamesIntoSetup, dismissNamesHint, openWerwolf,
       saveCurrentConfig, loadConfig, removeConfig,
       openGameMenu, closeGameMenu, pauseGame, resumeGame, confirmEndGame,
       startLocalGame, revealCard, nextReveal, skipTimer, selectVote, confirmVote, newGame, nextRound, resetGame,
@@ -1832,6 +1837,12 @@ const App = {
             <div class="game-select-name">Codenames</div>
             <div class="game-select-desc">Teamspiel mit Geheimwörtern — 4 bis 16 Spieler</div>
             <div class="game-select-hint-btn" @click.stop="state.showRulesGame='cn'">❓ Anleitung</div>
+          </div>
+          <!-- Werwolf (eigenständige Unter-App unter ./werwolf/) -->
+          <div class="game-select-card" @click="openWerwolf">
+            <img src="./icons/games/werwolf.png" class="game-select-img" alt="Werwolf"/>
+            <div class="game-select-name">Werwolf</div>
+            <div class="game-select-desc">Das Dorf gegen die Wölfe — ab 4 Spieler</div>
           </div>
         </div>
 
