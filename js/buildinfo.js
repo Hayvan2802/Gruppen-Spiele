@@ -1,9 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.68';
-export const BUILD_HASH = 'cnselectmode-im-vue-setu';
+export const BUILD      = '0.69';
+export const BUILD_HASH = 'multiplayer-lobby-f-r-al';
 
 export const CHANGELOG = [
   {
+    version: '0.69',
+    date: '28.06.2026',
+    changes: [
+    'Multiplayer-Lobby für alle Spiele: Spielernamen sichtbar, Bereit-Button für Gäste, Host-Uid-Fix, Tap-to-Reveal Karte bei Imposter',
+    ],
+  },
+{
     version: '0.68',
     date: '28.06.2026',
     changes: [
