@@ -1,9 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.69';
-export const BUILD_HASH = 'multiplayer-lobby-f-r-al';
+export const BUILD      = '0.70';
+export const BUILD_HASH = 'werwolf-anleitung-in-den';
 
 export const CHANGELOG = [
   {
+    version: '0.70',
+    date: '28.06.2026',
+    changes: [
+    'Werwolf-Anleitung in den Spielregeln war doppelt — doppelten Block entfernt',
+    ],
+  },
+{
     version: '0.69',
     date: '28.06.2026',
     changes: [
