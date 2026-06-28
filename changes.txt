@@ -1,1 +1,2 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+Codenames: Singleplayer/Multiplayer-Auswahl wie bei den anderen Spielen strukturiert

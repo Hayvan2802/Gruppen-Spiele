@@ -1554,21 +1554,13 @@ const App = {
             </div>
           </div>
 
-          <!-- Lokal: Spielen-Button -->
-          <div v-if="cnState.gameMode==='local'" style="margin-top:.5rem">
-            <button class="btn-start" @click="cnStartLocal">▶ Spielen</button>
-          </div>
-
           <!-- Coop Setup -->
           <div v-if="cnState.gameMode==='coop'" class="coop-box">
+            <!-- Idle -->
             <div v-if="cnState.coop.phase==='idle'" style="display:flex;gap:.6rem">
               <button class="btn-create-room" style="flex:1;margin-top:0" @click="cnShowHostSetup">🏠 Raum erstellen</button>
               <button class="btn-create-room" style="flex:1;margin-top:0;background:linear-gradient(135deg,#0ea5e9,#0284c7)" @click="cnShowJoinSetup">🚪 Beitreten</button>
             </div>
-          </div>
-
-          <!-- Coop Phasen (hosting / lobby / joining / joined) -->
-          <div v-if="cnState.gameMode==='coop' && cnState.coop.phase !== 'idle'" class="coop-box">
             <!-- Hosting -->
             <div v-if="cnState.coop.phase==='hosting'">
               <div class="coop-hint">Dein Name</div>
@@ -1583,25 +1575,22 @@ const App = {
                 @click="cnCreateRoom">🏠 Raum erstellen</button>
               <button class="btn-sec" style="margin-top:.5rem" @click="cnState.coop.phase='idle'">Abbrechen</button>
             </div>
-
             <!-- Lobby -->
             <div v-if="cnState.coop.phase==='lobby'">
               <div class="invite-box">
                 <span class="invite-code">{{ cnState.coop.code }}</span>
                 <button class="btn-sec btn-sm" @click="cnShareLink">🔗 Link teilen</button>
               </div>
-
               <div class="coop-hint">Spieler & Rollen ({{ cnState.coop.players.length }})</div>
               <div style="font-size:.75rem;color:var(--txt2);margin-bottom:.8rem;line-height:1.5">
                 Als Host weist du jedem Spieler eine Rolle zu.<br>
                 Jedes Team braucht einen <strong>Spymaster</strong> (gibt Hinweise) und <strong>Operatives</strong> (raten).
               </div>
-
               <!-- Spielerliste mit Rollenvergabe durch Host -->
               <div v-for="p in cnState.coop.players" :key="p.uid" class="cn-lobby-player">
                 <span class="li-icon">{{ p.isHost ? '👑' : '👤' }}</span>
                 <span class="li-name" style="flex:1">{{ p.name }}</span>
-                <!-- Host: Dropdown für Rollenvergabe -->
+                <!-- Host: Rollenvergabe -->
                 <div v-if="cnState.coop.isHost" style="display:flex;gap:.3rem">
                   <button class="cn-role-mini"
                     :class="{'cn-role-mini-active-red': p.role==='spymaster-red'}"
@@ -1626,13 +1615,11 @@ const App = {
                   {{ p.role==='spymaster-red'?'🔴S':p.role==='spymaster-blue'?'🔵S':p.role==='operative-red'?'🔴O':'🔵O' }}
                 </span>
               </div>
-
               <!-- Rollenübersicht -->
               <div style="margin:.8rem 0;padding:.6rem;background:var(--sur);border-radius:10px;font-size:.75rem;color:var(--txt2)">
                 🔴 Rot: {{ cnState.coop.players.filter(p=>p.role&&p.role.includes('red')).map(p=>p.name).join(', ') || '—' }}<br>
                 🔵 Blau: {{ cnState.coop.players.filter(p=>p.role&&p.role.includes('blue')).map(p=>p.name).join(', ') || '—' }}
               </div>
-
               <button v-if="cnState.coop.isHost" class="btn-create-room" style="margin-top:.5rem"
                 :disabled="cnState.coop.players.length < 2 || !cnState.coop.players.every(p=>p.role)"
                 @click="cnStartCoopGame">
@@ -1650,7 +1637,6 @@ const App = {
               </div>
               <button class="btn-sec" style="margin-top:.5rem" @click="cnCancelCoop">Verlassen</button>
             </div>
-
             <!-- Joining -->
             <div v-if="cnState.coop.phase==='joining'">
               <div class="coop-hint">Dein Name</div>
@@ -1665,7 +1651,6 @@ const App = {
                 @click="cnJoinRoom">🚪 Beitreten</button>
               <button class="btn-sec" style="margin-top:.5rem" @click="cnState.coop.phase='idle'">Abbrechen</button>
             </div>
-
             <!-- Joined: Warte auf Host-Rollenvergabe -->
             <div v-if="cnState.coop.phase==='joined'" style="text-align:center;padding:.8rem 0">
               <div style="font-size:2rem;margin-bottom:.5rem">⏳</div>
@@ -1680,6 +1665,11 @@ const App = {
               </div>
               <button class="btn-sec" style="margin-top:1rem" @click="cnCancelCoop">Verlassen</button>
             </div>
+          </div>
+
+          <!-- Lokal: Spielen-Button -->
+          <div v-if="cnState.gameMode==='local'" style="margin-top:.5rem">
+            <button class="btn-start" @click="cnStartLocal">▶ Spielen</button>
           </div>
         </template>
 
