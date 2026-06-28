@@ -154,6 +154,18 @@ aktualisieren bzw. ergänzen.
   `chore: SW v0.XX` für Versions-/Service-Worker-Bumps.
 - `.release-counter` hält einen Zählerstand für den Release-Prozess.
 
+### Git-Workflow (verbindlich)
+
+**Jede Änderung wird über einen Pull Request eingebracht und anschließend
+gemergt** — niemals direkt auf `main` committen/pushen. Ablauf:
+
+1. Auf einem Feature-Branch arbeiten und committen.
+2. Branch pushen.
+3. **Pull Request** gegen `main` erstellen.
+4. Den PR **mergen** (Squash-Merge als Standard).
+
+Das gilt auch für kleine Doku-Änderungen.
+
 ### Konventionen
 
 - **Reines Vanilla-JS in ES-Modulen.** Keine neuen Build-Abhängigkeiten oder
