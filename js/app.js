@@ -3,7 +3,7 @@
 import { createApp, reactive, computed } from './vue.esm-browser.prod.js';
 import { BUILD, CHANGELOG } from './buildinfo.js';
 import {
-  cnState, cnStartLocal, cnGiveHint, cnRevealCard, cnPassTurn, cnReset,
+  cnState, cnSelectMode, cnStartLocal, cnGiveHint, cnRevealCard, cnPassTurn, cnReset,
   cnShowHostSetup, cnCreateRoom, cnShowJoinSetup, cnJoinRoom,
   cnStartCoopGame, cnCancelCoop, cnShareLink, cnHostSetRole,
   cnIsSpymaster, cnMyTeam, cnCardColor,
@@ -1541,24 +1541,34 @@ const App = {
           <div class="sec">
             <h2>📱 Spielmodus</h2>
             <div class="mode-grid">
-              <div class="mode-card" @click="cnStartLocal">
+              <div class="mode-card" :class="{active: cnState.gameMode==='local'}" @click="cnSelectMode('local')">
                 <span class="mode-icon">📱</span>
                 <div class="mode-name">Ein Gerät</div>
                 <div class="mode-desc">Alle spielen auf einem Handy</div>
               </div>
-            </div>
-            <div v-if="cnState.coop.phase==='idle'" style="display:flex;gap:.6rem;margin-top:.7rem">
-              <button class="btn-create-room" style="flex:1;margin-top:0" @click="cnShowHostSetup">
-                🏠 Raum erstellen
-              </button>
-              <button class="btn-create-room" style="flex:1;margin-top:0;background:linear-gradient(135deg,#0ea5e9,#0284c7)" @click="cnShowJoinSetup">
-                🚪 Beitreten
-              </button>
+              <div class="mode-card" :class="{active: cnState.gameMode==='coop'}" @click="cnSelectMode('coop')">
+                <span class="mode-icon">🌐</span>
+                <div class="mode-name">Multiplayer</div>
+                <div class="mode-desc">Jeder auf eigenem Handy</div>
+              </div>
             </div>
           </div>
 
+          <!-- Lokal: Spielen-Button -->
+          <div v-if="cnState.gameMode==='local'" style="margin-top:.5rem">
+            <button class="btn-start" @click="cnStartLocal">▶ Spielen</button>
+          </div>
+
           <!-- Coop Setup -->
-          <div v-if="cnState.coop.phase !== 'idle'" class="coop-box">
+          <div v-if="cnState.gameMode==='coop'" class="coop-box">
+            <div v-if="cnState.coop.phase==='idle'" style="display:flex;gap:.6rem">
+              <button class="btn-create-room" style="flex:1;margin-top:0" @click="cnShowHostSetup">🏠 Raum erstellen</button>
+              <button class="btn-create-room" style="flex:1;margin-top:0;background:linear-gradient(135deg,#0ea5e9,#0284c7)" @click="cnShowJoinSetup">🚪 Beitreten</button>
+            </div>
+          </div>
+
+          <!-- Coop Phasen (hosting / lobby / joining / joined) -->
+          <div v-if="cnState.gameMode==='coop' && cnState.coop.phase !== 'idle'" class="coop-box">
             <!-- Hosting -->
             <div v-if="cnState.coop.phase==='hosting'">
               <div class="coop-hint">Dein Name</div>
