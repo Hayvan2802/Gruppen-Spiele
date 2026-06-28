@@ -174,24 +174,52 @@ aktualisieren bzw. ergänzen.
 
 ### Versionierung & Release
 
-- `js/buildinfo.js` ist **auto-generiert** und trägt oben den Hinweis
-  „nicht manuell bearbeiten". Es hält `BUILD` (Version) und das `CHANGELOG`.
-- `sw.js` enthält die Cache-Version (`CACHE = 'gruppen-spiele-vX.YY'`) — diese
-  muss bei einem Release **mit der Build-Version mitgezogen** werden, sonst
-  bekommen Nutzer den neuen Code nicht.
-- Commit-Konvention im Verlauf: `feat: …` für Features, `chore: v0.XX` /
-  `chore: SW v0.XX` für Versions-/Service-Worker-Bumps.
-- `.release-counter` hält einen Zählerstand für den Release-Prozess.
+**Single Source of Truth:** `.release-counter` hält die aktuelle Version
+im Format `Major.Minor`. Minor wird pro Release um 1 erhöht; Major nur auf
+ausdrückliche Anweisung (`node build.js --major`).
+
+**Generierte Dateien — niemals manuell editieren:**
+- `js/buildinfo.js` — Version, Datum, Changelog-Array
+- `sw.js` (Cache-String) — wird von `build.js` mitgepflegt
+
+**Release-Ablauf (zwei PRs):**
+
+```
+# A) Feature-/Fix-PR
+git checkout main && git pull
+git checkout -b feat/<name>
+# Code ändern
+# Eine user-facing Zeile in changes.txt eintragen
+node test.js          # alle Tests grün
+git add … && git commit && git push
+# PR öffnen → squash-merge
+
+# B) Release-PR (separater PR nach dem Feature-Merge)
+git checkout main && git pull
+git checkout -b release/v<nächste-version>
+node build.js         # bumpt .release-counter, schreibt buildinfo.js + sw.js,
+                      # leert changes.txt
+node test.js          # sicherheitshalber nochmal
+git add js/buildinfo.js sw.js changes.txt .release-counter
+git commit -m "chore: v<version>"
+git push
+# PR öffnen → squash-merge → GitHub Pages deployt automatisch
+```
+
+**`changes.txt`** ist die Changelog-Quelle (eine Zeile pro Änderung, `#`
+startet Kommentare). `node build.js` liest sie, schreibt den Eintrag in
+`buildinfo.js` und leert sie danach.
 
 ### Git-Workflow (verbindlich)
 
 **Jede Änderung wird über einen Pull Request eingebracht und anschließend
 gemergt** — niemals direkt auf `main` committen/pushen. Ablauf:
 
-1. Auf einem Feature-Branch arbeiten und committen.
+1. Auf einem Feature-Branch arbeiten, `changes.txt` befüllen, committen.
 2. Branch pushen.
 3. **Pull Request** gegen `main` erstellen.
 4. Den PR **mergen** (Squash-Merge als Standard).
+5. Danach separaten **Release-PR** mit `node build.js` öffnen und mergen.
 
 Das gilt auch für kleine Doku-Änderungen.
 
