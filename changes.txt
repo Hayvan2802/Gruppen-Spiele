@@ -1,1 +1,2 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+Werwolf-Anleitung in den Spielregeln war doppelt — doppelten Block entfernt
