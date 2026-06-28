@@ -13,7 +13,7 @@ import {
   wbiStartLocal, wbiShowCard, wbiHideCard, wbiMarkGuessed, wbiMarkNotGuessed,
   wbiMarkSkipped, wbiNextCard, wbiToggleDiscussCard, wbiStartResolve,
   wbiRestart, wbiSelectMode, wbiShowHostSetup, wbiCreateRoom,
-  wbiShowJoinSetup, wbiJoinRoom, wbiStartCoopGame, wbiCancelCoop,
+  wbiShowJoinSetup, wbiJoinRoom, wbiStartCoopGame, wbiCancelCoop, wbiToggleReady,
   wbiShareLink, wbiSendGuess, wbiCurrentCard, wbiRemainingCount, wbiGuessedCount,
 } from './games/werbinich.js';
 import { ALL_WORDS, KATEGORIEN, DEFAULT_KATEGORIEN, DONATE_URL, COOP_MAX_PLAYERS } from './config.js';
@@ -137,6 +137,8 @@ const state = reactive({
     error: null,
     myRoleIsImposter: null,
     myWord: null,
+    cardRevealed: false,  // tap-to-reveal
+    lobbyPlayers: [],     // Gäste sehen die Lobby (broadcast vom Host)
     // Abstimmung
     voteSelection: null,
     myVoteDone: false,
@@ -469,19 +471,32 @@ async function createRoom() {
   const myName = state.coop.myName.trim() || 'Host';
   state.coop.code = code; state.coop.error = null; state.coop.phase = 'lobby';
   state.coop.players = [{ uid: 'host', name: myName, ready: true, isHost: true }];
+  const lobbyBroadcast = () => Coop.send({
+    type: 'LOBBY_UPDATE',
+    players: state.coop.players.map(p => ({ uid: p.uid, name: p.name, ready: p.ready, isHost: p.isHost })),
+  });
   await Coop.hostGame({
     code, name: myName,
-    onOpen: (uid) => { state.coop.myUid = uid; },
+    onOpen: (uid) => {
+      state.coop.myUid = uid;
+      const h = state.coop.players.find(p => p.isHost);
+      if (h) h.uid = uid; // Host-UID von 'host' auf echte Firebase-UID aktualisieren
+    },
     onError: (e) => { state.coop.error = e.type === 'code-taken' ? t('coop.codeTaken') : t('coop.errorGeneric'); state.coop.phase = 'hosting'; },
     onJoin: (uid, data) => {
       if (!state.coop.players.find(p => p.uid === uid))
         state.coop.players.push({ uid, name: data?.name || uid, ready: false, isHost: false });
+      lobbyBroadcast();
     },
-    onLeave: (uid) => { state.coop.players = state.coop.players.filter(p => p.uid !== uid); },
+    onLeave: (uid) => {
+      state.coop.players = state.coop.players.filter(p => p.uid !== uid);
+      lobbyBroadcast();
+    },
     onMessage: (msg) => {
       if (msg.type === Coop.MSG.READY) {
         const p = state.coop.players.find(x => x.uid === msg.author);
         if (p) p.ready = msg.ready;
+        lobbyBroadcast();
       }
     },
   });
@@ -494,6 +509,9 @@ async function startCoopGame() {
   const assignments = players.map((p, i) => ({
     uid: p.uid, name: p.name, isImposter: impIdx.has(i), word,
   }));
+  // allPlayers VOR dem Senden setzen — Host verarbeitet eigene Nachrichten nicht
+  state.coop.allPlayers = assignments.map(a => ({ uid: a.uid, name: a.name, isImposter: a.isImposter }));
+  state.coop.cardRevealed = false;
   await Coop.send({ type: Coop.MSG.START, assignments });
 
   // Host sieht auch seine eigene Karte
@@ -548,6 +566,7 @@ async function cancelCoop() {
   state.coop.myUid = null; state.coop.myRoleIsImposter = null; state.coop.myWord = null;
   state.coop.voteResult = null; state.coop.votesReceived = {};
   state.coop.myVoteDone = false; state.coop.voteSelection = null;
+  state.coop.lobbyPlayers = []; state.coop.cardRevealed = false;
 }
 
 function coopSelectVote(name) {
@@ -592,13 +611,17 @@ function calcCoopResult() {
 function handleCoopMessage(msg) {
   if (!msg) return;
 
+  if (msg.type === 'LOBBY_UPDATE') {
+    state.coop.lobbyPlayers = msg.players || [];
+  }
+
   if (msg.type === Coop.MSG.START) {
     const mine = msg.assignments?.find(a => a.uid === state.coop.myUid);
     if (mine) {
       state.coop.myRoleIsImposter = mine.isImposter;
       state.coop.myWord = mine.word;
-      // allPlayers auch für Gäste speichern
       state.coop.allPlayers = msg.assignments.map(a => ({ uid: a.uid, name: a.name, isImposter: a.isImposter }));
+      state.coop.cardRevealed = false;
       state.coop.phase = 'myRole';
     }
   }
@@ -692,7 +715,7 @@ const App = {
       wbiStartLocal, wbiShowCard, wbiHideCard, wbiMarkGuessed, wbiMarkNotGuessed,
       wbiMarkSkipped, wbiNextCard, wbiToggleDiscussCard, wbiStartResolve,
       wbiRestart, wbiSelectMode, wbiShowHostSetup, wbiCreateRoom,
-      wbiShowJoinSetup, wbiJoinRoom, wbiStartCoopGame, wbiCancelCoop,
+      wbiShowJoinSetup, wbiJoinRoom, wbiStartCoopGame, wbiCancelCoop, wbiToggleReady,
       wbiShareLink, wbiSendGuess, wbiCurrentCard, wbiRemainingCount, wbiGuessedCount,
       showHostSetup, createRoom, startCoopGame,
       showJoinSetup, joinRoom, toggleReady, cancelCoop,
@@ -742,6 +765,18 @@ const App = {
             <div class="rules-step">2️⃣ <strong>Fragen stellen</strong><br>Jeder Spieler stellt reihum Ja/Nein-Fragen über sich selbst. z.B. „Bin ich ein Mensch?" „Bin ich berühmt?"</div>
             <div class="rules-step">3️⃣ <strong>Erraten</strong><br>Wer glaubt zu wissen wer er ist, tippt auf ✓ Erraten. Wer es noch nicht weiß stellt weiter Fragen.</div>
             <div class="rules-step">🏆 <strong>Wer gewinnt?</strong><br>Wer seinen Begriff als erstes errät gewinnt die Runde. Alle können weiterspielen bis alle fertig sind.</div>
+          </div>
+        </template>
+        <!-- Werwolf Anleitung -->
+        <template v-if="state.showRulesGame==='ww'">
+          <img src='./icons/games/werwolf.png' style='width:72px;height:72px;display:block;margin:0 auto .5rem;border-radius:16px'/>
+          <h3 style="text-align:center;margin-bottom:1rem">Werwolf — Anleitung</h3>
+          <div class="rules-section">
+            <div class="rules-step">1️⃣ <strong>Rollen verteilen</strong><br>Jeder Spieler bekommt heimlich eine Rolle: Dorfbewohner, Werwolf, Seherin, Hexe oder andere Sonderrollen.</div>
+            <div class="rules-step">🌙 <strong>Nachtphase</strong><br>Alle schließen die Augen. Der Spielleiter weckt die Werwölfe — sie wählen ein Opfer. Dann kommen Seherin und Hexe dran.</div>
+            <div class="rules-step">☀️ <strong>Tagphase</strong><br>Das Dorf diskutiert, wer ein Werwolf sein könnte. Am Ende stimmt das Dorf ab und eliminiert einen Spieler.</div>
+            <div class="rules-step">🔁 <strong>Rundenablauf</strong><br>Nacht und Tag wechseln sich ab bis das Dorf alle Werwölfe gefunden hat — oder die Werwölfe in der Mehrheit sind.</div>
+            <div class="rules-step">🏆 <strong>Wer gewinnt?</strong><br>Das Dorf gewinnt wenn alle Werwölfe eliminiert sind. Die Werwölfe gewinnen wenn sie gleich viele oder mehr Spieler sind als das Dorf.</div>
           </div>
         </template>
         <!-- Codenames Anleitung -->
@@ -804,18 +839,33 @@ const App = {
     <div v-if="state.coop.phase === 'myRole'" class="modal-bg" style="z-index:400">
       <div class="modal" style="text-align:center">
         <div class="whatsnew-badge">🕵️ Deine Karte</div>
-        <div v-if="state.coop.myRoleIsImposter">
-          <div style="font-size:3rem;margin:.8rem 0">🕵️</div>
-          <div style="font-size:1.2rem;font-weight:900;color:var(--blood2);margin-bottom:.5rem">DU BIST DER IMPOSTER!</div>
-          <p class="confirm-msg">Du kennst das Wort nicht. Tu so als ob — lass dich nicht erwischen!</p>
+
+        <!-- Karte: erst verdeckt, nach Antippen aufgedeckt -->
+        <div @click="state.coop.cardRevealed = !state.coop.cardRevealed"
+          style="cursor:pointer;margin:.8rem 0;padding:1rem;border-radius:16px;border:2px dashed var(--bdr);transition:border-color .2s"
+          :style="state.coop.cardRevealed ? 'border-color:var(--gold)' : ''">
+          <template v-if="!state.coop.cardRevealed">
+            <div style="font-size:3rem">🃏</div>
+            <div style="font-size:.85rem;color:var(--txt2);margin-top:.4rem">Antippen zum Aufdecken</div>
+            <div style="font-size:.72rem;color:var(--txt3);margin-top:.2rem">(nur du siehst die Karte)</div>
+          </template>
+          <template v-else>
+            <div v-if="state.coop.myRoleIsImposter">
+              <div style="font-size:3rem;margin:.4rem 0">🕵️</div>
+              <div style="font-size:1.2rem;font-weight:900;color:var(--blood2)">DU BIST DER IMPOSTER!</div>
+              <p class="confirm-msg" style="margin:.4rem 0">Du kennst das Wort nicht. Tu so als ob!</p>
+            </div>
+            <div v-else>
+              <div style="font-size:3rem;margin:.4rem 0">💬</div>
+              <div style="font-size:.75rem;letter-spacing:.15em;color:var(--txt2)">DEIN WORT</div>
+              <div style="font-size:2.2rem;font-weight:900;color:var(--gold);margin:.3rem 0">{{ state.coop.myWord }}</div>
+              <p class="confirm-msg" style="margin:.3rem 0">Beschreibe es ohne das Wort zu sagen!</p>
+            </div>
+            <div style="font-size:.7rem;color:var(--txt3);margin-top:.5rem">Nochmal antippen zum Verbergen</div>
+          </template>
         </div>
-        <div v-else>
-          <div style="font-size:3rem;margin:.8rem 0">💬</div>
-          <div style="font-size:.78rem;letter-spacing:.15em;color:var(--txt2);margin-bottom:.3rem">DEIN WORT</div>
-          <div style="font-size:2.2rem;font-weight:900;color:var(--gold);margin:.4rem 0">{{ state.coop.myWord }}</div>
-          <p class="confirm-msg">Beschreibe es ohne das Wort zu sagen!</p>
-        </div>
-        <div style="font-size:.78rem;color:var(--txt3);margin-top:.8rem;text-align:center">
+
+        <div style="font-size:.78rem;color:var(--txt3);text-align:center">
           {{ state.coop.isHost ? 'Du startest die Diskussion für alle.' : 'Warte bis der Host die Diskussion startet.' }}
         </div>
         <button class="btn btn-primary" style="margin-top:1rem"
@@ -1211,7 +1261,9 @@ const App = {
                 <li v-for="p in wbiState.coop.players" :key="p.uid" class="lobby-item">
                   <span class="li-icon">{{ p.isHost ? '👑' : '👤' }}</span>
                   <span class="li-name">{{ p.name }}</span>
-                  <span class="li-ready" :class="p.isHost ? 'host' : 'yes'">{{ p.isHost ? 'Host' : 'Bereit' }}</span>
+                  <span class="li-ready" :class="p.isHost ? 'host' : p.ready ? 'yes' : 'no'">
+                    {{ p.isHost ? 'Host' : p.ready ? '✓ Bereit' : 'Wartet…' }}
+                  </span>
                 </li>
               </ul>
               <button class="btn-create-room" :disabled="wbiState.coop.players.length < 2" @click="wbiStartCoopGame">
@@ -1232,11 +1284,26 @@ const App = {
                 @click="wbiJoinRoom">🚪 Beitreten</button>
               <button class="btn-sec" style="margin-top:.5rem" @click="wbiState.coop.phase='idle'">Abbrechen</button>
             </div>
-            <!-- Joined: Warten -->
-            <div v-if="wbiState.coop.phase==='joined'" style="text-align:center;padding:1rem">
-              <div style="font-size:1.5rem;margin-bottom:.5rem">⏳</div>
-              <p style="color:var(--txt2);font-size:.9rem">Warte auf den Host…</p>
-              <div style="font-size:1.4rem;font-weight:900;color:var(--gold);letter-spacing:.2em;margin:.6rem 0">{{ wbiState.coop.code }}</div>
+            <!-- Joined: Lobby-Ansicht -->
+            <div v-if="wbiState.coop.phase==='joined'">
+              <div class="invite-box" style="margin-bottom:.8rem">
+                <span class="invite-code">{{ wbiState.coop.code }}</span>
+              </div>
+              <div class="coop-hint">Lobby ({{ wbiState.coop.lobbyPlayers.length }} Spieler)</div>
+              <ul class="lobby-list" v-if="wbiState.coop.lobbyPlayers.length">
+                <li v-for="p in wbiState.coop.lobbyPlayers" :key="p.uid" class="lobby-item">
+                  <span class="li-icon">{{ p.isHost ? '👑' : '👤' }}</span>
+                  <span class="li-name">{{ p.name }}</span>
+                  <span class="li-ready" :class="p.isHost ? 'host' : p.ready ? 'yes' : 'no'">
+                    {{ p.isHost ? 'Host' : p.ready ? '✓ Bereit' : 'Wartet…' }}
+                  </span>
+                </li>
+              </ul>
+              <div v-else style="text-align:center;padding:.6rem;color:var(--txt2);font-size:.85rem">⏳ Verbinde…</div>
+              <button class="btn-create-room" style="margin-top:.8rem;background:linear-gradient(135deg,#16a34a,#15803d)"
+                @click="wbiToggleReady">
+                {{ wbiState.coop.myReady ? '✓ Bereit (tippen zum Ändern)' : '✅ Ich bin bereit!' }}
+              </button>
               <button class="btn-sec" style="margin-top:.5rem" @click="wbiCancelCoop">Verlassen</button>
             </div>
           </div>
@@ -1663,19 +1730,29 @@ const App = {
                 @click="cnJoinRoom">🚪 Beitreten</button>
               <button class="btn-sec" style="margin-top:.5rem" @click="cnState.coop.phase='idle'">Abbrechen</button>
             </div>
-            <!-- Joined: Warte auf Host-Rollenvergabe -->
-            <div v-if="cnState.coop.phase==='joined'" style="text-align:center;padding:.8rem 0">
-              <div style="font-size:2rem;margin-bottom:.5rem">⏳</div>
-              <p style="color:var(--txt2);font-size:.9rem">Erfolgreich beigetreten!</p>
-              <div style="font-size:1.6rem;font-weight:900;color:var(--gold);letter-spacing:.25em;margin:.6rem 0">
-                {{ cnState.coop.code }}
+            <!-- Joined: Lobby-Ansicht -->
+            <div v-if="cnState.coop.phase==='joined'">
+              <div class="invite-box" style="margin-bottom:.8rem">
+                <span class="invite-code">{{ cnState.coop.code }}</span>
               </div>
-              <p style="font-size:.82rem;color:var(--txt3)">Der Host vergibt gleich deine Rolle…</p>
+              <div class="coop-hint">Lobby ({{ cnState.coop.lobbyPlayers.length }} Spieler)</div>
+              <div v-if="cnState.coop.lobbyPlayers.length">
+                <div v-for="p in cnState.coop.lobbyPlayers" :key="p.uid" class="cn-lobby-player">
+                  <span class="li-icon">{{ p.isHost ? '👑' : '👤' }}</span>
+                  <span class="li-name" style="flex:1">{{ p.name }}</span>
+                  <span v-if="p.role" class="li-ready yes" style="font-size:.72rem">
+                    {{ p.role==='spymaster-red'?'🔴 Spym.':p.role==='spymaster-blue'?'🔵 Spym.':p.role==='operative-red'?'🔴 Op.':'🔵 Op.' }}
+                  </span>
+                  <span v-else class="li-ready no" style="font-size:.72rem">Keine Rolle</span>
+                </div>
+              </div>
+              <div v-else style="text-align:center;padding:.6rem;color:var(--txt2);font-size:.85rem">⏳ Verbinde…</div>
               <div v-if="cnState.coop.myRole" style="margin-top:.8rem;padding:.8rem;background:rgba(124,58,237,.1);border-radius:12px;border:1px solid rgba(124,58,237,.3)">
                 <div style="font-size:.72rem;color:var(--txt3);margin-bottom:.3rem">DEINE ROLLE</div>
                 <div style="font-size:1rem;font-weight:700;color:var(--gold)">{{ cnState.coop.myRole }}</div>
               </div>
-              <button class="btn-sec" style="margin-top:1rem" @click="cnCancelCoop">Verlassen</button>
+              <p style="font-size:.82rem;color:var(--txt3);text-align:center;margin-top:.6rem">Der Host vergibt die Rollen…</p>
+              <button class="btn-sec" style="margin-top:.8rem" @click="cnCancelCoop">Verlassen</button>
             </div>
           </div>
 
@@ -1988,13 +2065,25 @@ const App = {
             <button class="btn-sec" style="margin-top:.6rem" @click="state.coop.phase='idle'">{{ t('coop.cancel') }}</button>
           </div>
 
-          <!-- Joined (Gast wartet) -->
-          <div v-if="state.coop.phase==='joined'" style="text-align:center;padding:1rem">
-            <div style="font-size:1.5rem;margin-bottom:.5rem">⏳</div>
-            <p style="color:var(--txt2);font-size:.9rem">{{ t('coop.waiting') }}</p>
-            <div style="font-size:1.4rem;font-weight:900;color:var(--gold);letter-spacing:.2em;margin:.6rem 0">{{ state.coop.code }}</div>
-            <button class="btn-pri" @click="toggleReady" style="margin-bottom:.5rem">✓ {{ t('coop.readyBtn') }}</button>
-            <button class="btn-sec" @click="cancelCoop">{{ t('coop.leave') }}</button>
+          <!-- Joined (Gast in Lobby) -->
+          <div v-if="state.coop.phase==='joined'">
+            <div class="invite-box" style="margin-bottom:.8rem">
+              <span class="invite-code">{{ state.coop.code }}</span>
+            </div>
+            <div class="coop-hint">Lobby ({{ state.coop.lobbyPlayers.length }} Spieler)</div>
+            <ul class="lobby-list" v-if="state.coop.lobbyPlayers.length">
+              <li v-for="p in state.coop.lobbyPlayers" :key="p.uid" class="lobby-item">
+                <span class="li-icon">{{ p.isHost ? '👑' : '👤' }}</span>
+                <span class="li-name">{{ p.name }}</span>
+                <span class="li-ready" :class="p.isHost ? 'host' : p.ready ? 'yes' : 'no'">
+                  {{ p.isHost ? 'Host' : p.ready ? '✓ Bereit' : 'Wartet…' }}
+                </span>
+              </li>
+            </ul>
+            <div v-else style="text-align:center;padding:.6rem;color:var(--txt2);font-size:.85rem">⏳ Verbinde…</div>
+            <button class="btn-create-room" style="margin-top:.8rem;background:linear-gradient(135deg,#16a34a,#15803d)"
+              @click="toggleReady">✅ Ich bin bereit!</button>
+            <button class="btn-sec" style="margin-top:.5rem" @click="cancelCoop">{{ t('coop.leave') }}</button>
           </div>
 
         </div>

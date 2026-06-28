@@ -24,6 +24,7 @@ export const cnState = reactive({
     myName: '', myUid: null,
     isHost: false,
     players: [],    // [{ uid, name, role, isHost }]
+    lobbyPlayers: [], // Gäste: Spielerliste vom Host (CN_LOBBY-Broadcast)
     error: null,
     myRole: null,   // 'spymaster-red'|'spymaster-blue'|'operative-red'|'operative-blue'
     myTeam: null,   // 'red'|'blue'
@@ -224,6 +225,13 @@ export function cnShowHostSetup() {
   cnState.coop.myTeam   = null;
 }
 
+function cnLobbyBroadcast() {
+  Coop.send({
+    type: 'CN_LOBBY',
+    players: cnState.coop.players.map(p => ({ uid: p.uid, name: p.name, role: p.role, isHost: p.isHost })),
+  });
+}
+
 export async function cnCreateRoom() {
   const code   = cnState.coop.codeDraft.replace(/[^0-9]/g,'').slice(0,6);
   const myName = cnState.coop.myName.trim() || 'Host';
@@ -235,17 +243,25 @@ export async function cnCreateRoom() {
 
   await Coop.hostGame({
     code, name: myName,
-    onOpen:    (uid) => { cnState.coop.myUid = uid; },
-    onError:   (e)   => {
+    onOpen: (uid) => {
+      cnState.coop.myUid = uid;
+      const h = cnState.coop.players.find(p => p.isHost);
+      if (h) h.uid = uid;
+    },
+    onError: (e) => {
       cnState.coop.error = e.type==='code-taken' ? 'Code bereits vergeben!' : 'Verbindungsfehler.';
       cnState.coop.phase = 'hosting';
     },
-    onJoin:    (uid, data) => {
+    onJoin: (uid, data) => {
       const existing = cnState.coop.players.find(p => p.uid===uid);
       if (existing) { existing.name=data?.name||uid; existing.role=data?.role||null; }
       else cnState.coop.players.push({ uid, name:data?.name||uid, role:data?.role||null, isHost:false });
+      cnLobbyBroadcast();
     },
-    onLeave:   (uid) => { cnState.coop.players = cnState.coop.players.filter(p=>p.uid!==uid); },
+    onLeave: (uid) => {
+      cnState.coop.players = cnState.coop.players.filter(p=>p.uid!==uid);
+      cnLobbyBroadcast();
+    },
     onMessage: cnHandleCoopMsg,
   });
 }
@@ -294,6 +310,8 @@ export async function cnHostSetRole(uid, role) {
     cnState.coop.myRole = role;
     cnState.coop.myTeam = role?.includes('red') ? 'red' : 'blue';
   }
+  // Lobby-Update an alle senden
+  cnLobbyBroadcast();
 }
 
 export async function cnStartCoopGame() {
@@ -347,6 +365,10 @@ export async function cnStartCoopGame() {
 function cnHandleCoopMsg(msg) {
   if (!msg) return;
 
+  if (msg.type === 'CN_LOBBY') {
+    cnState.coop.lobbyPlayers = msg.players || [];
+  }
+
   if (msg.type === 'CN_ASSIGNED_ROLE') {
     cnState.coop.myRole = msg.role;
     cnState.coop.myTeam = msg.role?.includes('red') ? 'red' : 'blue';
@@ -368,7 +390,7 @@ function cnHandleCoopMsg(msg) {
     cnState.blueCount   = msg.blueCount;
     cnState.redLeft     = msg.redCount;
     cnState.blueLeft    = msg.blueCount;
-    cnState.currentTeam = startingTeam;
+    cnState.currentTeam = msg.startingTeam;
     cnState.hint        = '';
     cnState.hintCount   = 0;
     cnState.guessesLeft = 0;
@@ -429,12 +451,13 @@ function cnHandleCoopMsg(msg) {
 
 export async function cnCancelCoop() {
   await Coop.leave();
-  cnState.coop.phase   = 'idle';
-  cnState.coop.players = [];
-  cnState.coop.error   = null;
-  cnState.coop.myUid   = null;
-  cnState.coop.myRole  = null;
-  cnState.coop.myTeam  = null;
+  cnState.coop.phase        = 'idle';
+  cnState.coop.players      = [];
+  cnState.coop.lobbyPlayers = [];
+  cnState.coop.error        = null;
+  cnState.coop.myUid        = null;
+  cnState.coop.myRole       = null;
+  cnState.coop.myTeam       = null;
   cnReset();
 }
 

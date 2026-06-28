@@ -66,6 +66,8 @@ export const wbiState = reactive({
     myName: '', myUid: null,
     isHost: false,
     players: [],
+    lobbyPlayers: [],  // Gäste: Spielerliste vom Host (WBI_LOBBY-Broadcast)
+    myReady: false,
     error: null,
     myCard: null,      // { word, category } — nur ich sehe meine Karte
     allCards: {},      // { uid: { word, category, guessed, skipped } } — Host verwaltet
@@ -216,9 +218,18 @@ export async function wbiCreateRoom() {
   wbiState.coop.phase = 'lobby';
   wbiState.coop.players = [{ uid: 'host', name: myName, ready: true, isHost: true }];
 
+  const lobbyBroadcast = () => Coop.send({
+    type: 'WBI_LOBBY',
+    players: wbiState.coop.players.map(p => ({ uid: p.uid, name: p.name, ready: p.ready, isHost: p.isHost })),
+  });
+
   await Coop.hostGame({
     code, name: myName,
-    onOpen: (uid) => { wbiState.coop.myUid = uid; },
+    onOpen: (uid) => {
+      wbiState.coop.myUid = uid;
+      const h = wbiState.coop.players.find(p => p.isHost);
+      if (h) h.uid = uid;
+    },
     onError: (e) => {
       wbiState.coop.error = e.type === 'code-taken' ? 'Code bereits vergeben!' : 'Verbindungsfehler.';
       wbiState.coop.phase = 'hosting';
@@ -226,10 +237,26 @@ export async function wbiCreateRoom() {
     onJoin: (uid, data) => {
       if (!wbiState.coop.players.find(p => p.uid === uid))
         wbiState.coop.players.push({ uid, name: data?.name || uid, ready: false, isHost: false });
+      lobbyBroadcast();
     },
-    onLeave: (uid) => { wbiState.coop.players = wbiState.coop.players.filter(p => p.uid !== uid); },
-    onMessage: wbiHandleCoopMsg,
+    onLeave: (uid) => {
+      wbiState.coop.players = wbiState.coop.players.filter(p => p.uid !== uid);
+      lobbyBroadcast();
+    },
+    onMessage: (msg) => {
+      if (msg.type === 'WBI_READY') {
+        const p = wbiState.coop.players.find(x => x.uid === msg.author);
+        if (p) p.ready = msg.ready;
+        lobbyBroadcast();
+      }
+      wbiHandleCoopMsg(msg);
+    },
   });
+}
+
+export async function wbiToggleReady() {
+  wbiState.coop.myReady = !wbiState.coop.myReady;
+  await Coop.send({ type: 'WBI_READY', ready: wbiState.coop.myReady });
 }
 
 export function wbiShowJoinSetup() {
@@ -295,10 +322,15 @@ export async function wbiStartCoopGame() {
   }
 
   await Coop.send({ type: 'WBI_START', players: assignments.map(a => ({ uid: a.uid, name: a.name })) });
+  wbiState.coop.phase = 'playing';
 }
 
 function wbiHandleCoopMsg(msg) {
   if (!msg) return;
+
+  if (msg.type === 'WBI_LOBBY') {
+    wbiState.coop.lobbyPlayers = msg.players || [];
+  }
 
   if (msg.type === 'WBI_CARD' && msg.targetUid === wbiState.coop.myUid) {
     wbiState.coop.myCard = { word: msg.word, category: msg.category };
@@ -362,13 +394,15 @@ export async function wbiSendGuess(correct) {
 
 export async function wbiCancelCoop() {
   await Coop.leave();
-  wbiState.coop.phase    = 'idle';
-  wbiState.coop.players  = [];
-  wbiState.coop.error    = null;
-  wbiState.coop.myUid    = null;
-  wbiState.coop.myCard   = null;
-  wbiState.coop.allCards = {};
-  wbiState.coop.guesses  = [];
+  wbiState.coop.phase        = 'idle';
+  wbiState.coop.players      = [];
+  wbiState.coop.lobbyPlayers = [];
+  wbiState.coop.myReady      = false;
+  wbiState.coop.error        = null;
+  wbiState.coop.myUid        = null;
+  wbiState.coop.myCard       = null;
+  wbiState.coop.allCards     = {};
+  wbiState.coop.guesses      = [];
 }
 
 export async function wbiGetInviteLink() {
