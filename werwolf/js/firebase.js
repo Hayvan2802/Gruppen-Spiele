@@ -6,13 +6,13 @@
 import { log } from './debuglog.js';
 
 const firebaseConfig = {
-  apiKey: 'AIzaSyAVpCzaRbJu6C1nSNRQCjD3MLwf5wijPbY',
-  authDomain: 'coop-number-sums.firebaseapp.com',
-  databaseURL: 'https://coop-number-sums-default-rtdb.europe-west1.firebasedatabase.app',
-  projectId: 'coop-number-sums',
-  storageBucket: 'coop-number-sums.firebasestorage.app',
-  messagingSenderId: '380862882686',
-  appId: '1:380862882686:web:87d4831bd678ca2723092f',
+  apiKey: 'AIzaSyC-ke51RMgKFsxrHojetq3Cz2QK7O6UAkc',
+  authDomain: 'gruppen-spiele.firebaseapp.com',
+  databaseURL: 'https://gruppen-spiele-default-rtdb.europe-west1.firebasedatabase.app',
+  projectId: 'gruppen-spiele',
+  storageBucket: 'gruppen-spiele.firebasestorage.app',
+  messagingSenderId: '92280391521',
+  appId: '1:92280391521:web:58ba3606053bafcf7d6720',
 };
 
 let dbPromise = null;
