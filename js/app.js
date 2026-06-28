@@ -714,7 +714,7 @@ const App = {
          v-show statt v-if, damit Host + Shadow-DOM erhalten bleiben und der
          Wechsel hin/zurück ohne Reload sofort ist. -->
     <div id="ww-host" class="ww-host" v-show="state.screen==='ww'"></div>
-    <button v-if="state.screen==='ww'" class="ww-back-btn icon-btn" @click="closeWerwolf" title="Zurück" aria-label="Zurück">←</button>
+    <button v-if="state.screen==='ww'" class="back-corner icon-btn" @click="closeWerwolf" title="Zurück" aria-label="Zurück">←</button>
 
     <!-- Pause-Overlay entfernt — nur gameMenu Modal wird verwendet -->
 
@@ -1108,7 +1108,7 @@ const App = {
     <template v-if="state.screen === 'wbi'">
       <div class="top-bar">
         <!-- Im Setup: Zurück-Pfeil. Im Spiel: Pause-Button -->
-        <button v-if="wbiState.phase === 'setup'" class="icon-btn"
+        <button v-if="wbiState.phase === 'setup'" class="back-corner icon-btn"
           @click="state.screen='home';wbiRestart()" title="Zurück">←</button>
         <button v-else class="icon-btn"
           @click="state.wbiMenu=true" title="Spielmenü">⏸</button>
@@ -1494,7 +1494,7 @@ const App = {
     <!-- ══════════════════════════════════════════════════════════════════ -->
     <template v-if="state.screen === 'cn'">
       <div class="top-bar">
-        <button v-if="cnState.phase === 'setup'" class="icon-btn"
+        <button v-if="cnState.phase === 'setup'" class="back-corner icon-btn"
           @click="state.screen='home';cnReset()" title="Zurück">←</button>
         <button v-if="cnState.phase === 'setup'" class="icon-btn"
           @click="state.showSettingsModal=true" title="Einstellungen">⚙️</button>
@@ -1868,7 +1868,7 @@ const App = {
     <!-- ══════════════════════════════════════════════════════════════════ -->
     <template v-if="state.screen === 'setup'">
       <div class="top-bar">
-        <button class="icon-btn" @click="state.screen='home'" title="Zurück">←</button>
+        <button class="back-corner icon-btn" @click="state.screen='home'" title="Zurück">←</button>
         <button class="icon-btn" @click="state.showSettingsModal=true" title="Einstellungen">⚙️</button>
       </div>
       <div style="padding:0 1.2rem 3rem;max-width:480px;margin:0 auto">

@@ -1463,11 +1463,13 @@ body.neon .btn-start {
   z-index: 40;
   background: #0d0a14; /* verhindert Durchscheinen während des Ladens */
 }
-/* Durchgängiger Zurück-Button (wie bei den anderen Spielen), in der Haupt-App
-   gestylt und über dem Werwolf-Inhalt. Respektiert die Safe-Area (Notch). */
-.ww-back-btn {
+/* Einheitlicher Zurück-Button für ALLE Spiele: immer oben links in der Ecke.
+   Fix positioniert (aus dem Top-Bar-Fluss gelöst), an der Top-Bar-Polsterung
+   ausgerichtet, über dem Inhalt (z-index 60 > Top-Bar 50), aber unter Modals
+   (200+). Respektiert die Safe-Area (Notch). */
+.back-corner {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + .6rem);
-  left: calc(env(safe-area-inset-left, 0px) + .8rem);
-  z-index: 41;
+  top: max(.7rem, env(safe-area-inset-top, .7rem));
+  left: max(1.2rem, env(safe-area-inset-left, 1.2rem));
+  z-index: 60;
 }
