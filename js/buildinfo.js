@@ -1,8 +1,15 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.62';
-export const BUILD_HASH = 'werwolf-seamless';
+export const BUILD      = '0.63';
+export const BUILD_HASH = 'back-button-corner';
 
 export const CHANGELOG = [
+  {
+    version: '0.63',
+    date: '28.06.2026',
+    changes: [
+      'Zurück-Pfeil (←) jetzt bei allen Spielen einheitlich oben links',
+    ],
+  },
   {
     version: '0.62',
     date: '28.06.2026',
