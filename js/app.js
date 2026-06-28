@@ -102,7 +102,7 @@ const state = reactive({
   lobbyHistory: [],      // [{ round, word, winner, imposters, eliminated, tally, roles }]
   wbiMenu: false,
   wbiEndConfirm: false,
-  showRulesGame: null, // 'imposter' | 'wbi' | null
+  showRulesGame: null, // 'imposter' | 'wbi' | 'cn' | 'ww' | null
   // Theme
   activeTheme: 'dark',  // 'dark'|'light'|'auto'|'neon'
   settings: loadSettings(),
@@ -754,6 +754,18 @@ const App = {
             <div class="rules-step">3️⃣ <strong>Wörter erraten</strong><br>Das Team tippt auf Wörter die sie für richtig halten. Richtige Farbe = weiter raten. Falsche Farbe = Zug vorbei.</div>
             <div class="rules-step">☠️ <strong>Achtung: Schwarze Karte</strong><br>Wer die schwarze Karte aufdeckt verliert sofort das Spiel!</div>
             <div class="rules-step">🏆 <strong>Wer gewinnt?</strong><br>Das Team das alle seine Wörter zuerst aufdeckt gewinnt. Rot startet und hat eine Karte mehr.</div>
+          </div>
+        </template>
+        <!-- Werwolf Anleitung -->
+        <template v-if="state.showRulesGame==='ww'">
+          <img src='./icons/games/werwolf.png' style='width:72px;height:72px;display:block;margin:0 auto .5rem;border-radius:16px'/>
+          <h3 style="text-align:center;margin-bottom:1rem">Werwolf — Anleitung</h3>
+          <div class="rules-section">
+            <div class="rules-step">1️⃣ <strong>Rollen verteilen</strong><br>Jeder Spieler bekommt heimlich eine Rolle: Dorfbewohner, Werwolf, Seherin, Hexe oder andere Sonderrollen.</div>
+            <div class="rules-step">🌙 <strong>Nachtphase</strong><br>Alle schließen die Augen. Der Spielleiter weckt die Werwölfe — sie wählen ein Opfer. Dann kommen Seherin und Hexe dran.</div>
+            <div class="rules-step">☀️ <strong>Tagphase</strong><br>Das Dorf diskutiert, wer ein Werwolf sein könnte. Am Ende stimmt das Dorf ab und eliminiert einen Spieler.</div>
+            <div class="rules-step">🔁 <strong>Rundenablauf</strong><br>Nacht und Tag wechseln sich ab bis das Dorf alle Werwölfe gefunden hat — oder die Werwölfe in der Mehrheit sind.</div>
+            <div class="rules-step">🏆 <strong>Wer gewinnt?</strong><br>Das Dorf gewinnt wenn alle Werwölfe eliminiert sind. Die Werwölfe gewinnen wenn sie gleich viele oder mehr Spieler sind als das Dorf.</div>
           </div>
         </template>
         <button class="btn-start" style="margin-top:1rem" @click="state.showRulesGame=null">Verstanden ✓</button>
@@ -1554,21 +1566,13 @@ const App = {
             </div>
           </div>
 
-          <!-- Lokal: Spielen-Button -->
-          <div v-if="cnState.gameMode==='local'" style="margin-top:.5rem">
-            <button class="btn-start" @click="cnStartLocal">▶ Spielen</button>
-          </div>
-
           <!-- Coop Setup -->
           <div v-if="cnState.gameMode==='coop'" class="coop-box">
+            <!-- Idle -->
             <div v-if="cnState.coop.phase==='idle'" style="display:flex;gap:.6rem">
               <button class="btn-create-room" style="flex:1;margin-top:0" @click="cnShowHostSetup">🏠 Raum erstellen</button>
               <button class="btn-create-room" style="flex:1;margin-top:0;background:linear-gradient(135deg,#0ea5e9,#0284c7)" @click="cnShowJoinSetup">🚪 Beitreten</button>
             </div>
-          </div>
-
-          <!-- Coop Phasen (hosting / lobby / joining / joined) -->
-          <div v-if="cnState.gameMode==='coop' && cnState.coop.phase !== 'idle'" class="coop-box">
             <!-- Hosting -->
             <div v-if="cnState.coop.phase==='hosting'">
               <div class="coop-hint">Dein Name</div>
@@ -1583,25 +1587,22 @@ const App = {
                 @click="cnCreateRoom">🏠 Raum erstellen</button>
               <button class="btn-sec" style="margin-top:.5rem" @click="cnState.coop.phase='idle'">Abbrechen</button>
             </div>
-
             <!-- Lobby -->
             <div v-if="cnState.coop.phase==='lobby'">
               <div class="invite-box">
                 <span class="invite-code">{{ cnState.coop.code }}</span>
                 <button class="btn-sec btn-sm" @click="cnShareLink">🔗 Link teilen</button>
               </div>
-
               <div class="coop-hint">Spieler & Rollen ({{ cnState.coop.players.length }})</div>
               <div style="font-size:.75rem;color:var(--txt2);margin-bottom:.8rem;line-height:1.5">
                 Als Host weist du jedem Spieler eine Rolle zu.<br>
                 Jedes Team braucht einen <strong>Spymaster</strong> (gibt Hinweise) und <strong>Operatives</strong> (raten).
               </div>
-
               <!-- Spielerliste mit Rollenvergabe durch Host -->
               <div v-for="p in cnState.coop.players" :key="p.uid" class="cn-lobby-player">
                 <span class="li-icon">{{ p.isHost ? '👑' : '👤' }}</span>
                 <span class="li-name" style="flex:1">{{ p.name }}</span>
-                <!-- Host: Dropdown für Rollenvergabe -->
+                <!-- Host: Rollenvergabe -->
                 <div v-if="cnState.coop.isHost" style="display:flex;gap:.3rem">
                   <button class="cn-role-mini"
                     :class="{'cn-role-mini-active-red': p.role==='spymaster-red'}"
@@ -1626,13 +1627,11 @@ const App = {
                   {{ p.role==='spymaster-red'?'🔴S':p.role==='spymaster-blue'?'🔵S':p.role==='operative-red'?'🔴O':'🔵O' }}
                 </span>
               </div>
-
               <!-- Rollenübersicht -->
               <div style="margin:.8rem 0;padding:.6rem;background:var(--sur);border-radius:10px;font-size:.75rem;color:var(--txt2)">
                 🔴 Rot: {{ cnState.coop.players.filter(p=>p.role&&p.role.includes('red')).map(p=>p.name).join(', ') || '—' }}<br>
                 🔵 Blau: {{ cnState.coop.players.filter(p=>p.role&&p.role.includes('blue')).map(p=>p.name).join(', ') || '—' }}
               </div>
-
               <button v-if="cnState.coop.isHost" class="btn-create-room" style="margin-top:.5rem"
                 :disabled="cnState.coop.players.length < 2 || !cnState.coop.players.every(p=>p.role)"
                 @click="cnStartCoopGame">
@@ -1650,7 +1649,6 @@ const App = {
               </div>
               <button class="btn-sec" style="margin-top:.5rem" @click="cnCancelCoop">Verlassen</button>
             </div>
-
             <!-- Joining -->
             <div v-if="cnState.coop.phase==='joining'">
               <div class="coop-hint">Dein Name</div>
@@ -1665,7 +1663,6 @@ const App = {
                 @click="cnJoinRoom">🚪 Beitreten</button>
               <button class="btn-sec" style="margin-top:.5rem" @click="cnState.coop.phase='idle'">Abbrechen</button>
             </div>
-
             <!-- Joined: Warte auf Host-Rollenvergabe -->
             <div v-if="cnState.coop.phase==='joined'" style="text-align:center;padding:.8rem 0">
               <div style="font-size:2rem;margin-bottom:.5rem">⏳</div>
@@ -1681,6 +1678,21 @@ const App = {
               <button class="btn-sec" style="margin-top:1rem" @click="cnCancelCoop">Verlassen</button>
             </div>
           </div>
+
+          <!-- Lokal Setup -->
+          <template v-if="cnState.gameMode==='local'">
+            <div class="sec" style="margin-top:.5rem">
+              <h2>🌍 Wortsprache</h2>
+              <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+                <button v-for="l in [{id:'de',label:'🇩🇪 Deutsch'},{id:'en',label:'🇬🇧 English'},{id:'tr',label:'🇹🇷 Türkçe'},{id:'fr',label:'🇫🇷 Français'},{id:'es',label:'🇪🇸 Español'}]"
+                  :key="l.id"
+                  class="btn-sec"
+                  :style="cnState.lang===l.id ? 'background:var(--gold);color:#fff;border-color:var(--gold)' : ''"
+                  @click="cnState.lang=l.id">{{ l.label }}</button>
+              </div>
+            </div>
+            <button class="btn-start" style="margin-top:.5rem" @click="cnStartLocal">▶ Spielen</button>
+          </template>
         </template>
 
         <!-- ── SPIELFELD ── -->
@@ -1863,6 +1875,7 @@ const App = {
             <img src="./icons/games/werwolf.png" class="game-select-img" alt="Werwolf"/>
             <div class="game-select-name">Werwolf</div>
             <div class="game-select-desc">Das Dorf gegen die Wölfe — ab 4 Spieler</div>
+            <div class="game-select-hint-btn" @click.stop="state.showRulesGame='ww'">❓ Anleitung</div>
           </div>
         </div>
 
