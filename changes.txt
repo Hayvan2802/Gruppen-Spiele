@@ -1,2 +1,1 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
-Multiplayer-Lobby für alle Spiele: Spielernamen sichtbar, Bereit-Button für Gäste, Host-Uid-Fix, Tap-to-Reveal Karte bei Imposter
