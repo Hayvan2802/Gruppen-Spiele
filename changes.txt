@@ -1,1 +1,3 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+Codenames: Singleplayer/Multiplayer-Auswahl wie bei allen anderen Spielen
+Codenames: Bug behoben — Startteam war immer Rot (jetzt zufällig wie gewollt)

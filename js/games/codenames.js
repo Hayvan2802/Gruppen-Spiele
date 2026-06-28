@@ -15,6 +15,7 @@ export const CN_TYPE = { RED: 'red', BLUE: 'blue', BLACK: 'black', NEUTRAL: 'neu
 export const cnState = reactive({
   phase: 'setup',   // setup | playing | gameover
   lang: 'de',
+  gameMode: 'local', // 'local' | 'coop'
 
   // Coop
   coop: {
@@ -76,10 +77,11 @@ function toast(msg) {
 
 // ── Grid erzeugen ─────────────────────────────────────────────────────────────
 function createGrid(lang) {
+  const startingTeam = Math.random() < 0.5 ? 'red' : 'blue';
   const words = getCNWords(lang, 25);
   const types = shuffle([
-    ...Array(9).fill(CN_TYPE.RED),
-    ...Array(8).fill(CN_TYPE.BLUE),
+    ...Array(startingTeam === 'red' ? 9 : 8).fill(CN_TYPE.RED),
+    ...Array(startingTeam === 'blue' ? 9 : 8).fill(CN_TYPE.BLUE),
     CN_TYPE.BLACK,
     ...Array(7).fill(CN_TYPE.NEUTRAL),
   ]);
@@ -88,6 +90,12 @@ function createGrid(lang) {
     types,
     startingTeam,
   };
+}
+
+// ── Modus-Auswahl ─────────────────────────────────────────────────────────────
+export function cnSelectMode(mode) {
+  cnState.gameMode = mode;
+  if (mode === 'local') cnState.coop.phase = 'idle';
 }
 
 // ── Lokales Spiel ─────────────────────────────────────────────────────────────
