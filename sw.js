@@ -1,9 +1,9 @@
-// Gruppen-Spiele Service Worker v0.61
+// Gruppen-Spiele Service Worker v0.62
 // Kein self.skipWaiting() im install — Nutzer entscheidet per Banner.
-const CACHE = 'gruppen-spiele-v0.61';
+const CACHE = 'gruppen-spiele-v0.62';
 const ASSETS = [
   './index.html', './css/styles.css',
-  './js/app.js', './js/buildinfo.js',
+  './js/app.js', './js/buildinfo.js', './js/werwolf-embed.js',
   './js/games/werbinich.js', './js/games/werbinich-words.js',
   './js/games/codenames.js', './js/games/codenames-words.js', './js/config.js', './js/storage.js',
   './js/coop.js', './js/firebase.js', './js/debuglog.js',
@@ -21,7 +21,8 @@ const ASSETS = [
   // Die Firebase-SDK-Module der Unter-App lädt der Network-First-Handler erst
   // bei Bedarf (Coop) nach.
   './werwolf/', './werwolf/index.html', './werwolf/manifest.json',
-  './werwolf/css/styles.css', './werwolf/js/vue.esm-browser.prod.js',
+  './werwolf/css/styles.css', './werwolf/css/styles.shadow.css',
+  './werwolf/js/vue.esm-browser.prod.js',
   './werwolf/js/app.js', './werwolf/js/config.js', './werwolf/js/storage.js',
   './werwolf/js/coop.js', './werwolf/js/firebase.js', './werwolf/js/debuglog.js',
   './werwolf/js/buildinfo.js', './werwolf/js/i18n/index.js',

@@ -1453,3 +1453,21 @@ body.neon .btn-start {
 .cn-role-mini:active { transform: scale(.93); }
 .cn-role-mini-active-red  { background: rgba(248,113,113,.25); border-color: #f87171 !important; }
 .cn-role-mini-active-blue { background: rgba(96,165,250,.25);  border-color: #60a5fa !important; }
+
+/* ── Werwolf-Einbettung (Shadow-DOM-Host + Zurück-Button) ───────────────────── */
+/* Host füllt den Bildschirm und überlagert die Haupt-App, während Werwolf
+   aktiv ist. Das Werwolf-CSS lebt isoliert im Shadow-DOM dieses Elements. */
+.ww-host {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: #0d0a14; /* verhindert Durchscheinen während des Ladens */
+}
+/* Durchgängiger Zurück-Button (wie bei den anderen Spielen), in der Haupt-App
+   gestylt und über dem Werwolf-Inhalt. Respektiert die Safe-Area (Notch). */
+.ww-back-btn {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + .6rem);
+  left: calc(env(safe-area-inset-left, 0px) + .8rem);
+  z-index: 41;
+}

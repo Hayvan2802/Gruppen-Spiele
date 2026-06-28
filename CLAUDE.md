@@ -27,15 +27,30 @@ Backend-Server (außer Firebase RTDB für den Echtzeit-Multiplayer).
 | 🐺 **Werwolf** | eigenständige Unter-App unter `werwolf/` | Lokal + Coop |
 
 > **Werwolf-Integration:** Werwolf ist eine vollständige, eigenständige App
-> (gleiche Architektur wie das Hauptprojekt) und liegt unverändert unter
-> `werwolf/`. Vom Startbildschirm aus führt die Spielauswahl per
-> `window.location` nach `./werwolf/` — die Werwolf-App übernimmt dann komplett.
-> Zurück geht es über den 🎮-Button im Werwolf-Menü (`href="../"`). Der eigene
-> Service Worker der Werwolf-App ist bewusst **deaktiviert**
-> (`WW_REGISTER_OWN_SW = false` in `werwolf/js/app.js`), damit er sich nicht mit
-> dem Root-Service-Worker um die Caches streitet — `/werwolf/` wird vom
-> Root-`sw.js` (Scope `/`) mitbetreut. localStorage kollidiert nicht
-> (`gs_`- vs. `ww_`-Präfix).
+> (gleiche Architektur wie das Hauptprojekt) und liegt unter `werwolf/`. Sie wird
+> **nahtlos eingebettet** statt als zweite Seite geladen: `js/werwolf-embed.js`
+> mountet die Werwolf-App als **eigene Vue-Instanz in ein Shadow-DOM**-Element
+> (`#ww-host` im Haupt-Template).
+>
+> - **Warum Shadow-DOM:** Beide Apps teilen ~187 gleichnamige CSS-Klassen
+>   (`.btn`, `.screen`, `.top-bar` …). Das Shadow-DOM kapselt das Werwolf-CSS
+>   komplett ab. Dafür gibt es eine generierte Variante
+>   `werwolf/css/styles.shadow.css`, in der nur die 9 globalen Selektoren
+>   (`:root`, `html`, `body`, `body.light` …) auf `.ww-root` umgeschrieben sind
+>   (alle Klassen/Keyframes bleiben unverändert, da das Shadow-DOM sie isoliert).
+> - **Nahtlos & schnell:** `state.screen='ww'` blendet den Host ein (kein Reload);
+>   nach dem ersten Mounten bleibt die App im Speicher (`v-show`) → Wechsel
+>   hin/zurück ist sofort. Werwolf wird zudem nach dem Laden im Hintergrund
+>   vorgewärmt (`requestIdleCallback`).
+> - **Zurück:** durchgängiger `←`-Button der Haupt-App (`.ww-back-btn`,
+>   `closeWerwolf()`), wie bei den anderen Spielen.
+> - **Anpassungen in `werwolf/js/app.js`:** `mountWerwolf(el)`/`setWwRoot(el)`
+>   exportiert; Theme-Klasse und Toasts gehen auf `wwRoot` (das `.ww-root` im
+>   Shadow) statt `document.body`. Auto-Mount nur noch standalone
+>   (`if (!window.__WW_EMBEDDED__)`), sodass `/werwolf/` als Seite weiter
+>   funktioniert. Eigener Service Worker bleibt **deaktiviert**
+>   (`WW_REGISTER_OWN_SW = false`). localStorage kollidiert nicht
+>   (`gs_`- vs. `ww_`-Präfix).
 
 ## Architektur
 
