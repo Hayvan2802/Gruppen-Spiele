@@ -15,33 +15,12 @@
   <link rel="stylesheet" href="./css/styles.css" />
 
   <title>Werwolf</title>
-  <style>
-    #splash {
-      position: fixed; inset: 0; background: #0d0a14;
-      display: flex; align-items: center; justify-content: center; z-index: 99997;
-      transition: opacity .45s ease; padding-top: env(safe-area-inset-top, 0px);
-    }
-    #splash.fade-out { opacity: 0; pointer-events: none; }
-    #splash-inner { text-align: center; }
-    #splash-logo {
-      width: 104px; height: 104px; border-radius: 26px; margin: 0 auto;
-      display: block; box-shadow: 0 0 48px rgba(200,160,80,.35);
-    }
-    #splash-title { font-family: system-ui, sans-serif; font-size: 1.6rem; font-weight: 900; color: #e8dfc8; margin-top: 18px; letter-spacing: 2px; }
-    #splash-sub   { font-family: system-ui, sans-serif; font-size: .8rem; color: #5d4a3a; margin-top: 4px; }
-    #splash-version { font-family: system-ui, sans-serif; font-size: .72rem; color: #3a2a1a; margin-top: 12px; }
-  </style>
+  <!-- Kein Splashscreen: Werwolf ist Teil von Gruppen-Spiele und wird direkt
+       (ohne eigenen Startbildschirm/Version) zur Werwolf-Auswahl geladen.
+       Dunkler Hintergrund verhindert ein kurzes Aufblitzen beim Laden. -->
 </head>
-<body>
+<body style="background:#0d0a14">
   <div id="rotate-fix">
-    <div id="splash">
-      <div id="splash-inner">
-        <img id="splash-logo" src="./icons/icon-192.png" alt="" />
-        <div id="splash-title">🐺 WERWOLF</div>
-        <div id="splash-sub">Das Dorf schläft. Die Wölfe erwachen.</div>
-        <div id="splash-version"></div>
-      </div>
-    </div>
     <div id="app"></div>
     <div id="err" style="display:none;position:fixed;inset:0;background:#1a0000;color:#ff6b6b;padding:20px;font-family:monospace;font-size:13px;z-index:99999;overflow:auto;white-space:pre-wrap"></div>
   </div>

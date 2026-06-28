@@ -1,6 +1,6 @@
-// Gruppen-Spiele Service Worker v0.60
+// Gruppen-Spiele Service Worker v0.61
 // Kein self.skipWaiting() im install — Nutzer entscheidet per Banner.
-const CACHE = 'gruppen-spiele-v0.60';
+const CACHE = 'gruppen-spiele-v0.61';
 const ASSETS = [
   './index.html', './css/styles.css',
   './js/app.js', './js/buildinfo.js',
@@ -16,9 +16,18 @@ const ASSETS = [
   './js/vendor/firebase/firebase-app.js',
   './js/vendor/firebase/firebase-auth.js',
   './js/vendor/firebase/firebase-database.js',
-  // Werwolf-Unter-App (Einstieg). Übrige Werwolf-Assets werden vom
-  // Network-First-Handler beim ersten Online-Besuch nachgecacht.
-  './werwolf/', './werwolf/index.html',
+  // Werwolf-Unter-App: Kern-Assets vorab cachen, damit der erste Klick auf
+  // Werwolf sofort lädt (kein langsames Nachladen eines zweiten Vue-Bundles).
+  // Die Firebase-SDK-Module der Unter-App lädt der Network-First-Handler erst
+  // bei Bedarf (Coop) nach.
+  './werwolf/', './werwolf/index.html', './werwolf/manifest.json',
+  './werwolf/css/styles.css', './werwolf/js/vue.esm-browser.prod.js',
+  './werwolf/js/app.js', './werwolf/js/config.js', './werwolf/js/storage.js',
+  './werwolf/js/coop.js', './werwolf/js/firebase.js', './werwolf/js/debuglog.js',
+  './werwolf/js/buildinfo.js', './werwolf/js/i18n/index.js',
+  './werwolf/js/i18n/de.js', './werwolf/js/i18n/en.js', './werwolf/js/i18n/tr.js',
+  './werwolf/js/i18n/fr.js', './werwolf/js/i18n/es.js', './werwolf/js/i18n/it.js',
+  './werwolf/js/i18n/pl.js', './werwolf/js/i18n/ru.js', './werwolf/js/i18n/ar.js',
 ];
 
 self.addEventListener('install', e => {

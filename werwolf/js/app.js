@@ -12,8 +12,7 @@ import {
 import { t, setLocale, detectLocale, i18nState, SUPPORTED_LOCALES } from './i18n/index.js';
 
 const APP_START = Date.now();
-const splashVersion = document.getElementById('splash-version');
-if (splashVersion) splashVersion.textContent = `v${BUILD}`;
+// Kein Splash/Version mehr — Versionskontrolle liegt bei Gruppen-Spiele.
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 const state = reactive({
@@ -986,7 +985,8 @@ async function cancelCoop() {
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 function init() {
-  applyTheme(); applyLocale(); maybeShowWhatsNew();
+  applyTheme(); applyLocale();
+  // maybeShowWhatsNew() entfällt — Versionshinweise zeigt Gruppen-Spiele.
   if (state.lastSavedNames.length > 0) state.showSavedNamesHint = true;
 
   // Einladungslink: ?code=XXXXXX → direkt in Coop-Join-Ansicht
@@ -999,10 +999,7 @@ function init() {
     log('coop', `Einladungslink erkannt: Code ${inviteCode}`);
   }
 
-  setTimeout(() => {
-    const splash = document.getElementById('splash');
-    if (splash) splash.classList.add('fade-out');
-  }, Math.max(0, 600 - (Date.now() - APP_START)));
+  // Kein Splash-Fade mehr — die App startet direkt mit der Werwolf-Auswahl.
 }
 
 // ─── TEMPLATE ────────────────────────────────────────────────────────────────
@@ -1300,32 +1297,7 @@ const App = {
             </div>
           </div>
 
-          <!-- Über die App -->
-          <div class="drawer-section" style="border-top:1px solid var(--bdr);padding-top:1rem">
-            <div class="drawer-section-title">Über die App</div>
-            <div class="srow">
-              <div class="slabel">Version</div>
-              <span class="verbadge">v{{ BUILD }}</span>
-            </div>
-            <div class="srow" style="border:none">
-              <div class="slabel">{{ t('settings.history') }}</div>
-              <button class="ver-hist-btn" @click="state.showHistory=true;state.showSettingsModal=false">{{ t('settings.historyBtn') }}</button>
-            </div>
-          </div>
-
-          <!-- Update prüfen -->
-          <div class="drawer-section" style="border-top:1px solid var(--bdr);padding-top:1rem">
-            <div class="drawer-section-title">Updates</div>
-            <div class="srow" style="border:none">
-              <div>
-                <div class="slabel">Auf Update prüfen</div>
-                <div class="ssub">v{{ BUILD }} — aktuelle Version</div>
-              </div>
-              <button class="ver-hist-btn" @click="checkForUpdate" style="white-space:nowrap">
-                🔄 Prüfen
-              </button>
-            </div>
-          </div>
+          <!-- Version/Updates entfernt — Versionskontrolle liegt bei Gruppen-Spiele. -->
 
         </div>
       </div>

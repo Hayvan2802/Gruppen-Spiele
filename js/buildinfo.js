@@ -1,8 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.60';
-export const BUILD_HASH = 'werwolf-integration';
+export const BUILD      = '0.61';
+export const BUILD_HASH = 'werwolf-no-splash';
 
 export const CHANGELOG = [
+  {
+    version: '0.61',
+    date: '28.06.2026',
+    changes: [
+      'Werwolf öffnet direkt die Auswahl — kein eigener Splashscreen mehr',
+      'Werwolf lädt schneller (Kern-Assets werden vorab gecacht)',
+      'Versionsanzeige & Update-Prüfung nur noch zentral in Gruppen-Spiele',
+    ],
+  },
   {
     version: '0.60',
     date: '28.06.2026',
