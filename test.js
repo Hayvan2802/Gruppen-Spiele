@@ -467,7 +467,9 @@ test('WBI: Noch nicht vorbei wenn einer übrig', () => {
 console.log('\n=== APP.JS SYNTAX ===');
 
 const fs = require('fs');
-const appCode = fs.readFileSync('/home/claude/gs2/js/app.js', 'utf8');
+const path = require('path');
+// Pfade relativ zum Test-Verzeichnis (Repo-Root) — kein hartkodierter Pfad.
+const appCode = fs.readFileSync(path.join(__dirname, 'js/app.js'), 'utf8');
 
 test('Keine doppelten Funktionsdefinitionen', () => {
   const fns = ['applyUpdate','checkForUpdate','applyTheme','registerSW',
@@ -512,8 +514,8 @@ test('if-Statement ohne {}: kein push({}) direkt danach', () => {
 });
 
 // Codenames-spezifisch
-const cnCode = fs.existsSync('/home/claude/gs2/js/games/codenames.js')
-  ? fs.readFileSync('/home/claude/gs2/js/games/codenames.js', 'utf8') : '';
+const cnPath = path.join(__dirname, 'js/games/codenames.js');
+const cnCode = fs.existsSync(cnPath) ? fs.readFileSync(cnPath, 'utf8') : '';
 
 test('codenames.js: keine doppelten Exports', () => {
   if (!cnCode) return;
