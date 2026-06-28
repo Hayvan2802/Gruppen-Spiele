@@ -1,8 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.64';
-export const BUILD_HASH = 'own-firebase';
+export const BUILD      = '0.65';
+export const BUILD_HASH = 'werwolf-design-match';
 
 export const CHANGELOG = [
+  {
+    version: '0.65',
+    date: '28.06.2026',
+    changes: [
+      'Werwolf: Design vereinheitlicht — gleiche Farben & Schrift wie alle anderen Spiele',
+      'Keine Google Fonts mehr — Werwolf lädt jetzt ohne externen Font-Request',
+    ],
+  },
   {
     version: '0.64',
     date: '28.06.2026',
