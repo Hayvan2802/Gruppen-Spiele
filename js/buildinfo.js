@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.65';
-export const BUILD_HASH = 'werwolf-design-match';
+export const BUILD      = '0.66';
+export const BUILD_HASH = 'codenames-modus-auswahl';
 
 export const CHANGELOG = [
   {
+    version: '0.66',
+    date: '28.06.2026',
+    changes: [
+    'Codenames: Singleplayer/Multiplayer-Auswahl wie bei allen anderen Spielen',
+    'Codenames: Bug behoben — Startteam war immer Rot (jetzt zufällig wie gewollt)',
+    ],
+  },
+{
     version: '0.65',
     date: '28.06.2026',
     changes: [
