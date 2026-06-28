@@ -1,8 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.59';
-export const BUILD_HASH = 'cn-random-start';
+export const BUILD      = '0.60';
+export const BUILD_HASH = 'werwolf-integration';
 
 export const CHANGELOG = [
+  {
+    version: '0.60',
+    date: '28.06.2026',
+    changes: [
+      'Neues Spiel: Werwolf ist jetzt direkt in Gruppen-Spiele integriert',
+      'Über die Spielauswahl startet Werwolf als nahtlose Unter-App',
+      'Zurück zu Gruppen-Spiele per 🎮-Button im Werwolf-Menü',
+    ],
+  },
   {
     version: '0.59',
     date: '27.06.2026',

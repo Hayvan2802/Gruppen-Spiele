@@ -1,6 +1,6 @@
-// Gruppen-Spiele Service Worker v0.59
+// Gruppen-Spiele Service Worker v0.60
 // Kein self.skipWaiting() im install — Nutzer entscheidet per Banner.
-const CACHE = 'gruppen-spiele-v0.59';
+const CACHE = 'gruppen-spiele-v0.60';
 const ASSETS = [
   './index.html', './css/styles.css',
   './js/app.js', './js/buildinfo.js',
@@ -11,9 +11,14 @@ const ASSETS = [
   './js/i18n/tr.js', './js/i18n/fr.js', './js/i18n/es.js',
   './js/i18n/it.js', './js/i18n/pl.js', './js/i18n/ru.js', './js/i18n/ar.js',
   './manifest.json', './icons/icon-192.png', './icons/icon-512.png',
+  './icons/games/imposter.png', './icons/games/wbi.png',
+  './icons/games/codenames.png', './icons/games/werwolf.png',
   './js/vendor/firebase/firebase-app.js',
   './js/vendor/firebase/firebase-auth.js',
   './js/vendor/firebase/firebase-database.js',
+  // Werwolf-Unter-App (Einstieg). Übrige Werwolf-Assets werden vom
+  // Network-First-Handler beim ersten Online-Besuch nachgecacht.
+  './werwolf/', './werwolf/index.html',
 ];
 
 self.addEventListener('install', e => {

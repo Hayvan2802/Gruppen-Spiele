@@ -24,6 +24,18 @@ Backend-Server (außer Firebase RTDB für den Echtzeit-Multiplayer).
 | 🕵️ **Imposter** | direkt in `js/app.js` | Lokal (1 Gerät) + Coop |
 | 🧩 **Codenames** | `js/games/codenames.js`, `codenames-words.js` | Lokal + Coop |
 | 🤔 **Wer bin ich?** | `js/games/werbinich.js`, `werbinich-words.js` | Lokal + Coop |
+| 🐺 **Werwolf** | eigenständige Unter-App unter `werwolf/` | Lokal + Coop |
+
+> **Werwolf-Integration:** Werwolf ist eine vollständige, eigenständige App
+> (gleiche Architektur wie das Hauptprojekt) und liegt unverändert unter
+> `werwolf/`. Vom Startbildschirm aus führt die Spielauswahl per
+> `window.location` nach `./werwolf/` — die Werwolf-App übernimmt dann komplett.
+> Zurück geht es über den 🎮-Button im Werwolf-Menü (`href="../"`). Der eigene
+> Service Worker der Werwolf-App ist bewusst **deaktiviert**
+> (`WW_REGISTER_OWN_SW = false` in `werwolf/js/app.js`), damit er sich nicht mit
+> dem Root-Service-Worker um die Caches streitet — `/werwolf/` wird vom
+> Root-`sw.js` (Scope `/`) mitbetreut. localStorage kollidiert nicht
+> (`gs_`- vs. `ww_`-Präfix).
 
 ## Architektur
 
@@ -107,6 +119,8 @@ Gruppen-Spiele/
 │   │   └── de|en|tr|fr|es|it|pl|ru|ar.js   # Übersetzungen
 │   └── vendor/firebase/          # Eingebundene Firebase-SDK-Module
 ├── icons/                  # PWA-Icons + Spiel-Icons (icons/games/)
+├── werwolf/                # 🐺 Eigenständige Werwolf-Unter-App (eigenes
+│                           #    index.html, js/, css/, sw.js — relative Pfade)
 ├── test.js                 # Node-Testfälle für Imposter-Logik (node test.js)
 ├── backups/v1.0.0/         # Snapshot vor größeren Umbauten
 ├── src/                    # ⚠️ LEGACY (alte v1.x-Imposter-Struktur, NICHT live)
