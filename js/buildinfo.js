@@ -1,9 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.66';
-export const BUILD_HASH = 'codenames-modus-auswahl';
+export const BUILD      = '0.67';
+export const BUILD_HASH = 'codenames-setup-struktur';
 
 export const CHANGELOG = [
   {
+    version: '0.67',
+    date: '28.06.2026',
+    changes: [
+    'Codenames: Singleplayer/Multiplayer-Auswahl wie bei den anderen Spielen strukturiert',
+    'Codenames: Sprachauswahl (DE/EN/TR/FR/ES) direkt im lokalen Setup sichtbar',
+    'Werwolf: Anleitung-Button auf der Startseite und im Spielmenü ergänzt',
+    ],
+  },
+{
     version: '0.66',
     date: '28.06.2026',
     changes: [
