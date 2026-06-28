@@ -1,8 +1,15 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.63';
-export const BUILD_HASH = 'back-button-corner';
+export const BUILD      = '0.64';
+export const BUILD_HASH = 'own-firebase';
 
 export const CHANGELOG = [
+  {
+    version: '0.64',
+    date: '28.06.2026',
+    changes: [
+      'Eigene Firebase-Datenbank (gruppen-spiele) — kein fremder API-Key mehr',
+    ],
+  },
   {
     version: '0.63',
     date: '28.06.2026',
