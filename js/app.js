@@ -701,7 +701,7 @@ const App = {
       dismissWhatsNew, applyUpdate, checkForUpdate,
       exportLogToFile,
       // Codenames
-      cnState, cnStartLocal, cnGiveHint, cnRevealCard, cnPassTurn, cnReset,
+      cnState, cnSelectMode, cnStartLocal, cnGiveHint, cnRevealCard, cnPassTurn, cnReset,
       cnShowHostSetup, cnCreateRoom, cnShowJoinSetup, cnJoinRoom,
       cnStartCoopGame, cnCancelCoop, cnShareLink, cnHostSetRole,
       cnIsSpymaster, cnMyTeam, cnCardColor,
