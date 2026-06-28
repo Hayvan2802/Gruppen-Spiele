@@ -1,9 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.67';
-export const BUILD_HASH = 'codenames-setup-struktur';
+export const BUILD      = '0.68';
+export const BUILD_HASH = 'cnselectmode-im-vue-setu';
 
 export const CHANGELOG = [
   {
+    version: '0.68',
+    date: '28.06.2026',
+    changes: [
+    'Codenames: Modus-Auswahl (Multiplayer/Ein Gerät) reagiert nun korrekt',
+    ],
+  },
+{
     version: '0.67',
     date: '28.06.2026',
     changes: [
