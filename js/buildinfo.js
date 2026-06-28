@@ -1,8 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.61';
-export const BUILD_HASH = 'werwolf-no-splash';
+export const BUILD      = '0.62';
+export const BUILD_HASH = 'werwolf-seamless';
 
 export const CHANGELOG = [
+  {
+    version: '0.62',
+    date: '28.06.2026',
+    changes: [
+      'Werwolf öffnet jetzt nahtlos wie die anderen Spiele — ohne Neuladen',
+      'Durchgängiger Zurück-Pfeil (←) oben, sofortiger Wechsel hin und zurück',
+      'Werwolf wird im Hintergrund vorgeladen → kein Warten beim ersten Klick',
+    ],
+  },
   {
     version: '0.61',
     date: '28.06.2026',

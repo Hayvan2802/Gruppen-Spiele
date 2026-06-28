@@ -14,6 +14,12 @@ import { t, setLocale, detectLocale, i18nState, SUPPORTED_LOCALES } from './i18n
 const APP_START = Date.now();
 // Kein Splash/Version mehr — Versionskontrolle liegt bei Gruppen-Spiele.
 
+// Wurzel-Element für Theme-Klasse und Toasts.
+// Standalone (/werwolf/) = document.body; eingebettet in Gruppen-Spiele
+// setzt das Embed-Glue hier das .ww-root-Element im Shadow-DOM.
+let wwRoot = document.body;
+export function setWwRoot(el) { wwRoot = el || document.body; }
+
 // ─── STATE ────────────────────────────────────────────────────────────────────
 const state = reactive({
   screen: 'home',
@@ -142,12 +148,12 @@ function addLog(txt, type = '') {
 }
 function setNow(txt) { state.logNow = '📍 ' + txt; }
 function showToast(msg) {
-  let el = document.getElementById('ww-toast');
+  let el = wwRoot.querySelector('#ww-toast');
   if (!el) {
     el = document.createElement('div');
     el.id = 'ww-toast';
     el.className = 'toast';
-    document.body.appendChild(el);
+    wwRoot.appendChild(el);
   }
   el.textContent = msg;
   el.classList.add('show');
@@ -177,7 +183,7 @@ function applyTheme() {
   } else {
     isLight = theme === 'light';
   }
-  document.body.classList.toggle('light', isLight);
+  wwRoot.classList.toggle('light', isLight);
 }
 function setTheme(t) {
   state.settings.theme = t;
@@ -1378,7 +1384,6 @@ const App = {
     <!-- ═══ HOME ═══ -->
     <div v-if="state.screen==='home'" class="screen">
       <div class="top-bar">
-        <a class="icon-btn" href="../" title="Zurück zu Gruppen-Spiele">🎮</a>
         <a v-if="DONATE_URL" class="home-donate-btn icon-btn" :href="DONATE_URL" target="_blank" rel="noopener">☕ <span class="home-donate-heart">❤</span></a>
         <button class="icon-btn" @click="state.showStats=true" title="Statistiken">📊</button>
         <button class="icon-btn" @click="state.showSettingsModal=true">⚙️</button>
@@ -1753,8 +1758,19 @@ const App = {
   `,
 };
 
-createApp(App).mount('#app');
-init();
+// Standalone (eigene Seite /werwolf/) mountet sich selbst auf #app.
+// Eingebettet in Gruppen-Spiele setzt das Embed-Glue window.__WW_EMBEDDED__,
+// und das Mounten übernimmt mountWerwolf() in ein Shadow-DOM-Element.
+if (!window.__WW_EMBEDDED__) {
+  createApp(App).mount('#app');
+  init();
+}
+
+// Einstieg für die eingebettete Nutzung in Gruppen-Spiele.
+export function mountWerwolf(el) {
+  createApp(App).mount(el);
+  init();
+}
 
 // ── SERVICE WORKER — exakt nach Tom's Pattern ────────────────────────────────
 // Kein auto-skipWaiting. Nutzer entscheidet per Banner wann er aktualisiert.

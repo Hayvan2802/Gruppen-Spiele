@@ -264,10 +264,14 @@ function loadLastNamesIntoSetup() {
 }
 function dismissNamesHint() { state.showSavedNamesHint = false; }
 
-// Werwolf läuft als eigenständige Unter-App unter ./werwolf/.
-// Wir navigieren dorthin — der Werwolf-Startbildschirm übernimmt dann komplett.
-// (Zurück führt der 🎮-Button im Werwolf-Topbar wieder hierher.)
-function openWerwolf() { window.location.href = './werwolf/'; }
+// Werwolf ist als eigene Vue-Instanz in einem Shadow-DOM eingebettet
+// (siehe werwolf-embed.js) — nahtlos wie die anderen Spiele, ohne Reload.
+function openWerwolf() {
+  state.screen = 'ww';
+  const host = document.getElementById('ww-host');
+  if (host) import('./werwolf-embed.js').then(m => m.ensureWerwolf(host));
+}
+function closeWerwolf() { state.screen = 'home'; }
 
 // ── Konfigurationen ───────────────────────────────────────────────────────────
 function saveCurrentConfig() {
@@ -678,7 +682,7 @@ const App = {
       t, i18nState,
       setTheme, setLang,
       changePlayerCount, selectMode,
-      loadLastNamesIntoSetup, dismissNamesHint, openWerwolf,
+      loadLastNamesIntoSetup, dismissNamesHint, openWerwolf, closeWerwolf,
       saveCurrentConfig, loadConfig, removeConfig,
       openGameMenu, closeGameMenu, pauseGame, resumeGame, confirmEndGame,
       startLocalGame, revealCard, nextReveal, skipTimer, selectVote, confirmVote, newGame, nextRound, resetGame,
@@ -705,6 +709,12 @@ const App = {
   },
   template: `
   <div class="app" :class="{ rtl: i18nState.rtl }">
+
+    <!-- ── WERWOLF: eingebettete Unter-App (eigene Vue-Instanz im Shadow-DOM) ──
+         v-show statt v-if, damit Host + Shadow-DOM erhalten bleiben und der
+         Wechsel hin/zurück ohne Reload sofort ist. -->
+    <div id="ww-host" class="ww-host" v-show="state.screen==='ww'"></div>
+    <button v-if="state.screen==='ww'" class="ww-back-btn icon-btn" @click="closeWerwolf" title="Zurück" aria-label="Zurück">←</button>
 
     <!-- Pause-Overlay entfernt — nur gameMenu Modal wird verwendet -->
 
@@ -2367,3 +2377,14 @@ const App = {
 
 createApp(App).mount('#app');
 init();
+
+// Werwolf im Hintergrund vorwärmen, sobald der Browser idle ist, damit der
+// erste Klick auf Werwolf sofort öffnet (kein spürbarer Ladevorgang).
+(function prewarmWerwolf() {
+  const warm = () => {
+    const host = document.getElementById('ww-host');
+    if (host) import('./werwolf-embed.js').then(m => m.ensureWerwolf(host)).catch(() => {});
+  };
+  if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 4000 });
+  else setTimeout(warm, 1500);
+})();
