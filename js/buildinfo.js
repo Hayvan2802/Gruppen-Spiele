@@ -1,9 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.83';
-export const BUILD_HASH = 'button-sichtbarkeit-in-a';
+export const BUILD      = '0.84';
+export const BUILD_HASH = 'coop-diskussion-als-eige';
 
 export const CHANGELOG = [
   {
+    version: '0.84',
+    date: '29.06.2026',
+    changes: [
+    'Bereit-Button im Multiplayer lässt sich jetzt wieder abwählen (nochmal tippen)',
+    'Scrollen und Zoomen während Spielphasen (Timer, Kartenansicht, Diskussion) deaktiviert',
+    'Pinch-Zoom auf iOS global gesperrt',
+    ],
+  },
+{
     version: '0.83',
     date: '29.06.2026',
     changes: [

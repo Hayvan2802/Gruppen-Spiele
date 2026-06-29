@@ -1,6 +1,6 @@
 // app.js — Gruppen-Spiele v0.0.5 (Vue 3, esm-browser)
 // Portiert vom Werwolf-Projekt — nur Imposter-Spiellogik
-import { createApp, reactive, computed } from './vue.esm-browser.prod.js';
+import { createApp, reactive, computed, watchEffect } from './vue.esm-browser.prod.js';
 import { BUILD, CHANGELOG } from './buildinfo.js';
 import {
   cnState, cnSelectMode, cnStartLocal, cnGiveHint, cnRevealCard, cnPassTurn, cnReset,
@@ -26,6 +26,12 @@ import {
 import { t, setLocale, detectLocale, i18nState, SUPPORTED_LOCALES } from './i18n/index.js';
 
 const APP_START = Date.now();
+
+// ── Pinch-Zoom global sperren (iOS ignoriert viewport user-scalable=no) ───────
+document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
+document.addEventListener('touchmove', e => {
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
 
 // ── Timer-Dauer nach Spieleranzahl ────────────────────────────────────────────
 function getTimerSeconds(playerCount) {
@@ -159,6 +165,7 @@ const state = reactive({
     voteResult: null,            // { eliminated, imposters, winner, tally }
     allPlayers: [],              // snapshot aller Spieler für Ergebnisanzeige
     showCardPeek: false,        // Karte nochmal ansehen während Diskussion
+    myReady: false,             // eigener Bereitschaftsstatus (Gast)
   },
 
   // Rollenverteilung
@@ -576,7 +583,10 @@ async function joinRoom() {
   });
 }
 
-async function toggleReady() { await Coop.send({ type: Coop.MSG.READY, ready: true }); }
+async function toggleReady() {
+  state.coop.myReady = !state.coop.myReady;
+  await Coop.send({ type: Coop.MSG.READY, ready: state.coop.myReady });
+}
 
 function getInviteLink() {
   const base = window.location.origin + window.location.pathname;
@@ -608,6 +618,7 @@ async function cancelCoop() {
   state.coop.postTimerVoters = []; state.coop.myPostTimerVote = null;
   state.coop.votesProgress = { count: 0, total: 0, voters: [] };
   state.coop.showCardPeek = false;
+  state.coop.myReady = false;
 }
 
 function coopSelectVote(name) {
@@ -895,6 +906,14 @@ function init() {
 // ── Vue App ───────────────────────────────────────────────────────────────────
 const App = {
   setup() {
+    // Scroll-Sperre für Spielphasen wo nichts gescrollt werden soll
+    const noScrollScreens = new Set(['reveal', 'timer', 'postTimer']);
+    const noScrollCoopPhases = new Set(['myRole', 'discussion', 'postTimer']);
+    watchEffect(() => {
+      const block = noScrollScreens.has(state.screen) || noScrollCoopPhases.has(state.coop.phase);
+      document.body.classList.toggle('no-scroll', block);
+    });
+
     const timerPct = computed(() => state.timerSeconds / getTimerSeconds(state.roles.length || state.playerCount) * 100);
     // Dynamische Imposter-Optionen: 1 per 4 Spieler, min 1, max 4
     // Frei wählbar 1–5 Imposter, unabhängig von Spielerzahl
@@ -2424,8 +2443,11 @@ const App = {
               </li>
             </ul>
             <div v-else style="text-align:center;padding:.6rem;color:var(--txt2);font-size:.85rem">⏳ Verbinde…</div>
-            <button class="btn-create-room" style="margin-top:.8rem;background:linear-gradient(135deg,#16a34a,#15803d)"
-              @click="toggleReady">✅ Ich bin bereit!</button>
+            <button class="btn-create-room" style="margin-top:.8rem"
+              :style="state.coop.myReady ? 'background:linear-gradient(135deg,#16a34a,#15803d)' : 'background:linear-gradient(135deg,var(--pri),var(--pri2))'"
+              @click="toggleReady">
+              {{ state.coop.myReady ? '✓ Bereit (tippen zum Abmelden)' : '✅ Ich bin bereit!' }}
+            </button>
             <button class="btn-sec" style="margin-top:.5rem" @click="cancelCoop">{{ t('coop.leave') }}</button>
           </div>
 
