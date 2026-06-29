@@ -1,9 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.77';
-export const BUILD_HASH = 'forcelongpolling-entfern';
+export const BUILD      = '0.78';
+export const BUILD_HASH = 'karte-verdeckt-setup-scr';
 
 export const CHANGELOG = [
   {
+    version: '0.78',
+    date: '29.06.2026',
+    changes: [
+    'Wer bin ich? Multiplayer: Karte startet verdeckt (Antippen zum Aufdecken/Verdecken), Host sieht nicht mehr das Setup-Menü hinter dem Spiel, Erraten-Buttons funktionieren korrekt für Host und Gast',
+    ],
+  },
+{
     version: '0.77',
     date: '29.06.2026',
     changes: [

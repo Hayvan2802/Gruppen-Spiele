@@ -1,2 +1,1 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
-Wer bin ich? Multiplayer: Karte startet verdeckt (Antippen zum Aufdecken/Verdecken), Host sieht nicht mehr das Setup-Menü hinter dem Spiel, Erraten-Buttons funktionieren korrekt für Host und Gast
