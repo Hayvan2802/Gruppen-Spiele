@@ -158,6 +158,7 @@ const state = reactive({
     votesProgress: { count: 0, total: 0, voters: [] },
     voteResult: null,            // { eliminated, imposters, winner, tally }
     allPlayers: [],              // snapshot aller Spieler für Ergebnisanzeige
+    showCardPeek: false,        // Karte nochmal ansehen während Diskussion
   },
 
   // Rollenverteilung
@@ -606,6 +607,7 @@ async function cancelCoop() {
   state.coop.postTimerVotes = { extend: 0, vote: 0 };
   state.coop.postTimerVoters = []; state.coop.myPostTimerVote = null;
   state.coop.votesProgress = { count: 0, total: 0, voters: [] };
+  state.coop.showCardPeek = false;
 }
 
 function coopSelectVote(name) {
@@ -714,6 +716,19 @@ function startCoopTimer() {
   }, 1000);
 }
 
+// Host überspringt den Diskussions-Timer → direkt zur Post-Timer-Abstimmung
+async function coopSkipTimer() {
+  if (!state.coop.isHost) return;
+  clearInterval(state.coop.coopTimerInterval);
+  state.coop.coopTimerInterval = null;
+  state.coop.phase = 'postTimer';
+  state.coop.postTimerVotes = { extend: 0, vote: 0 };
+  state.coop.postTimerVoters = [];
+  state.coop.myPostTimerVote = null;
+  await Coop.send({ type: Coop.MSG.TIMER_SKIP });
+  haptic('medium');
+}
+
 // ── Coop: Post-Timer-Abstimmung ────────────────────────────────────────────────
 async function sendPostTimerVote(choice) {
   if (state.coop.myPostTimerVote) return;
@@ -784,6 +799,16 @@ function handleCoopMessage(msg) {
     state.coop.coopTimerSeconds = 120;
     clearInterval(state.coop.coopTimerInterval);
     startCoopTimer();
+  }
+
+  if (msg.type === Coop.MSG.TIMER_SKIP) {
+    clearInterval(state.coop.coopTimerInterval);
+    state.coop.coopTimerInterval = null;
+    state.coop.phase = 'postTimer';
+    state.coop.postTimerVotes = { extend: 0, vote: 0 };
+    state.coop.postTimerVoters = [];
+    state.coop.myPostTimerVote = null;
+    haptic('medium');
   }
 
   if (msg.type === Coop.MSG.POST_TIMER_VOTE) {
@@ -900,7 +925,7 @@ const App = {
       showHostSetup, createRoom, startCoopGame,
       showJoinSetup, joinRoom, toggleReady, cancelCoop,
       getInviteLink, shareInviteLink,
-      confirmCard, sendPostTimerVote,
+      confirmCard, sendPostTimerVote, coopSkipTimer,
       coopSelectVote, coopConfirmVote, startCoopVoting,
       dismissWhatsNew, applyUpdate, checkForUpdate,
       exportLogToFile,
@@ -974,6 +999,11 @@ const App = {
         </template>
         <button class="btn-start" style="margin-top:1rem" @click="state.showRulesGame=null">Verstanden ✓</button>
       </div>
+    </div>
+
+    <!-- ── Hintergrund-Abdeckung für Coop-Spielphasen ── -->
+    <div v-if="['myRole','discussion','postTimer','coopVoting','coopResult'].includes(state.coop.phase)"
+      style="position:fixed;inset:0;background:var(--bg);z-index:395">
     </div>
 
     <!-- ── SPIELMENÜ ── -->
@@ -1066,40 +1096,79 @@ const App = {
       </div>
     </div>
 
-    <!-- ── COOP: DISKUSSION (Timer 2 Min.) ── -->
-    <div v-if="state.coop.phase === 'discussion'" class="modal-bg" style="z-index:400">
-      <div class="modal" style="text-align:center">
-        <div class="whatsnew-badge">💬 DISKUSSION</div>
+    <!-- ── COOP: DISKUSSION (Full Screen) ── -->
+    <div v-if="state.coop.phase === 'discussion'"
+      style="position:fixed;inset:0;background:var(--bg);z-index:400;display:flex;flex-direction:column;overflow-y:auto">
+      <div class="top-bar">
+        <div style="width:40px"></div>
+        <span style="font-size:.78rem;letter-spacing:.15em;color:var(--gold);font-weight:700">IMPOSTER · MULTIPLAYER</span>
+        <button class="icon-btn" @click="state.showSettingsModal=true" title="Einstellungen">⚙️</button>
+      </div>
+      <div class="timer-screen" style="flex:1">
+        <div class="whatsnew-badge" style="margin-bottom:.5rem">💬 DISKUSSION</div>
         <h3 style="margin-bottom:.2rem">Jetzt diskutieren!</h3>
-        <p style="font-size:.8rem;color:var(--txt2);margin-bottom:.8rem">
+        <p class="timer-subtitle" style="margin-bottom:.8rem">
           Beschreibt das Wort abwechselnd — ohne es direkt zu sagen.<br>Wer verhält sich verdächtig?
         </p>
 
         <!-- Timer Ring -->
-        <div style="position:relative;width:150px;height:150px;margin:0 auto .8rem">
-          <svg width="150" height="150" viewBox="0 0 150 150">
-            <circle cx="75" cy="75" r="63" fill="none" stroke="var(--bdr2)" stroke-width="9"/>
-            <circle cx="75" cy="75" r="63" fill="none"
+        <div style="position:relative;width:160px;height:160px;margin:0 auto .8rem">
+          <svg width="160" height="160" viewBox="0 0 160 160">
+            <circle cx="80" cy="80" r="68" fill="none" stroke="var(--bdr2)" stroke-width="10"/>
+            <circle cx="80" cy="80" r="68" fill="none"
               :stroke="state.coop.coopTimerSeconds <= 10 ? '#ef4444' : state.coop.coopTimerSeconds <= 30 ? '#f59e0b' : 'var(--gold)'"
-              stroke-width="9" stroke-linecap="round"
-              :stroke-dasharray="2 * Math.PI * 63"
-              :stroke-dashoffset="2 * Math.PI * 63 * (1 - state.coop.coopTimerSeconds / 120)"
+              stroke-width="10" stroke-linecap="round"
+              :stroke-dasharray="2 * Math.PI * 68"
+              :stroke-dashoffset="2 * Math.PI * 68 * (1 - state.coop.coopTimerSeconds / 120)"
               style="transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset 1s linear,stroke .4s"/>
           </svg>
           <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;line-height:1">
-            <div style="font-size:2.4rem;font-weight:900"
+            <div class="timer-sec"
               :style="{color: state.coop.coopTimerSeconds <= 10 ? '#ef4444' : state.coop.coopTimerSeconds <= 30 ? '#f59e0b' : 'var(--gold)'}">
               {{ state.coop.coopTimerSeconds }}
             </div>
-            <div style="font-size:.62rem;color:var(--txt3);letter-spacing:.1em">SEK</div>
+            <div class="timer-sec-label">SEK</div>
           </div>
         </div>
 
-        <div class="timer-players">
+        <div class="timer-players" style="margin-bottom:1.2rem">
           <div v-for="p in state.coop.allPlayers" :key="p.uid" class="timer-player-dot"
             style="background:rgba(124,58,237,.25)">
             {{ p.name[0].toUpperCase() }}
           </div>
+        </div>
+
+        <!-- Karte nochmal ansehen -->
+        <button class="btn-sec" style="margin-bottom:.6rem;max-width:320px"
+          @click="state.coop.showCardPeek=true">
+          🃏 Meine Karte nochmal ansehen
+        </button>
+
+        <!-- Timer überspringen (nur Host) -->
+        <button v-if="state.coop.isHost" class="timer-skip-btn" style="max-width:320px"
+          @click="coopSkipTimer">
+          Abstimmung starten →
+        </button>
+        <div v-else style="font-size:.75rem;color:var(--txt3);margin-top:.3rem">
+          Warte auf den Host…
+        </div>
+      </div>
+
+      <!-- Karten-Peek Modal -->
+      <div v-if="state.coop.showCardPeek" class="modal-bg" style="z-index:410"
+        @click.self="state.coop.showCardPeek=false">
+        <div class="modal" style="text-align:center">
+          <div v-if="state.coop.myRoleIsImposter">
+            <div style="font-size:3rem;margin-bottom:.5rem">🕵️</div>
+            <div style="font-size:1.1rem;font-weight:900;color:var(--blood2)">DU BIST DER IMPOSTER!</div>
+            <p style="font-size:.85rem;color:var(--txt2);margin-top:.4rem">Du kennst das Wort nicht. Tu so als ob!</p>
+          </div>
+          <div v-else>
+            <div style="font-size:.7rem;letter-spacing:.15em;color:var(--txt3);text-transform:uppercase;margin-bottom:.3rem">Dein Wort</div>
+            <div style="font-size:2.2rem;font-weight:900;color:var(--gold)">{{ state.coop.myWord }}</div>
+            <p style="font-size:.8rem;color:var(--txt2);margin-top:.4rem">Beschreibe es ohne das Wort zu sagen!</p>
+          </div>
+          <button class="btn-sec" style="margin-top:1rem" @click="state.coop.showCardPeek=false">✕ Schließen</button>
         </div>
       </div>
     </div>

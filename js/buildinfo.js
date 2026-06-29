@@ -1,9 +1,19 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.82';
-export const BUILD_HASH = 'karte-best-tigung-tippba';
+export const BUILD      = '0.83';
+export const BUILD_HASH = 'button-sichtbarkeit-in-a';
 
 export const CHANGELOG = [
   {
+    version: '0.83',
+    date: '29.06.2026',
+    changes: [
+    'Multiplayer-Diskussion läuft jetzt auf eigener Seite (kein Hintergrund mehr sichtbar) — mit Einstellungen-Zugang',
+    'Neuer "Abstimmung starten"-Button im Diskussions-Timer für den Host',
+    'Neuer "Meine Karte nochmal ansehen"-Button während der Diskussion',
+    'Raumcode-Bug behoben: nach einer Runde kann derselbe Code sofort wieder verwendet werden',
+    ],
+  },
+{
     version: '0.82',
     date: '29.06.2026',
     changes: [
