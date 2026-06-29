@@ -1,9 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.92';
-export const BUILD_HASH = 'werwolf-redirect-ordner';
+export const BUILD      = '0.93';
+export const BUILD_HASH = 'titel-in-top-bar-kein-be';
 
 export const CHANGELOG = [
   {
+    version: '0.93',
+    date: '29.06.2026',
+    changes: [
+    'Versionshistorie: Titel in der Top-Bar, Zurück-Button oben links klar abgetrennt',
+    ],
+  },
+{
     version: '0.92',
     date: '29.06.2026',
     changes: [
