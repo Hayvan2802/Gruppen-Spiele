@@ -1,15 +1,19 @@
 {
   "name": "gruppen-spiele",
-  "version": "0.86.0",
+  "version": "0.87.0",
   "description": "Werbefreie Party-Games als PWA – Imposter, Codenames, Wer bin ich?, Werwolf",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
     "test:unit": "node --test test/unit/*.test.js",
-    "test": "npm run test:unit"
+    "test:e2e": "playwright test",
+    "test": "npm run test:unit && npm run test:e2e"
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
   }
 }
