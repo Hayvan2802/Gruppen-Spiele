@@ -25,9 +25,10 @@ export function ensureFirebase() {
         ]);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        // experimentalAutoDetectLongPolling: Fix für iCloud Private Relay
-        // Private Relay blockiert WebSocket → Firebase fällt automatisch auf
-        // Long Polling zurück wenn dieser Flag gesetzt ist.
+        // forceLongPolling: Fix für iCloud Private Relay.
+        // Private Relay blockiert WebSockets → Long Polling erzwingen.
+        // Muss VOR getDatabase() aufgerufen werden.
+        dbModule.forceLongPolling();
         const db = dbModule.getDatabase(app);
         const uid = await new Promise((resolve, reject) => {
           const timer = setTimeout(() => reject({ type: 'timeout' }), 20000);
