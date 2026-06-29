@@ -136,7 +136,17 @@ Gruppen-Spiele/
 ├── icons/                  # PWA-Icons + Spiel-Icons (icons/games/)
 ├── werwolf/                # 🐺 Eigenständige Werwolf-Unter-App (eigenes
 │                           #    index.html, js/, css/, sw.js — relative Pfade)
-├── test.js                 # Node-Testfälle für Imposter-Logik (node test.js)
+├── scripts/
+│   └── build.js            # Release-Skript (node scripts/build.js)
+├── test/
+│   └── unit/
+│       └── imposter.test.js  # Node-Testfälle für Imposter-Logik
+├── .github/
+│   └── workflows/
+│       └── test.yml        # CI: Unit-Tests bei jedem PR/Push
+├── .gitignore              # .DS_Store, Thumbs.db, *.log, node_modules/
+├── package.json            # npm-Skripte: test, build
+├── changes.txt             # Changelog-Quelle für den nächsten Release
 ├── backups/v1.0.0/         # Snapshot vor größeren Umbauten
 ├── src/                    # ⚠️ LEGACY (alte v1.x-Imposter-Struktur, NICHT live)
 └── README.md               # Nutzer-/Projektbeschreibung
@@ -164,10 +174,12 @@ zuverlässig — immer über HTTP servieren.
 ### Tests
 
 ```bash
-node test.js
+npm test
+# oder direkt:
+node test/unit/imposter.test.js
 ```
 
-`test.js` enthält eigenständige Testfälle (mit Mock-Spiellogik) für die
+`test/unit/imposter.test.js` enthält eigenständige Testfälle (mit Mock-Spiellogik) für die
 Imposter-Mechanik. Es ist **kein** Test-Framework eingebunden — reine
 `assert`-Helfer im File. Bei Änderungen an der Imposter-Logik die Tests
 aktualisieren bzw. ergänzen.
@@ -190,16 +202,16 @@ git checkout main && git pull
 git checkout -b feat/<name>
 # Code ändern
 # Eine user-facing Zeile in changes.txt eintragen
-node test.js          # alle Tests grün
+npm test              # alle Tests grün
 git add … && git commit && git push
 # PR öffnen → squash-merge
 
 # B) Release-PR (separater PR nach dem Feature-Merge)
 git checkout main && git pull
 git checkout -b release/v<nächste-version>
-node build.js         # bumpt .release-counter, schreibt buildinfo.js + sw.js,
+node scripts/build.js # bumpt .release-counter, schreibt buildinfo.js + sw.js,
                       # leert changes.txt
-node test.js          # sicherheitshalber nochmal
+npm test              # sicherheitshalber nochmal
 git add js/buildinfo.js sw.js changes.txt .release-counter
 git commit -m "chore: v<version>"
 git push
@@ -207,7 +219,7 @@ git push
 ```
 
 **`changes.txt`** ist die Changelog-Quelle (eine Zeile pro Änderung, `#`
-startet Kommentare). `node build.js` liest sie, schreibt den Eintrag in
+startet Kommentare). `node scripts/build.js` liest sie, schreibt den Eintrag in
 `buildinfo.js` und leert sie danach.
 
 ### Git-Workflow (verbindlich)
