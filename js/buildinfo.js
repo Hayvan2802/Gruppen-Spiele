@@ -1,9 +1,26 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.79';
-export const BUILD_HASH = 'update-banner-hat-vorran';
+export const BUILD      = '0.80';
+export const BUILD_HASH = 'host-verarbeitet-spielna';
 
 export const CHANGELOG = [
   {
+    version: '0.80',
+    date: '29.06.2026',
+    changes: [
+    'Imposter Multiplayer: Vollständiger Spielablauf — Karten-Bestätigung, 2-Min-Timer, Abstimmung',
+    'Tap-to-Reveal: Karte erst nach Antippen sichtbar (🃏), dann Bestätigung erforderlich',
+    'Bestätigungs-Zähler: "X von Y haben bestätigt" für alle sichtbar in Echtzeit',
+    'Diskussionstimer startet synchron auf allen Geräten sobald alle bestätigt haben',
+    'Post-Timer-Wahl: Abstimmung ob Diskussion verlängert oder Abstimmung gestartet wird',
+    'Abstimmung: jeder stimmt auf eigenem Handy ab, wer schon gewählt hat ist für alle sichtbar',
+    'Bestätigung vor Stimmabgabe verhindert versehentliche Klicks',
+    'Ergebnis-Screen: Gewinner, Eliminierter, Imposter-Auflösung, Stimmenzählung',
+    'Gewinnlogik: Dorf gewinnt nur wenn alle Imposter eliminiert; Imposter gewinnen bei Gleichstand',
+    'Singleplayer: Post-Timer-Screen mit "Noch eine Runde" oder "Abstimmung starten"',
+    'Bugfix: Host hat Spielnachrichten nach Spielstart nicht verarbeitet (kritischer Fix)',
+    ],
+  },
+{
     version: '0.79',
     date: '29.06.2026',
     changes: [
