@@ -1,9 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.76';
-export const BUILD_HASH = 'app-konflikt-bei-verbind';
+export const BUILD      = '0.77';
+export const BUILD_HASH = 'forcelongpolling-entfern';
 
 export const CHANGELOG = [
   {
+    version: '0.77',
+    date: '29.06.2026',
+    changes: [
+    'Multiplayer-Verbindungsfehler behoben: forceLongPolling() entfernt (kollidierte mit Werwolf-Firebase-Initialisierung), Fehlerdetails im Verbindungsfehler-Text sichtbar',
+    ],
+  },
+{
     version: '0.76',
     date: '29.06.2026',
     changes: [
