@@ -1,9 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.72';
-export const BUILD_HASH = 'zur-ck-button-nur-auf-st';
+export const BUILD      = '0.73';
+export const BUILD_HASH = 'watch-f-r-screen-event-i';
 
 export const CHANGELOG = [
   {
+    version: '0.73',
+    date: '29.06.2026',
+    changes: [
+    'Werwolf: Zurück-Button (←) im Spiel zuverlässig ausgeblendet (watch in setup() verschoben)',
+    ],
+  },
+{
     version: '0.72',
     date: '29.06.2026',
     changes: [
