@@ -51,5 +51,5 @@ export function t(key) {
     obj = STRINGS.de;
     for (const p of parts) { obj = obj?.[p]; }
   }
-  return typeof obj === 'string' ? obj : key;
+  return (typeof obj === 'string' || Array.isArray(obj)) ? obj : key;
 }

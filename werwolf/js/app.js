@@ -56,6 +56,7 @@ const state = reactive({
 
   showRevealTips: false,
   showSettingsModal: false,
+  showWwRules: false,
   gameMenu: { active: false },
   gamePaused: false,
   gameEndConfirm: false,
@@ -1105,7 +1106,10 @@ const App = {
           <button class="icon-btn" @click="closeGameMenu">✕</button>
         </div>
         <button class="btn btn-primary" style="margin-bottom:.6rem" @click="closeGameMenu">▶ Fortsetzen</button>
-        <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="pauseGame">⏸ Pausieren</button>
+        <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="openRoleReveal(null);state.gameMenu.active=false">🃏 Karten anzeigen</button>
+        <div style="height:1px;background:var(--bdr);margin:.4rem 0 .9rem"></div>
+        <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="state.showSettingsModal=true;state.gameMenu.active=false">⚙️ Einstellungen</button>
+        <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="state.showWwRules=true;state.gameMenu.active=false">❓ Anleitung</button>
         <div style="height:1px;background:var(--bdr);margin:.4rem 0 .9rem"></div>
         <button class="btn btn-ghost" style="color:#e07070;border-color:#e07070" @click="state.gameEndConfirm=true;state.gameMenu.active=false">
           🚪 Spiel beenden
@@ -1125,6 +1129,24 @@ const App = {
         <button class="btn btn-primary" @click="state.gameEndConfirm=false;state.gamePaused=false;state.gameMenu.active=false">
           Nein, weiterspielen
         </button>
+      </div>
+    </div>
+
+    <!-- ── WERWOLF ANLEITUNG ── -->
+    <div v-if="state.showWwRules" class="modal-bg" @click.self="state.showWwRules=false" style="z-index:520">
+      <div class="modal" style="max-height:85vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+          <span style="font-family:'Cinzel',serif;font-size:.9rem;letter-spacing:.15em;color:var(--gold)">ANLEITUNG</span>
+          <button class="icon-btn" @click="state.showWwRules=false">✕</button>
+        </div>
+        <div class="rules-section">
+          <div class="rules-step">1️⃣ <strong>Rollen verteilen</strong><br>Jeder Spieler bekommt heimlich eine Rolle: Dorfbewohner, Werwolf, Seherin, Hexe oder andere Sonderrollen.</div>
+          <div class="rules-step">🌙 <strong>Nachtphase</strong><br>Alle schließen die Augen. Der Spielleiter weckt die Werwölfe — sie wählen ein Opfer. Dann kommen Seherin und Hexe dran.</div>
+          <div class="rules-step">☀️ <strong>Tagphase</strong><br>Das Dorf diskutiert, wer ein Werwolf sein könnte. Am Ende stimmt das Dorf ab und eliminiert einen Spieler.</div>
+          <div class="rules-step">🔁 <strong>Rundenablauf</strong><br>Nacht und Tag wechseln sich ab bis das Dorf alle Werwölfe gefunden hat — oder die Werwölfe in der Mehrheit sind.</div>
+          <div class="rules-step">🏆 <strong>Wer gewinnt?</strong><br>Das Dorf gewinnt wenn alle Werwölfe eliminiert sind. Die Werwölfe gewinnen wenn sie gleich viele oder mehr Spieler sind als das Dorf.</div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:.8rem" @click="state.showWwRules=false">Verstanden ✓</button>
       </div>
     </div>
 
@@ -1353,7 +1375,7 @@ const App = {
                 <div class="card-back" v-show="!state.roleRevealModal.flipped" @click="revealRoleAgain" style="cursor:pointer">
                   <div class="cbi">🌑</div><div class="cbt">{{ t('reveal.tap') }}</div>
                 </div>
-                <div class="card-front" v-show="state.roleRevealModal.flipped">
+                <div class="card-front" v-show="state.roleRevealModal.flipped" @click="state.roleRevealModal.flipped=false;state.roleRevealModal.showTips=false" style="cursor:pointer">
                   <div class="cfi">{{ rrRole?.icon }}</div>
                   <div class="cft">{{ roleName(rrPlayer.roleId) }}</div>
                   <div class="ctbadge" :class="rrRole?.team==='wolf'?'wb':rrRole?.team==='dorf'?'db':'sb'">{{ teamLabel(rrRole?.team) }}</div>
@@ -1606,7 +1628,7 @@ const App = {
           <div class="card-back" v-show="!state.revealFlipped" @click="revealRole" style="cursor:pointer">
             <div class="cbi">🌑</div><div class="cbt">{{ t('reveal.tap') }}</div>
           </div>
-          <div class="card-front" v-show="state.revealFlipped">
+          <div class="card-front" v-show="state.revealFlipped" @click="state.revealFlipped=false;state.showRevealTips=false" style="cursor:pointer" :title="'Antippen zum Verdecken'">
             <div class="cfi">{{ revealRole2?.icon }}</div>
             <div class="cft">{{ roleName(revealPlayer?.roleId) }}</div>
             <div class="ctbadge" :class="revealRole2?.team==='wolf'?'wb':revealRole2?.team==='dorf'?'db':'sb'">{{ teamLabel(revealRole2?.team) }}</div>
@@ -1637,8 +1659,6 @@ const App = {
     <!-- ═══ GAME ═══ -->
     <div v-if="state.screen==='game'" class="screen">
       <div class="top-bar">
-        <button class="icon-btn" @click="openRoleReveal(null)" title="Rolle anzeigen">🃏</button>
-        <button class="icon-btn" @click="state.showSettingsModal=true">⚙️</button>
         <button class="icon-btn" @click="openGameMenu" title="Spielmenü" style="color:#e07070">⏸</button>
       </div>
       <div class="game-inner">
