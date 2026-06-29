@@ -1,3 +1,1 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
-E2E-Tests für Werwolf hinzugefügt (Shadow-DOM, Navigation, Zurück-Button)
-README überarbeitet: Werwolf in Spieleliste, aktuelle Projektstruktur, Entwicklungshinweise

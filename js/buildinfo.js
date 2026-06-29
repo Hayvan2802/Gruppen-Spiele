@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.88';
-export const BUILD_HASH = 'e2e-tests-mit-playwright';
+export const BUILD      = '0.89';
+export const BUILD_HASH = 'werwolf-e2e-tests-readme';
 
 export const CHANGELOG = [
   {
+    version: '0.89',
+    date: '29.06.2026',
+    changes: [
+    'E2E-Tests für Werwolf hinzugefügt (Shadow-DOM, Navigation, Zurück-Button)',
+    'README überarbeitet: Werwolf in Spieleliste, aktuelle Projektstruktur, Entwicklungshinweise',
+    ],
+  },
+{
     version: '0.88',
     date: '29.06.2026',
     changes: [
