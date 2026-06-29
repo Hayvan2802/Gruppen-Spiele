@@ -1,9 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.81';
+export const BUILD      = '0.82';
 export const BUILD_HASH = 'karte-best-tigung-tippba';
 
 export const CHANGELOG = [
   {
+    version: '0.82',
+    date: '29.06.2026',
+    changes: [
+    'Abstimmungs-Button ("Beschuldigen") jetzt mit Schatten und Rahmen — deutlich besser sichtbar',
+    'Primäre Aktions-Buttons in allen Spielen (Imposter, Wer bin ich, Codenames, Werwolf) mit verbessertem Kontrast und aktivem Feedback',
+    '"Karte aufdecken"-Button im Reveal-Screen mit sichtbarem Schatten',
+    ],
+  },
+{
     version: '0.81',
     date: '29.06.2026',
     changes: [
