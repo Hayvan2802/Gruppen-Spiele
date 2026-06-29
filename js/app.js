@@ -1242,10 +1242,13 @@ const App = {
     <!-- ── WHATS NEW — nur wenn kein Update-Banner aktiv ── -->
     <div v-if="state.showWhatsNew && !state.showHistory && !state.updateReady" class="modal-bg">
       <div class="modal whatsnew-modal">
-        <span class="whatsnew-badge">✦ {{ newChangelogs.length > 1 ? newChangelogs.length + ' NEUE VERSIONEN' : 'NEU IN VERSION ' + newChangelogs[0]?.version }}</span>
+        <span class="whatsnew-badge">✨ {{ newChangelogs.length > 1 ? newChangelogs.length + ' NEUE VERSIONEN' : 'NEU IN VERSION ' + newChangelogs[0]?.version }}</span>
         <div class="wnv-scroll">
           <div v-for="cl in newChangelogs" :key="cl.version" class="wnv-entry">
-            <div class="wnv-version">v{{ cl.version }}</div>
+            <div class="wnv-header-row">
+              <div class="wnv-version">v{{ cl.version }}</div>
+              <div class="wnv-date-chip">{{ cl.date }}</div>
+            </div>
             <ul class="wnv-list">
               <li v-for="c in cl.changes" :key="c">{{ c }}</li>
             </ul>
@@ -2864,7 +2867,10 @@ const App = {
       <div v-if="state.historyDetail" style="padding:0 1.2rem 3rem;max-width:480px;margin:0 auto">
         <div style="padding:1rem 0 .5rem">
           <span class="cl-version-num">v{{ state.historyDetail.version }}</span>
-          <span class="cl-version-date" style="margin-left:.6rem">{{ state.historyDetail.date }}</span>
+          <div style="margin-top:.25rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">
+            <span class="cl-version-date">{{ state.historyDetail.date }}</span>
+            <span v-if="state.historyDetail.time" style="color:var(--txt3);font-size:.78rem">· {{ state.historyDetail.time }} Uhr</span>
+          </div>
         </div>
         <ul style="list-style:none;padding:0">
           <li v-for="c in state.historyDetail.changes" :key="c"

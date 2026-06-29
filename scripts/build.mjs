@@ -41,9 +41,10 @@ if (changes.length === 0) {
   process.exit(1);
 }
 
-// ── 3. Datum (Heute) ─────────────────────────────────────────────────────────
+// ── 3. Datum + Uhrzeit ───────────────────────────────────────────────────────
 const now = new Date();
 const date = `${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
+const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
 // ── 4. buildinfo.js generieren ───────────────────────────────────────────────
 const oldBuildinfo = readFileSync('js/buildinfo.js', 'utf8');
@@ -56,7 +57,7 @@ const oldEntries = oldBuildinfo.slice(arrayStart + 1, oldBuildinfo.lastIndexOf('
 
 // Neuen Eintrag bauen
 const changesStr = changes.map(c => `    '${c.replace(/'/g, "\\'")}',`).join('\n');
-const newEntry = `  {\n    version: '${version}',\n    date: '${date}',\n    changes: [\n${changesStr}\n    ],\n  },`;
+const newEntry = `  {\n    version: '${version}',\n    date: '${date}',\n    time: '${time}',\n    changes: [\n${changesStr}\n    ],\n  },`;
 
 // Git-Hash für BUILD_HASH (kurz, lesbar)
 let buildHash = 'release';
