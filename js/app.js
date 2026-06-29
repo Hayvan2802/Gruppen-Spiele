@@ -922,10 +922,20 @@ const App = {
     const currentVoter = computed(() => state.roles[state.stimmIdx]);
     const voteOptions  = computed(() => state.roles.filter(r => r.name !== currentVoter.value?.name));
     const imposters    = computed(() => state.roles.filter(r => r.isImposter).map(r => r.name));
+    // Alle Versionen die der Nutzer noch nicht gesehen hat (neueste zuerst)
+    const newChangelogs = computed(() => {
+      const seen = loadSeenVersion();
+      if (!seen || !CHANGELOG.length) return CHANGELOG;
+      const idx = CHANGELOG.findIndex(cl => cl.version === seen);
+      if (idx === -1) return CHANGELOG;
+      const fresh = CHANGELOG.slice(0, idx);
+      return fresh.length ? fresh : [CHANGELOG[0]];
+    });
 
     return {
       state, BUILD, CHANGELOG, DONATE_URL, SUPPORTED_LOCALES,
       timerPct, revealPlayer, currentVoter, voteOptions, imposters, maxImposterOptions, getTimerSeconds,
+      newChangelogs,
       t, i18nState,
       setTheme, setLang,
       changePlayerCount, selectMode,
@@ -1231,13 +1241,17 @@ const App = {
 
     <!-- ── WHATS NEW — nur wenn kein Update-Banner aktiv ── -->
     <div v-if="state.showWhatsNew && !state.showHistory && !state.updateReady" class="modal-bg">
-      <div class="modal">
-        <span class="whatsnew-badge">✦ NEU IN VERSION {{ CHANGELOG[0]?.version }}</span>
-        <div class="wnv-version">v{{ CHANGELOG[0]?.version }}</div>
-        <ul class="wnv-list">
-          <li v-for="c in CHANGELOG[0]?.changes" :key="c">{{ c }}</li>
-        </ul>
-        <button class="btn-start" @click="dismissWhatsNew">Los geht's! 🎮</button>
+      <div class="modal whatsnew-modal">
+        <span class="whatsnew-badge">✦ {{ newChangelogs.length > 1 ? newChangelogs.length + ' NEUE VERSIONEN' : 'NEU IN VERSION ' + newChangelogs[0]?.version }}</span>
+        <div class="wnv-scroll">
+          <div v-for="cl in newChangelogs" :key="cl.version" class="wnv-entry">
+            <div class="wnv-version">v{{ cl.version }}</div>
+            <ul class="wnv-list">
+              <li v-for="c in cl.changes" :key="c">{{ c }}</li>
+            </ul>
+          </div>
+        </div>
+        <button class="btn-start" style="margin-top:.5rem;flex-shrink:0" @click="dismissWhatsNew">Los geht's! 🎮</button>
       </div>
     </div>
 
@@ -1652,7 +1666,7 @@ const App = {
               <div v-else style="text-align:center;padding:.6rem;color:var(--txt2);font-size:.85rem">⏳ Verbinde…</div>
               <button class="btn-create-room" style="margin-top:.8rem;background:linear-gradient(135deg,#16a34a,#15803d)"
                 @click="wbiToggleReady">
-                {{ wbiState.coop.myReady ? '✓ Bereit (tippen zum Ändern)' : '✅ Ich bin bereit!' }}
+                {{ wbiState.coop.myReady ? '✗ Nicht mehr bereit' : '✅ Ich bin bereit!' }}
               </button>
               <button class="btn-sec" style="margin-top:.5rem" @click="wbiCancelCoop">Verlassen</button>
             </div>
@@ -2446,7 +2460,7 @@ const App = {
             <button class="btn-create-room" style="margin-top:.8rem"
               :style="state.coop.myReady ? 'background:linear-gradient(135deg,#16a34a,#15803d)' : 'background:linear-gradient(135deg,var(--pri),var(--pri2))'"
               @click="toggleReady">
-              {{ state.coop.myReady ? '✓ Bereit (tippen zum Abmelden)' : '✅ Ich bin bereit!' }}
+              {{ state.coop.myReady ? '✗ Nicht mehr bereit' : '✅ Ich bin bereit!' }}
             </button>
             <button class="btn-sec" style="margin-top:.5rem" @click="cancelCoop">{{ t('coop.leave') }}</button>
           </div>
