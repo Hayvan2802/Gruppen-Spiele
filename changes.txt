@@ -1,1 +1,3 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+E2E-Tests mit Playwright für alle Spiele (Imposter, Codenames, Wer bin ich?) hinzugefügt
+Firebase RTDB Security Rules (database.rules.json) hinzugefügt

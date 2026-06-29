@@ -15,4 +15,19 @@ jobs:
         with:
           node-version: 22
       - name: Unit-Tests
-        run: npm test
+        run: npm run test:unit
+
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Abhängigkeiten installieren
+        run: npm install
+      - name: Playwright-Browser installieren
+        run: npx playwright install --with-deps chromium
+      - name: E2E-Tests
+        run: npm run test:e2e
