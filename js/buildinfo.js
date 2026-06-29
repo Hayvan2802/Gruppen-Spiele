@@ -1,9 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.86';
-export const BUILD_HASH = 'build-js-und-test-js-aus';
+export const BUILD      = '0.87';
+export const BUILD_HASH = 'tests-auf-node-test-ci-n';
 
 export const CHANGELOG = [
   {
+    version: '0.87',
+    date: '29.06.2026',
+    changes: [
+    'Tests auf node:test umgestellt, CI auf Node 22, CLAUDE.md mit Auto-PR-Workflow aktualisiert',
+    ],
+  },
+{
     version: '0.86',
     date: '29.06.2026',
     changes: [
