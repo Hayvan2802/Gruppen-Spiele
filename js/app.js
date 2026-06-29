@@ -1,6 +1,6 @@
 // app.js — Gruppen-Spiele v0.0.5 (Vue 3, esm-browser)
 // Portiert vom Werwolf-Projekt — nur Imposter-Spiellogik
-import { createApp, reactive, computed } from './vue.esm-browser.prod.js';
+import { createApp, reactive, computed, watchEffect } from './vue.esm-browser.prod.js';
 import { BUILD, CHANGELOG } from './buildinfo.js';
 import {
   cnState, cnSelectMode, cnStartLocal, cnGiveHint, cnRevealCard, cnPassTurn, cnReset,
@@ -26,6 +26,12 @@ import {
 import { t, setLocale, detectLocale, i18nState, SUPPORTED_LOCALES } from './i18n/index.js';
 
 const APP_START = Date.now();
+
+// ── Pinch-Zoom global sperren (iOS ignoriert viewport user-scalable=no) ───────
+document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
+document.addEventListener('touchmove', e => {
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
 
 // ── Timer-Dauer nach Spieleranzahl ────────────────────────────────────────────
 function getTimerSeconds(playerCount) {
@@ -158,6 +164,8 @@ const state = reactive({
     votesProgress: { count: 0, total: 0, voters: [] },
     voteResult: null,            // { eliminated, imposters, winner, tally }
     allPlayers: [],              // snapshot aller Spieler für Ergebnisanzeige
+    showCardPeek: false,        // Karte nochmal ansehen während Diskussion
+    myReady: false,             // eigener Bereitschaftsstatus (Gast)
   },
 
   // Rollenverteilung
@@ -575,7 +583,10 @@ async function joinRoom() {
   });
 }
 
-async function toggleReady() { await Coop.send({ type: Coop.MSG.READY, ready: true }); }
+async function toggleReady() {
+  state.coop.myReady = !state.coop.myReady;
+  await Coop.send({ type: Coop.MSG.READY, ready: state.coop.myReady });
+}
 
 function getInviteLink() {
   const base = window.location.origin + window.location.pathname;
@@ -606,6 +617,8 @@ async function cancelCoop() {
   state.coop.postTimerVotes = { extend: 0, vote: 0 };
   state.coop.postTimerVoters = []; state.coop.myPostTimerVote = null;
   state.coop.votesProgress = { count: 0, total: 0, voters: [] };
+  state.coop.showCardPeek = false;
+  state.coop.myReady = false;
 }
 
 function coopSelectVote(name) {
@@ -714,6 +727,19 @@ function startCoopTimer() {
   }, 1000);
 }
 
+// Host überspringt den Diskussions-Timer → direkt zur Post-Timer-Abstimmung
+async function coopSkipTimer() {
+  if (!state.coop.isHost) return;
+  clearInterval(state.coop.coopTimerInterval);
+  state.coop.coopTimerInterval = null;
+  state.coop.phase = 'postTimer';
+  state.coop.postTimerVotes = { extend: 0, vote: 0 };
+  state.coop.postTimerVoters = [];
+  state.coop.myPostTimerVote = null;
+  await Coop.send({ type: Coop.MSG.TIMER_SKIP });
+  haptic('medium');
+}
+
 // ── Coop: Post-Timer-Abstimmung ────────────────────────────────────────────────
 async function sendPostTimerVote(choice) {
   if (state.coop.myPostTimerVote) return;
@@ -784,6 +810,16 @@ function handleCoopMessage(msg) {
     state.coop.coopTimerSeconds = 120;
     clearInterval(state.coop.coopTimerInterval);
     startCoopTimer();
+  }
+
+  if (msg.type === Coop.MSG.TIMER_SKIP) {
+    clearInterval(state.coop.coopTimerInterval);
+    state.coop.coopTimerInterval = null;
+    state.coop.phase = 'postTimer';
+    state.coop.postTimerVotes = { extend: 0, vote: 0 };
+    state.coop.postTimerVoters = [];
+    state.coop.myPostTimerVote = null;
+    haptic('medium');
   }
 
   if (msg.type === Coop.MSG.POST_TIMER_VOTE) {
@@ -870,6 +906,14 @@ function init() {
 // ── Vue App ───────────────────────────────────────────────────────────────────
 const App = {
   setup() {
+    // Scroll-Sperre für Spielphasen wo nichts gescrollt werden soll
+    const noScrollScreens = new Set(['reveal', 'timer', 'postTimer']);
+    const noScrollCoopPhases = new Set(['myRole', 'discussion', 'postTimer']);
+    watchEffect(() => {
+      const block = noScrollScreens.has(state.screen) || noScrollCoopPhases.has(state.coop.phase);
+      document.body.classList.toggle('no-scroll', block);
+    });
+
     const timerPct = computed(() => state.timerSeconds / getTimerSeconds(state.roles.length || state.playerCount) * 100);
     // Dynamische Imposter-Optionen: 1 per 4 Spieler, min 1, max 4
     // Frei wählbar 1–5 Imposter, unabhängig von Spielerzahl
@@ -900,7 +944,7 @@ const App = {
       showHostSetup, createRoom, startCoopGame,
       showJoinSetup, joinRoom, toggleReady, cancelCoop,
       getInviteLink, shareInviteLink,
-      confirmCard, sendPostTimerVote,
+      confirmCard, sendPostTimerVote, coopSkipTimer,
       coopSelectVote, coopConfirmVote, startCoopVoting,
       dismissWhatsNew, applyUpdate, checkForUpdate,
       exportLogToFile,
@@ -976,6 +1020,11 @@ const App = {
       </div>
     </div>
 
+    <!-- ── Hintergrund-Abdeckung für Coop-Spielphasen ── -->
+    <div v-if="['myRole','discussion','postTimer','coopVoting','coopResult'].includes(state.coop.phase)"
+      style="position:fixed;inset:0;background:var(--bg);z-index:395">
+    </div>
+
     <!-- ── SPIELMENÜ ── -->
     <div v-if="state.gameMenu.active" class="modal-bg" @click.self="closeGameMenu">
       <div class="modal" style="animation:fadeIn .2s ease">
@@ -1046,53 +1095,99 @@ const App = {
           </div>
         </div>
 
-        <!-- Karte bestätigen -->
-        <button class="btn btn-primary" style="margin-top:.8rem"
-          :disabled="state.coop.myCardConfirmed || !state.coop.cardRevealed"
-          @click="confirmCard">
-          {{ state.coop.myCardConfirmed ? '✓ Bestätigt — warte auf andere…' : 'Ich hab meine Karte verstanden ✓' }}
-        </button>
-        <div v-if="!state.coop.cardRevealed && !state.coop.myCardConfirmed"
-          style="font-size:.73rem;color:var(--txt3);margin-top:.4rem">
-          👆 Erst Karte aufdecken
-        </div>
+        <!-- Karte bestätigen: erst nach Aufdecken sichtbar -->
+        <template v-if="!state.coop.cardRevealed && !state.coop.myCardConfirmed">
+          <div style="font-size:.82rem;color:var(--txt3);margin-top:.6rem">
+            👆 Tippe die Karte an um sie aufzudecken
+          </div>
+        </template>
+        <template v-else-if="state.coop.myCardConfirmed">
+          <div style="margin-top:.8rem;padding:.7rem;background:rgba(16,163,74,.15);border-radius:12px;border:1px solid rgba(16,163,74,.3)">
+            <div style="font-size:1.3rem">✓</div>
+            <div style="font-size:.85rem;color:var(--green)">Bestätigt — warte auf andere…</div>
+          </div>
+        </template>
+        <template v-else>
+          <button class="btn-start" style="margin-top:.8rem" @click="confirmCard">
+            Ich hab meine Karte verstanden ✓
+          </button>
+        </template>
       </div>
     </div>
 
-    <!-- ── COOP: DISKUSSION (Timer 2 Min.) ── -->
-    <div v-if="state.coop.phase === 'discussion'" class="modal-bg" style="z-index:400">
-      <div class="modal" style="text-align:center">
-        <div class="whatsnew-badge">💬 DISKUSSION</div>
+    <!-- ── COOP: DISKUSSION (Full Screen) ── -->
+    <div v-if="state.coop.phase === 'discussion'"
+      style="position:fixed;inset:0;background:var(--bg);z-index:400;display:flex;flex-direction:column;overflow-y:auto">
+      <div class="top-bar">
+        <div style="width:40px"></div>
+        <span style="font-size:.78rem;letter-spacing:.15em;color:var(--gold);font-weight:700">IMPOSTER · MULTIPLAYER</span>
+        <button class="icon-btn" @click="state.showSettingsModal=true" title="Einstellungen">⚙️</button>
+      </div>
+      <div class="timer-screen" style="flex:1">
+        <div class="whatsnew-badge" style="margin-bottom:.5rem">💬 DISKUSSION</div>
         <h3 style="margin-bottom:.2rem">Jetzt diskutieren!</h3>
-        <p style="font-size:.8rem;color:var(--txt2);margin-bottom:.8rem">
+        <p class="timer-subtitle" style="margin-bottom:.8rem">
           Beschreibt das Wort abwechselnd — ohne es direkt zu sagen.<br>Wer verhält sich verdächtig?
         </p>
 
         <!-- Timer Ring -->
-        <div style="position:relative;width:150px;height:150px;margin:0 auto .8rem">
-          <svg width="150" height="150" viewBox="0 0 150 150">
-            <circle cx="75" cy="75" r="63" fill="none" stroke="var(--bdr2)" stroke-width="9"/>
-            <circle cx="75" cy="75" r="63" fill="none"
+        <div style="position:relative;width:160px;height:160px;margin:0 auto .8rem">
+          <svg width="160" height="160" viewBox="0 0 160 160">
+            <circle cx="80" cy="80" r="68" fill="none" stroke="var(--bdr2)" stroke-width="10"/>
+            <circle cx="80" cy="80" r="68" fill="none"
               :stroke="state.coop.coopTimerSeconds <= 10 ? '#ef4444' : state.coop.coopTimerSeconds <= 30 ? '#f59e0b' : 'var(--gold)'"
-              stroke-width="9" stroke-linecap="round"
-              :stroke-dasharray="2 * Math.PI * 63"
-              :stroke-dashoffset="2 * Math.PI * 63 * (1 - state.coop.coopTimerSeconds / 120)"
+              stroke-width="10" stroke-linecap="round"
+              :stroke-dasharray="2 * Math.PI * 68"
+              :stroke-dashoffset="2 * Math.PI * 68 * (1 - state.coop.coopTimerSeconds / 120)"
               style="transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset 1s linear,stroke .4s"/>
           </svg>
           <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;line-height:1">
-            <div style="font-size:2.4rem;font-weight:900"
+            <div class="timer-sec"
               :style="{color: state.coop.coopTimerSeconds <= 10 ? '#ef4444' : state.coop.coopTimerSeconds <= 30 ? '#f59e0b' : 'var(--gold)'}">
               {{ state.coop.coopTimerSeconds }}
             </div>
-            <div style="font-size:.62rem;color:var(--txt3);letter-spacing:.1em">SEK</div>
+            <div class="timer-sec-label">SEK</div>
           </div>
         </div>
 
-        <div class="timer-players">
+        <div class="timer-players" style="margin-bottom:1.2rem">
           <div v-for="p in state.coop.allPlayers" :key="p.uid" class="timer-player-dot"
             style="background:rgba(124,58,237,.25)">
             {{ p.name[0].toUpperCase() }}
           </div>
+        </div>
+
+        <!-- Karte nochmal ansehen -->
+        <button class="btn-sec" style="margin-bottom:.6rem;max-width:320px"
+          @click="state.coop.showCardPeek=true">
+          🃏 Meine Karte nochmal ansehen
+        </button>
+
+        <!-- Timer überspringen (nur Host) -->
+        <button v-if="state.coop.isHost" class="timer-skip-btn" style="max-width:320px"
+          @click="coopSkipTimer">
+          Abstimmung starten →
+        </button>
+        <div v-else style="font-size:.75rem;color:var(--txt3);margin-top:.3rem">
+          Warte auf den Host…
+        </div>
+      </div>
+
+      <!-- Karten-Peek Modal -->
+      <div v-if="state.coop.showCardPeek" class="modal-bg" style="z-index:410"
+        @click.self="state.coop.showCardPeek=false">
+        <div class="modal" style="text-align:center">
+          <div v-if="state.coop.myRoleIsImposter">
+            <div style="font-size:3rem;margin-bottom:.5rem">🕵️</div>
+            <div style="font-size:1.1rem;font-weight:900;color:var(--blood2)">DU BIST DER IMPOSTER!</div>
+            <p style="font-size:.85rem;color:var(--txt2);margin-top:.4rem">Du kennst das Wort nicht. Tu so als ob!</p>
+          </div>
+          <div v-else>
+            <div style="font-size:.7rem;letter-spacing:.15em;color:var(--txt3);text-transform:uppercase;margin-bottom:.3rem">Dein Wort</div>
+            <div style="font-size:2.2rem;font-weight:900;color:var(--gold)">{{ state.coop.myWord }}</div>
+            <p style="font-size:.8rem;color:var(--txt2);margin-top:.4rem">Beschreibe es ohne das Wort zu sagen!</p>
+          </div>
+          <button class="btn-sec" style="margin-top:1rem" @click="state.coop.showCardPeek=false">✕ Schließen</button>
         </div>
       </div>
     </div>
@@ -2304,7 +2399,10 @@ const App = {
                 </span>
               </li>
             </ul>
-            <button class="btn-pri" @click="startCoopGame" :disabled="state.coop.players.length < 2">{{ t('coop.startBtn') }}</button>
+            <button class="btn-start" style="margin-top:.8rem" @click="startCoopGame"
+              :disabled="state.coop.players.length < 2 || !state.coop.players.filter(p=>!p.isHost).every(p=>p.ready)">
+              ▶ Spiel starten ({{ state.coop.players.length }} Spieler)
+            </button>
             <button class="btn-sec" style="margin-top:.5rem" @click="cancelCoop">{{ t('coop.leave') }}</button>
           </div>
 
@@ -2345,8 +2443,11 @@ const App = {
               </li>
             </ul>
             <div v-else style="text-align:center;padding:.6rem;color:var(--txt2);font-size:.85rem">⏳ Verbinde…</div>
-            <button class="btn-create-room" style="margin-top:.8rem;background:linear-gradient(135deg,#16a34a,#15803d)"
-              @click="toggleReady">✅ Ich bin bereit!</button>
+            <button class="btn-create-room" style="margin-top:.8rem"
+              :style="state.coop.myReady ? 'background:linear-gradient(135deg,#16a34a,#15803d)' : 'background:linear-gradient(135deg,var(--pri),var(--pri2))'"
+              @click="toggleReady">
+              {{ state.coop.myReady ? '✓ Bereit (tippen zum Abmelden)' : '✅ Ich bin bereit!' }}
+            </button>
             <button class="btn-sec" style="margin-top:.5rem" @click="cancelCoop">{{ t('coop.leave') }}</button>
           </div>
 
@@ -2541,7 +2642,7 @@ const App = {
 
         <template v-if="!state.revealFlipped">
           <div style="font-size:.8rem;color:var(--txt3);margin-top:.6rem;text-align:center">oder</div>
-          <button class="btn-rev" style="margin-top:.4rem;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border:none;padding:.8rem 2rem;border-radius:12px;font-size:.9rem;font-weight:700;cursor:pointer" @click="revealCard">
+          <button class="btn-rev" style="margin-top:.4rem;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border:1px solid rgba(124,58,237,.4);padding:.8rem 2rem;border-radius:12px;font-size:.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(124,58,237,.35)" @click="revealCard">
             👁 Karte aufdecken
           </button>
         </template>

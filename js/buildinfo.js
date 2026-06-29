@@ -1,9 +1,46 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.80';
-export const BUILD_HASH = 'host-verarbeitet-spielna';
+export const BUILD      = '0.84';
+export const BUILD_HASH = 'coop-diskussion-als-eige';
 
 export const CHANGELOG = [
   {
+    version: '0.84',
+    date: '29.06.2026',
+    changes: [
+    'Bereit-Button im Multiplayer lässt sich jetzt wieder abwählen (nochmal tippen)',
+    'Scrollen und Zoomen während Spielphasen (Timer, Kartenansicht, Diskussion) deaktiviert',
+    'Pinch-Zoom auf iOS global gesperrt',
+    ],
+  },
+{
+    version: '0.83',
+    date: '29.06.2026',
+    changes: [
+    'Multiplayer-Diskussion läuft jetzt auf eigener Seite (kein Hintergrund mehr sichtbar) — mit Einstellungen-Zugang',
+    'Neuer "Abstimmung starten"-Button im Diskussions-Timer für den Host',
+    'Neuer "Meine Karte nochmal ansehen"-Button während der Diskussion',
+    'Raumcode-Bug behoben: nach einer Runde kann derselbe Code sofort wieder verwendet werden',
+    ],
+  },
+{
+    version: '0.82',
+    date: '29.06.2026',
+    changes: [
+    'Abstimmungs-Button ("Beschuldigen") jetzt mit Schatten und Rahmen — deutlich besser sichtbar',
+    'Primäre Aktions-Buttons in allen Spielen (Imposter, Wer bin ich, Codenames, Werwolf) mit verbessertem Kontrast und aktivem Feedback',
+    '"Karte aufdecken"-Button im Reveal-Screen mit sichtbarem Schatten',
+    ],
+  },
+{
+    version: '0.81',
+    date: '29.06.2026',
+    changes: [
+    'Bugfix: Karte-Bestätigen-Button im Multiplayer war nicht tippbar bevor Karte aufgedeckt wurde',
+    'Bugfix: Bestätigungs-Flow zeigt Button erst nach Aufdecken, Bestätigungszustand klar sichtbar',
+    'Lobby: "Spiel starten"-Button jetzt groß und farbig, zeigt Spielerzahl, nur aktiv wenn alle bereit',
+    ],
+  },
+{
     version: '0.80',
     date: '29.06.2026',
     changes: [

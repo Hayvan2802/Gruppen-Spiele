@@ -67,9 +67,16 @@ export async function hostGame({ code, name, onOpen, onError, onJoin, onLeave, o
     log('coop', `Hoste Raum ${code}…`);
     const playersSnap = await withTimeout(f.get(f.ref(f.db, `rooms/${code}/players`)));
     if (playersSnap.exists() && playersSnap.size > 0) {
-      log('coop', `Code ${code} bereits belegt`);
-      onError && onError({ type: 'code-taken' });
-      return;
+      // Prüfen ob wir selbst der frühere Host waren — dann abgelaufenen Raum übernehmen
+      const metaSnap = await f.get(f.ref(f.db, `rooms/${code}/meta`));
+      if (metaSnap.exists() && metaSnap.val().hostId === f.uid) {
+        log('coop', `Code ${code}: eigener alter Raum — wird zurückgesetzt`);
+        await f.remove(f.ref(f.db, `rooms/${code}/players`));
+      } else {
+        log('coop', `Code ${code} bereits belegt`);
+        onError && onError({ type: 'code-taken' });
+        return;
+      }
     }
     roomCode = code;
     await f.remove(f.ref(f.db, `rooms/${code}/events`));
@@ -173,6 +180,9 @@ export const MSG = {
   VOTE_CAST:         'vote_cast',         // Spieler → Host: Stimme (targetName)
   VOTE_PROGRESS:     'vote_progress',     // Host → alle: Fortschritt (count, total, voterNames)
   VOTE_RESULT:       'vote_result',       // Host → alle: Ergebnis (eliminated, votes{})
+
+  // Timer überspringen (nur Host)
+  TIMER_SKIP:        'timer_skip',
 
   // Nachtphase — Aktionen auf eigenem Gerät
   NIGHT_START:       'night_start',       // Host → alle: Nacht beginnt (round)
