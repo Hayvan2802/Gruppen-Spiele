@@ -1,9 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.75';
-export const BUILD_HASH = 'forcelongpolling-aktivie';
+export const BUILD      = '0.76';
+export const BUILD_HASH = 'app-konflikt-bei-verbind';
 
 export const CHANGELOG = [
   {
+    version: '0.76',
+    date: '29.06.2026',
+    changes: [
+    'Multiplayer-Verbindungsfehler beim Hosten behoben (Firebase App-Konflikt bei Retry verhindert)',
+    ],
+  },
+{
     version: '0.75',
     date: '29.06.2026',
     changes: [
