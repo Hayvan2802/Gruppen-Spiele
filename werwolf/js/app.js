@@ -1012,6 +1012,9 @@ function init() {
 // ─── TEMPLATE ────────────────────────────────────────────────────────────────
 const App = {
   setup() {
+    // Haupt-App informieren wenn sich der Screen ändert (steuert den ←-Button)
+    watch(() => state.screen, s => window.dispatchEvent(new CustomEvent('ww-screen', { detail: s })), { immediate: true });
+
     const stdRoles    = computed(() => Object.values(ROLES).filter(r => r.std));
     const extraRoles  = computed(() => Object.values(ROLES).filter(r => !r.std));
     const alivePlayers = computed(() => state.players.filter(p => p.alive));
@@ -1788,11 +1791,8 @@ if (!window.__WW_EMBEDDED__) {
 
 // Einstieg für die eingebettete Nutzung in Gruppen-Spiele.
 export function mountWerwolf(el) {
-  const app = createApp(App);
-  app.mount(el);
+  createApp(App).mount(el);
   init();
-  // Haupt-App informieren wenn sich der interne Screen ändert (für ←-Button)
-  watch(() => state.screen, s => window.dispatchEvent(new CustomEvent('ww-screen', { detail: s })));
 }
 
 // ── SERVICE WORKER — exakt nach Tom's Pattern ────────────────────────────────
