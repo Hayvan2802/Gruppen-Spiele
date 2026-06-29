@@ -48,8 +48,7 @@ Backend-Server (außer Firebase RTDB für den Echtzeit-Multiplayer).
 >   exportiert; Theme-Klasse und Toasts gehen auf `wwRoot` (das `.ww-root` im
 >   Shadow) statt `document.body`. Auto-Mount nur noch standalone
 >   (`if (!window.__WW_EMBEDDED__)`), sodass `/js/games/werwolf/` als Seite weiter
->   funktioniert (Redirect von `/werwolf/` → `/js/games/werwolf/` vorhanden).
->   Eigener Service Worker bleibt **deaktiviert**
+>   funktioniert. Eigener Service Worker bleibt **deaktiviert**
 >   (`WW_REGISTER_OWN_SW = false`). localStorage kollidiert nicht
 >   (`gs_`- vs. `ww_`-Präfix).
 
@@ -137,7 +136,6 @@ Gruppen-Spiele/
 │   │   └── de|en|tr|fr|es|it|pl|ru|ar.js   # Übersetzungen
 │   └── vendor/firebase/          # Eingebundene Firebase-SDK-Module
 ├── icons/                  # PWA-Icons + Spiel-Icons (icons/games/)
-├── werwolf/                # Redirect-Alias → js/games/werwolf/ (alter URL)
 ├── scripts/
 │   └── build.js            # Release-Skript (node scripts/build.js)
 ├── test/
