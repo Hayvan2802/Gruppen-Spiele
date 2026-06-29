@@ -1,2 +1,1 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
-Werwolf: Zurück-Button (←) nur noch auf dem Startbildschirm sichtbar, nicht mehr während des Spiels
