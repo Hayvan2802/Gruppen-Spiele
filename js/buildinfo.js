@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.94';
-export const BUILD_HASH = 'alle-verpassten-versione';
+export const BUILD      = '0.95';
+export const BUILD_HASH = 'datum-pro-version-anzeig';
 
 export const CHANGELOG = [
   {
+    version: '0.95',
+    date: '29.06.2026',
+    time: '19:51',
+    changes: [
+    'Neu-Fenster zeigt jetzt Datum neben jeder Version; Versionsdetail zeigt genaue Uhrzeit',
+    ],
+  },
+{
     version: '0.94',
     date: '29.06.2026',
     changes: [
