@@ -1,9 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.70';
-export const BUILD_HASH = 'werwolf-anleitung-in-den';
+export const BUILD      = '0.71';
+export const BUILD_HASH = 'tipps-karte-verdecken-un';
 
 export const CHANGELOG = [
   {
+    version: '0.71',
+    date: '29.06.2026',
+    changes: [
+    'Werwolf: Rollentipps wurden als einzelne Buchstaben angezeigt — Fix für t()-Funktion die Arrays zurückgibt',
+    'Werwolf: Karte antippen verdeckt sie wieder (Reveal-Screen und Karten-Modal)',
+    'Werwolf: Pause-Menü enthält jetzt Einstellungen, Anleitung und Karten anzeigen — separate ⚙️/🃏 Top-Bar-Buttons entfernt',
+    ],
+  },
+{
     version: '0.70',
     date: '28.06.2026',
     changes: [
