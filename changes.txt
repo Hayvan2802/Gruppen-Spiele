@@ -1,1 +1,4 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+Werwolf: Rollentipps wurden als einzelne Buchstaben angezeigt — Fix für t()-Funktion die Arrays zurückgibt
+Werwolf: Karte antippen verdeckt sie wieder (Reveal-Screen und Karten-Modal)
+Werwolf: Pause-Menü enthält jetzt Einstellungen, Anleitung und Karten anzeigen — separate ⚙️/🃏 Top-Bar-Buttons entfernt
