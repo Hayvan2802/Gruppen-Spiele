@@ -112,6 +112,7 @@ const state = reactive({
   historyList: false,
   updateReady: false,
   showSettingsModal: false,
+  wwScreen: 'home',
   gameMenu: { active: false },
   gamePaused: false,
   gameEndConfirm: false,
@@ -268,12 +269,17 @@ function dismissNamesHint() { state.showSavedNamesHint = false; }
 
 // Werwolf ist als eigene Vue-Instanz in einem Shadow-DOM eingebettet
 // (siehe werwolf-embed.js) — nahtlos wie die anderen Spiele, ohne Reload.
+// Werwolf meldet seinen internen Screen per Custom Event → state.wwScreen
+// steuert, ob der ←-Button der Haupt-App sichtbar ist (nur auf Werwolf-Home).
+window.addEventListener('ww-screen', e => { state.wwScreen = e.detail; });
+
 function openWerwolf() {
   state.screen = 'ww';
+  state.wwScreen = 'home';
   const host = document.getElementById('ww-host');
   if (host) import('./werwolf-embed.js').then(m => m.ensureWerwolf(host));
 }
-function closeWerwolf() { state.screen = 'home'; }
+function closeWerwolf() { state.screen = 'home'; state.wwScreen = 'home'; }
 
 // ── Konfigurationen ───────────────────────────────────────────────────────────
 function saveCurrentConfig() {
@@ -737,7 +743,7 @@ const App = {
          v-show statt v-if, damit Host + Shadow-DOM erhalten bleiben und der
          Wechsel hin/zurück ohne Reload sofort ist. -->
     <div id="ww-host" class="ww-host" v-show="state.screen==='ww'"></div>
-    <button v-if="state.screen==='ww'" class="back-corner icon-btn" @click="closeWerwolf" title="Zurück" aria-label="Zurück">←</button>
+    <button v-if="state.screen==='ww' && state.wwScreen==='home'" class="back-corner icon-btn" @click="closeWerwolf" title="Zurück" aria-label="Zurück">←</button>
 
     <!-- Pause-Overlay entfernt — nur gameMenu Modal wird verwendet -->
 

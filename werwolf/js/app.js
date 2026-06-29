@@ -1788,8 +1788,11 @@ if (!window.__WW_EMBEDDED__) {
 
 // Einstieg für die eingebettete Nutzung in Gruppen-Spiele.
 export function mountWerwolf(el) {
-  createApp(App).mount(el);
+  const app = createApp(App);
+  app.mount(el);
   init();
+  // Haupt-App informieren wenn sich der interne Screen ändert (für ←-Button)
+  watch(() => state.screen, s => window.dispatchEvent(new CustomEvent('ww-screen', { detail: s })));
 }
 
 // ── SERVICE WORKER — exakt nach Tom's Pattern ────────────────────────────────
