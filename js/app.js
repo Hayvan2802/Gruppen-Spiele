@@ -2551,7 +2551,7 @@ const App = {
 
         <template v-if="!state.revealFlipped">
           <div style="font-size:.8rem;color:var(--txt3);margin-top:.6rem;text-align:center">oder</div>
-          <button class="btn-rev" style="margin-top:.4rem;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border:none;padding:.8rem 2rem;border-radius:12px;font-size:.9rem;font-weight:700;cursor:pointer" @click="revealCard">
+          <button class="btn-rev" style="margin-top:.4rem;background:linear-gradient(135deg,var(--pri),var(--pri2));color:#fff;border:1px solid rgba(124,58,237,.4);padding:.8rem 2rem;border-radius:12px;font-size:.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(124,58,237,.35)" @click="revealCard">
             👁 Karte aufdecken
           </button>
         </template>
