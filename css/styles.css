@@ -21,6 +21,7 @@ body.light {
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{height:100%;overscroll-behavior:none;overflow-x:hidden;}
 body{background:var(--bg);color:var(--txt);font-family:'system-ui',Georgia,serif;min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s;}
+body.no-scroll{overflow:hidden;touch-action:pan-x pan-y;}
 /* Sternenpunkte entfernt */
 #rotate-fix{position:relative;min-height:100vh;}
 .app{position:relative;z-index:1;min-height:100vh;}
