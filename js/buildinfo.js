@@ -1,9 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.85';
-export const BUILD_HASH = 'projektstruktur-aufger-u';
+export const BUILD      = '0.86';
+export const BUILD_HASH = 'build-js-und-test-js-aus';
 
 export const CHANGELOG = [
   {
+    version: '0.86',
+    date: '29.06.2026',
+    changes: [
+    'Veraltete Dateien im Root entfernt (build.js, test.js — ersetzt durch scripts/ und test/unit/)',
+    ],
+  },
+{
     version: '0.85',
     date: '29.06.2026',
     changes: [
