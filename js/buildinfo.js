@@ -1,9 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.71';
-export const BUILD_HASH = 'tipps-karte-verdecken-un';
+export const BUILD      = '0.72';
+export const BUILD_HASH = 'zur-ck-button-nur-auf-st';
 
 export const CHANGELOG = [
   {
+    version: '0.72',
+    date: '29.06.2026',
+    changes: [
+    'Werwolf: Zurück-Button (←) nur noch auf dem Startbildschirm sichtbar, nicht mehr während des Spiels',
+    ],
+  },
+{
     version: '0.71',
     date: '29.06.2026',
     changes: [
