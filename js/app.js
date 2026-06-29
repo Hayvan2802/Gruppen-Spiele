@@ -2843,7 +2843,7 @@ const App = {
     <!-- ══════════════════════════════════════════════════════════════════ -->
     <template v-if="state.screen === 'history'">
       <div class="top-bar">
-        <button class="icon-btn" @click="state.historyDetail ? state.historyDetail=null : state.screen='home'">←</button>
+        <button class="back-corner icon-btn" @click="state.historyDetail ? state.historyDetail=null : state.screen='home'" title="Zurück">←</button>
       </div>
       <!-- Detailansicht einer Version -->
       <div v-if="state.historyDetail" style="padding:0 1.2rem 3rem;max-width:480px;margin:0 auto">
