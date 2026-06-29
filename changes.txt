@@ -1,2 +1,1 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
-Multiplayer: Firebase nutzt jetzt Long Polling statt WebSocket — behebt Verbindungsfehler bei iCloud Private Relay

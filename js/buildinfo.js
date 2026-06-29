@@ -1,9 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.74';
-export const BUILD_HASH = 'update-check-alle-12s-be';
+export const BUILD      = '0.75';
+export const BUILD_HASH = 'forcelongpolling-aktivie';
 
 export const CHANGELOG = [
   {
+    version: '0.75',
+    date: '29.06.2026',
+    changes: [
+    'Multiplayer: Firebase nutzt jetzt Long Polling statt WebSocket — behebt Verbindungsfehler bei iCloud Private Relay',
+    ],
+  },
+{
     version: '0.74',
     date: '29.06.2026',
     changes: [
