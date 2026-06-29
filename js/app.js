@@ -488,7 +488,7 @@ async function createRoom() {
       const h = state.coop.players.find(p => p.isHost);
       if (h) h.uid = uid; // Host-UID von 'host' auf echte Firebase-UID aktualisieren
     },
-    onError: (e) => { Coop.resetFb(); state.coop.error = e.type === 'code-taken' ? t('coop.codeTaken') : e.type === 'timeout' ? t('coop.errorTimeout') : t('coop.errorGeneric'); state.coop.phase = 'hosting'; },
+    onError: (e) => { Coop.resetFb(); state.coop.error = e.type === 'code-taken' ? t('coop.codeTaken') : e.type === 'timeout' ? t('coop.errorTimeout') : `${t('coop.errorGeneric')} (${e.code || e.message || e.type || JSON.stringify(e)})`; state.coop.phase = 'hosting'; },
     onJoin: (uid, data) => {
       if (!state.coop.players.find(p => p.uid === uid))
         state.coop.players.push({ uid, name: data?.name || uid, ready: false, isHost: false });
@@ -542,7 +542,7 @@ async function joinRoom() {
       if (e.type === 'code-not-found') state.coop.error = t('coop.codeWrong');
       else if (e.type === 'room-full') state.coop.error = t('coop.roomFull');
       else if (e.type === 'timeout')   state.coop.error = t('coop.errorTimeout');
-      else state.coop.error = t('coop.errorGeneric');
+      else state.coop.error = `${t('coop.errorGeneric')} (${e.code || e.message || e.type || JSON.stringify(e)})`;
     },
     onMessage: handleCoopMessage,
     onClose: () => { state.coop.phase = 'idle'; },

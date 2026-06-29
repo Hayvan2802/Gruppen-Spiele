@@ -234,7 +234,7 @@ export async function wbiCreateRoom() {
       Coop.resetFb();
       if (e.type === 'code-taken') wbiState.coop.error = 'Code bereits vergeben!';
       else if (e.type === 'timeout') wbiState.coop.error = 'Timeout — bitte erneut versuchen.';
-      else wbiState.coop.error = 'Verbindungsfehler — bitte erneut versuchen.';
+      else wbiState.coop.error = `Verbindungsfehler — bitte erneut versuchen. (${e.code || e.message || e.type || JSON.stringify(e)})`;
       wbiState.coop.phase = 'hosting';
     },
     onJoin: (uid, data) => {
@@ -286,7 +286,7 @@ export async function wbiJoinRoom() {
       if (e.type === 'code-not-found') wbiState.coop.error = 'Raum nicht gefunden!';
       else if (e.type === 'room-full')  wbiState.coop.error = 'Raum ist voll!';
       else if (e.type === 'timeout')    wbiState.coop.error = 'Timeout — bitte erneut versuchen.';
-      else wbiState.coop.error = 'Verbindungsfehler — bitte erneut versuchen.';
+      else wbiState.coop.error = `Verbindungsfehler — bitte erneut versuchen. (${e.code || e.message || e.type || JSON.stringify(e)})`;
     },
     onMessage: wbiHandleCoopMsg,
     onClose: () => { wbiState.coop.phase = 'idle'; },

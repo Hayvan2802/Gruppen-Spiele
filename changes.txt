@@ -1,1 +1,2 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+Multiplayer-Verbindungsfehler behoben: forceLongPolling() entfernt (kollidierte mit Werwolf-Firebase-Initialisierung), Fehlerdetails im Verbindungsfehler-Text sichtbar
