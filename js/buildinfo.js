@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.73';
-export const BUILD_HASH = 'watch-f-r-screen-event-i';
+export const BUILD      = '0.74';
+export const BUILD_HASH = 'update-check-alle-12s-be';
 
 export const CHANGELOG = [
   {
+    version: '0.74',
+    date: '29.06.2026',
+    changes: [
+    'Update-Prüfung läuft jetzt alle 12 Sekunden statt alle 60 Sekunden',
+    'Multiplayer: Verbindungsfehler zeigt jetzt "bitte erneut versuchen" und setzt Firebase zurück für sauberen Neustart',
+    ],
+  },
+{
     version: '0.73',
     date: '29.06.2026',
     changes: [
