@@ -660,7 +660,10 @@ function handleCoopMessage(msg) {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 function init() {
-  applyTheme(); applyLocale(); maybeShowWhatsNew();
+  applyTheme(); applyLocale();
+  // Kurz warten damit der SW promote(reg.waiting) ausführen kann —
+  // Update-Banner hat Vorrang vor der Versionsmitteilung.
+  setTimeout(maybeShowWhatsNew, 800);
   if (state.lastSavedNames.length > 0) state.showSavedNamesHint = true;
 
   // Einladungslink: ?code=XXXXXX → direkt in Coop-Join-Ansicht
@@ -869,8 +872,8 @@ const App = {
       </div>
     </div>
 
-    <!-- ── WHATS NEW ── -->
-    <div v-if="state.showWhatsNew && !state.showHistory" class="modal-bg">
+    <!-- ── WHATS NEW — nur wenn kein Update-Banner aktiv ── -->
+    <div v-if="state.showWhatsNew && !state.showHistory && !state.updateReady" class="modal-bg">
       <div class="modal">
         <span class="whatsnew-badge">✦ NEU IN VERSION {{ CHANGELOG[0]?.version }}</span>
         <div class="wnv-version">v{{ CHANGELOG[0]?.version }}</div>
@@ -881,8 +884,8 @@ const App = {
       </div>
     </div>
 
-    <!-- ── UPDATE BANNER (zentriertes Modal) ── -->
-    <div v-if="state.updateReady && !state.showWhatsNew" class="update-modal-overlay">
+    <!-- ── UPDATE BANNER (hat Vorrang vor Versionsmitteilung) ── -->
+    <div v-if="state.updateReady" class="update-modal-overlay">
       <div class="update-modal" style="animation:fadeIn .25s ease">
         <div style="font-size:2.2rem;margin-bottom:.6rem">🆕</div>
         <span class="uc-badge" style="margin-bottom:.8rem">✦ UPDATE VERFÜGBAR</span>
