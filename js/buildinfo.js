@@ -1,9 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.90';
-export const BUILD_HASH = 'zur-ck-button-in-version';
+export const BUILD      = '0.91';
+export const BUILD_HASH = 'verschiebe-werwolf-nach';
 
 export const CHANGELOG = [
   {
+    version: '0.91',
+    date: '29.06.2026',
+    changes: [
+    'Werwolf nach js/games/werwolf/ verschoben (liegt jetzt neben Codenames und Wer bin ich?)',
+    ],
+  },
+{
     version: '0.90',
     date: '29.06.2026',
     changes: [
