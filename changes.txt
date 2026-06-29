@@ -1,1 +1,2 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+Einstellungen: Tabs (Allgemein/Daten), Backup exportieren/importieren, erweitertes Diagnoseprotokoll
