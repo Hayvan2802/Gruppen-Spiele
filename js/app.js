@@ -18,7 +18,7 @@ import {
 } from './games/werbinich.js';
 import { ALL_WORDS, KATEGORIEN, DEFAULT_KATEGORIEN, DONATE_URL, COOP_MAX_PLAYERS } from './config.js';
 import * as Coop from './coop.js';
-import { log, exportLogToFile } from './debuglog.js';
+import { log, exportLogToFile, logDeviceSnapshot, installGlobalErrorHandlers, installJankDetector } from './debuglog.js';
 import {
   loadSettings, saveSettings, loadSeenVersion, saveSeenVersion,
   loadLastNames, saveLastNames, loadConfigs, saveConfig, deleteConfig,
@@ -118,6 +118,7 @@ const state = reactive({
   historyList: false,
   updateReady: false,
   showSettingsModal: false,
+  settingsTab: 'allgemein',
   wwScreen: 'home',
   gameMenu: { active: false },
   gamePaused: false,
@@ -868,6 +869,9 @@ function handleCoopMessage(msg) {
 // ── Init ──────────────────────────────────────────────────────────────────────
 function init() {
   applyTheme(); applyLocale();
+  logDeviceSnapshot();
+  installGlobalErrorHandlers();
+  installJankDetector();
   // Kurz warten damit der SW promote(reg.waiting) ausführen kann —
   // Update-Banner hat Vorrang vor der Versionsmitteilung.
   setTimeout(maybeShowWhatsNew, 800);
@@ -901,6 +905,56 @@ function init() {
     const splash = document.getElementById('splash');
     if (splash) splash.classList.add('fade-out');
   }, Math.max(0, 600 - (Date.now() - APP_START)));
+}
+
+// ── Backup / Import ───────────────────────────────────────────────────────────
+async function exportBackup() {
+  const { BUILD } = await import('./buildinfo.js');
+  const data = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && (key.startsWith('gs_') || key.startsWith('ww_'))) {
+      try { data[key] = JSON.parse(localStorage.getItem(key)); }
+      catch { data[key] = localStorage.getItem(key); }
+    }
+  }
+  const backup = { app: 'Gruppen-Spiele', version: BUILD, exportedAt: new Date().toISOString(), data };
+  const filename = `gruppen-spiele-backup-${new Date().toISOString().slice(0,10)}.json`;
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  if (navigator.canShare) {
+    try {
+      const file = new File([blob], filename, { type: 'application/json' });
+      if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: 'Gruppen-Spiele Backup' }); return; }
+    } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = Object.assign(document.createElement('a'), { href: url, download: filename });
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importBackup() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json,application/json';
+  input.onchange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const backup = JSON.parse(await file.text());
+      if (!backup.data || typeof backup.data !== 'object') throw new Error('Ungültiges Format');
+      let count = 0;
+      for (const [key, val] of Object.entries(backup.data)) {
+        if (key.startsWith('gs_') || key.startsWith('ww_')) {
+          localStorage.setItem(key, JSON.stringify(val)); count++;
+        }
+      }
+      state.settings = loadSettings();
+      state.savedConfigs = loadConfigs();
+      state.lastSavedNames = loadLastNames();
+      alert(`✅ ${count} Einträge wiederhergestellt.`);
+    } catch (err) { alert('❌ Backup konnte nicht gelesen werden: ' + err.message); }
+  };
+  document.body.appendChild(input); input.click(); document.body.removeChild(input);
 }
 
 // ── Vue App ───────────────────────────────────────────────────────────────────
@@ -957,7 +1011,7 @@ const App = {
       confirmCard, sendPostTimerVote, coopSkipTimer,
       coopSelectVote, coopConfirmVote, startCoopVoting,
       dismissWhatsNew, applyUpdate, checkForUpdate,
-      exportLogToFile,
+      exportLogToFile, exportBackup, importBackup,
       // Codenames
       cnState, cnSelectMode, cnStartLocal, cnGiveHint, cnRevealCard, cnPassTurn, cnReset,
       cnShowHostSetup, cnCreateRoom, cnShowJoinSetup, cnJoinRoom,
@@ -1384,68 +1438,68 @@ const App = {
           <span class="drawer-title">⚙️ EINSTELLUNGEN</span>
           <button class="icon-btn" @click="state.showSettingsModal=false">✕</button>
         </div>
+        <!-- Tab-Leiste -->
+        <div class="stab-bar">
+          <button class="stab-btn" :class="{active:state.settingsTab==='allgemein'}" @click="state.settingsTab='allgemein'">Allgemein</button>
+          <button class="stab-btn" :class="{active:state.settingsTab==='daten'}" @click="state.settingsTab='daten'">Daten</button>
+        </div>
         <div class="drawer-body">
 
-          <div class="drawer-section">
-            <div class="drawer-section-title">Darstellung</div>
-            <div class="srow">
-              <div><div class="slabel">Theme</div></div>
-              <div class="theme-btns">
-                <button v-for="th in ['dark','light','auto']" :key="th"
-                  class="theme-btn" :class="{active: state.settings.theme===th}"
-                  @click="setTheme(th)">
-                  {{ th==='dark'?'🌙 Dunkel':th==='light'?'☀️ Hell':'🔄 System' }}
-                </button>
+          <!-- ── ALLGEMEIN ── -->
+          <template v-if="state.settingsTab==='allgemein'">
+            <div class="drawer-section">
+              <div class="drawer-section-title">Darstellung</div>
+              <div class="srow">
+                <div><div class="slabel">Theme</div></div>
+                <div class="theme-btns">
+                  <button v-for="th in ['dark','light','auto']" :key="th"
+                    class="theme-btn" :class="{active: state.settings.theme===th}"
+                    @click="setTheme(th)">
+                    {{ th==='dark'?'🌙 Dunkel':th==='light'?'☀️ Hell':'🔄 System' }}
+                  </button>
+                </div>
+              </div>
+              <div class="srow">
+                <div><div class="slabel">Sprache</div></div>
+                <select class="lsel" :value="state.settings.lang" @change="setLang($event.target.value)">
+                  <option v-for="l in SUPPORTED_LOCALES" :key="l.id" :value="l.id">{{ l.label }}</option>
+                </select>
               </div>
             </div>
-            <div class="srow">
-              <div><div class="slabel">Sprache</div></div>
-              <select class="lsel" :value="state.settings.lang" @change="setLang($event.target.value)">
-                <option v-for="l in SUPPORTED_LOCALES" :key="l.id" :value="l.id">{{ l.label }}</option>
-              </select>
-            </div>
-          </div>
 
-          <div class="drawer-section">
-            <div class="drawer-section-title">Über die App</div>
-            <div class="srow">
-              <div><div class="slabel">Version</div><div class="ssub">Gruppen-Spiele</div></div>
-              <span class="verbadge">v{{ BUILD }}</span>
-            </div>
-            <div class="srow">
-              <div><div class="slabel">Versionshistorie</div><div class="ssub">Alle Änderungen</div></div>
-              <button class="ver-hist-btn" @click="state.screen='history';state.showSettingsModal=false;state.historyDetail=null">Anzeigen</button>
-            </div>
-            <div class="srow">
-              <div><div class="slabel">Auf Update prüfen</div><div class="ssub">Sucht nach neuer Version</div></div>
-              <button class="ver-hist-btn" @click="checkForUpdate" style="white-space:nowrap">🔄 Prüfen</button>
-            </div>
-            <div v-if="state.updateReady" class="srow">
-              <div><div class="slabel">Update verfügbar</div></div>
-              <button class="ver-hist-btn" @click="applyUpdate" style="color:var(--gold)">Installieren</button>
-            </div>
-            <div class="srow">
-              <div><div class="slabel">Diagnoseprotokoll</div></div>
-              <button class="ver-hist-btn" @click="exportLogToFile">Exportieren</button>
-            </div>
-          </div>
-
-          <!-- Versionshistorie Liste -->
-          <div v-if="state.showHistory && !state.historyDetail" class="drawer-section">
-            <div class="drawer-section-title">Versionshistorie</div>
-            <div v-for="cl in CHANGELOG" :key="cl.version" class="cl-version-card"
-              @click="state.historyDetail=cl">
-              <div class="cl-version-card-head">
-                <span class="cl-version-num">v{{ cl.version }}</span>
-                <span class="cl-version-date">{{ cl.date }}</span>
+            <div class="drawer-section">
+              <div class="drawer-section-title">Über die App</div>
+              <div class="srow">
+                <div><div class="slabel">Version</div><div class="ssub">Gruppen-Spiele</div></div>
+                <span class="verbadge">v{{ BUILD }}</span>
               </div>
-              <ul class="cl-version-preview-list">
-                <li v-for="(c,i) in cl.changes.slice(0,2)" :key="i">{{ c }}</li>
-                <li v-if="cl.changes.length > 2" class="cl-more">+ {{ cl.changes.length - 2 }} weitere…</li>
-              </ul>
-              <div class="cl-tap-hint">Antippen für Details →</div>
+              <div class="srow">
+                <div><div class="slabel">Versionshistorie</div><div class="ssub">Alle Änderungen</div></div>
+                <button class="ver-hist-btn" @click="state.screen='history';state.showSettingsModal=false;state.historyDetail=null">Anzeigen</button>
+              </div>
+              <div class="srow">
+                <div><div class="slabel">Auf Update prüfen</div><div class="ssub">Sucht nach neuer Version</div></div>
+                <button class="ver-hist-btn" @click="checkForUpdate" style="white-space:nowrap">🔄 Prüfen</button>
+              </div>
+              <div v-if="state.updateReady" class="srow">
+                <div><div class="slabel">Update verfügbar</div></div>
+                <button class="ver-hist-btn" @click="applyUpdate" style="color:var(--gold)">Installieren</button>
+              </div>
             </div>
-          </div>
+          </template>
+
+          <!-- ── DATEN ── -->
+          <template v-else-if="state.settingsTab==='daten'">
+            <div class="drawer-section">
+              <div class="drawer-section-title">Sicherung</div>
+              <button class="srow-btn" @click="exportBackup">📤 Backup exportieren</button>
+              <button class="srow-btn" @click="importBackup">📥 Backup importieren</button>
+            </div>
+            <div class="drawer-section">
+              <div class="drawer-section-title">Diagnose</div>
+              <button class="srow-btn" @click="exportLogToFile">🐛 Diagnoseprotokoll exportieren</button>
+            </div>
+          </template>
 
         </div>
       </div>
