@@ -1,1 +1,2 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+Projektstruktur aufgeräumt: scripts/, test/unit/, package.json, CI-Workflow, .gitignore
