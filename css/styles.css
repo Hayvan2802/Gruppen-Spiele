@@ -345,7 +345,13 @@ body.light .glog{background:var(--sur);}
 .uc-btn-later:hover{background:var(--sur2);}
 
 /* ── Whats New (Screenshot 1) ────────────────────────────────────────────── */
-.wnv-version{font-size:1.55rem;font-weight:900;color:var(--txt);margin:.3rem 0 .85rem;}
+.whatsnew-modal{display:flex;flex-direction:column;max-height:80vh;overflow:hidden;}
+.wnv-scroll{overflow-y:auto;overscroll-behavior:contain;flex:1;margin:0 -1.4rem;padding:0 1.4rem;}
+.wnv-entry{padding-bottom:1rem;margin-bottom:.8rem;border-bottom:1px solid var(--bdr);}
+.wnv-entry:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0;}
+.wnv-header-row{display:flex;align-items:baseline;justify-content:space-between;margin:.3rem 0 .6rem;}
+.wnv-date-chip{font-size:.78rem;color:var(--txt3);}
+.wnv-version{font-size:1.55rem;font-weight:900;color:var(--txt);}
 .wnv-list{list-style:none;padding:0;margin-bottom:.5rem;}
 .wnv-list li{font-size:.88rem;color:var(--txt2);padding:.28rem 0;display:flex;gap:.55rem;line-height:1.5;}
 .wnv-list li::before{content:'✦';color:var(--gold);flex-shrink:0;margin-top:.05rem;}

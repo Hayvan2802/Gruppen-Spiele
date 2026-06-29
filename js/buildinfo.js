@@ -1,9 +1,46 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.90';
-export const BUILD_HASH = 'zur-ck-button-in-version';
+export const BUILD      = '0.95';
+export const BUILD_HASH = 'datum-pro-version-anzeig';
 
 export const CHANGELOG = [
   {
+    version: '0.95',
+    date: '29.06.2026',
+    time: '19:51',
+    changes: [
+    'Neu-Fenster zeigt jetzt Datum neben jeder Version; Versionsdetail zeigt genaue Uhrzeit',
+    ],
+  },
+{
+    version: '0.94',
+    date: '29.06.2026',
+    changes: [
+    'Update-Fenster zeigt jetzt alle verpassten Versionen auf einmal und ist scrollbar',
+    'Multiplayer Bereit-Button zeigt jetzt „Nicht mehr bereit" statt verwirrenden Text',
+    ],
+  },
+{
+    version: '0.93',
+    date: '29.06.2026',
+    changes: [
+    'Versionshistorie: Titel in der Top-Bar, Zurück-Button oben links klar abgetrennt',
+    ],
+  },
+{
+    version: '0.92',
+    date: '29.06.2026',
+    changes: [
+    'Werwolf-Ordner aus dem Root-Verzeichnis entfernt',
+    ],
+  },
+{
+    version: '0.91',
+    date: '29.06.2026',
+    changes: [
+    'Werwolf nach js/games/werwolf/ verschoben (liegt jetzt neben Codenames und Wer bin ich?)',
+    ],
+  },
+{
     version: '0.90',
     date: '29.06.2026',
     changes: [

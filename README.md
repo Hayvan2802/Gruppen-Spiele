@@ -48,7 +48,6 @@ Gruppen-Spiele/
 │   │   ├── index.js            # t(), Locale-Handling, SUPPORTED_LOCALES
 │   │   └── de|en|tr|fr|es|it|pl|ru|ar.js
 │   └── vendor/firebase/        # Eingebundene Firebase-SDK-Module
-├── werwolf/                # Weiterleitung → js/games/werwolf/ (alter URL-Alias)
 ├── scripts/
 │   └── build.mjs           # Release-Skript (Version bumpen, buildinfo.js + sw.js)
 └── test/

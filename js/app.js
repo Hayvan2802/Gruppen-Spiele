@@ -922,10 +922,20 @@ const App = {
     const currentVoter = computed(() => state.roles[state.stimmIdx]);
     const voteOptions  = computed(() => state.roles.filter(r => r.name !== currentVoter.value?.name));
     const imposters    = computed(() => state.roles.filter(r => r.isImposter).map(r => r.name));
+    // Alle Versionen die der Nutzer noch nicht gesehen hat (neueste zuerst)
+    const newChangelogs = computed(() => {
+      const seen = loadSeenVersion();
+      if (!seen || !CHANGELOG.length) return CHANGELOG;
+      const idx = CHANGELOG.findIndex(cl => cl.version === seen);
+      if (idx === -1) return CHANGELOG;
+      const fresh = CHANGELOG.slice(0, idx);
+      return fresh.length ? fresh : [CHANGELOG[0]];
+    });
 
     return {
       state, BUILD, CHANGELOG, DONATE_URL, SUPPORTED_LOCALES,
       timerPct, revealPlayer, currentVoter, voteOptions, imposters, maxImposterOptions, getTimerSeconds,
+      newChangelogs,
       t, i18nState,
       setTheme, setLang,
       changePlayerCount, selectMode,
@@ -1231,13 +1241,20 @@ const App = {
 
     <!-- ── WHATS NEW — nur wenn kein Update-Banner aktiv ── -->
     <div v-if="state.showWhatsNew && !state.showHistory && !state.updateReady" class="modal-bg">
-      <div class="modal">
-        <span class="whatsnew-badge">✦ NEU IN VERSION {{ CHANGELOG[0]?.version }}</span>
-        <div class="wnv-version">v{{ CHANGELOG[0]?.version }}</div>
-        <ul class="wnv-list">
-          <li v-for="c in CHANGELOG[0]?.changes" :key="c">{{ c }}</li>
-        </ul>
-        <button class="btn-start" @click="dismissWhatsNew">Los geht's! 🎮</button>
+      <div class="modal whatsnew-modal">
+        <span class="whatsnew-badge">✨ {{ newChangelogs.length > 1 ? newChangelogs.length + ' NEUE VERSIONEN' : 'NEU IN VERSION ' + newChangelogs[0]?.version }}</span>
+        <div class="wnv-scroll">
+          <div v-for="cl in newChangelogs" :key="cl.version" class="wnv-entry">
+            <div class="wnv-header-row">
+              <div class="wnv-version">v{{ cl.version }}</div>
+              <div class="wnv-date-chip">{{ cl.date }}</div>
+            </div>
+            <ul class="wnv-list">
+              <li v-for="c in cl.changes" :key="c">{{ c }}</li>
+            </ul>
+          </div>
+        </div>
+        <button class="btn-start" style="margin-top:.5rem;flex-shrink:0" @click="dismissWhatsNew">Los geht's! 🎮</button>
       </div>
     </div>
 
@@ -1652,7 +1669,7 @@ const App = {
               <div v-else style="text-align:center;padding:.6rem;color:var(--txt2);font-size:.85rem">⏳ Verbinde…</div>
               <button class="btn-create-room" style="margin-top:.8rem;background:linear-gradient(135deg,#16a34a,#15803d)"
                 @click="wbiToggleReady">
-                {{ wbiState.coop.myReady ? '✓ Bereit (tippen zum Ändern)' : '✅ Ich bin bereit!' }}
+                {{ wbiState.coop.myReady ? '✗ Nicht mehr bereit' : '✅ Ich bin bereit!' }}
               </button>
               <button class="btn-sec" style="margin-top:.5rem" @click="wbiCancelCoop">Verlassen</button>
             </div>
@@ -2446,7 +2463,7 @@ const App = {
             <button class="btn-create-room" style="margin-top:.8rem"
               :style="state.coop.myReady ? 'background:linear-gradient(135deg,#16a34a,#15803d)' : 'background:linear-gradient(135deg,var(--pri),var(--pri2))'"
               @click="toggleReady">
-              {{ state.coop.myReady ? '✓ Bereit (tippen zum Abmelden)' : '✅ Ich bin bereit!' }}
+              {{ state.coop.myReady ? '✗ Nicht mehr bereit' : '✅ Ich bin bereit!' }}
             </button>
             <button class="btn-sec" style="margin-top:.5rem" @click="cancelCoop">{{ t('coop.leave') }}</button>
           </div>
@@ -2842,14 +2859,18 @@ const App = {
     <!-- ── HISTORY SCREEN ── -->
     <!-- ══════════════════════════════════════════════════════════════════ -->
     <template v-if="state.screen === 'history'">
-      <div class="top-bar">
+      <div class="top-bar" style="justify-content:center;position:relative">
         <button class="back-corner icon-btn" @click="state.historyDetail ? state.historyDetail=null : state.screen='home'" title="Zurück">←</button>
+        <span style="font-weight:600;font-size:.95rem;color:var(--txt)">{{ state.historyDetail ? 'v' + state.historyDetail.version : 'Versionshistorie' }}</span>
       </div>
       <!-- Detailansicht einer Version -->
       <div v-if="state.historyDetail" style="padding:0 1.2rem 3rem;max-width:480px;margin:0 auto">
         <div style="padding:1rem 0 .5rem">
           <span class="cl-version-num">v{{ state.historyDetail.version }}</span>
-          <span class="cl-version-date" style="margin-left:.6rem">{{ state.historyDetail.date }}</span>
+          <div style="margin-top:.25rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">
+            <span class="cl-version-date">{{ state.historyDetail.date }}</span>
+            <span v-if="state.historyDetail.time" style="color:var(--txt3);font-size:.78rem">· {{ state.historyDetail.time }} Uhr</span>
+          </div>
         </div>
         <ul style="list-style:none;padding:0">
           <li v-for="c in state.historyDetail.changes" :key="c"
