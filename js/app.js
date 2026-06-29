@@ -525,6 +525,7 @@ async function createRoom() {
         if (p) p.ready = msg.ready;
         lobbyBroadcast();
       }
+      handleCoopMessage(msg);
     },
   });
 }
