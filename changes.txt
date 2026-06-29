@@ -1,1 +1,2 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+Veraltete Dateien im Root entfernt (build.js, test.js — ersetzt durch scripts/ und test/unit/)
