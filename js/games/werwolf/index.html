@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Werwolf" />
+  <meta name="theme-color" content="#0d0a14" />
+  <meta name="description" content="Werwolf — Das kostenlose Partyspiel für den Browser" />
+
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="./css/styles.css" />
+
+  <title>Werwolf</title>
+  <!-- Kein Splashscreen: Werwolf ist Teil von Gruppen-Spiele und wird direkt
+       (ohne eigenen Startbildschirm/Version) zur Werwolf-Auswahl geladen.
+       Dunkler Hintergrund verhindert ein kurzes Aufblitzen beim Laden. -->
+</head>
+<body style="background:#0d0a14">
+  <div id="rotate-fix">
+    <div id="app"></div>
+    <div id="err" style="display:none;position:fixed;inset:0;background:#1a0000;color:#ff6b6b;padding:20px;font-family:monospace;font-size:13px;z-index:99999;overflow:auto;white-space:pre-wrap"></div>
+  </div>
+  <script>
+    // Fehler-Overlay — schreibt im selben Format wie debuglog.js (Key: ww_debuglog)
+    function wwLogWindowError(message, extra) {
+      try {
+        var key = 'ww_debuglog';
+        var entries = JSON.parse(localStorage.getItem(key)) || [];
+        entries.push({ ts: Date.now(), category: 'window', message: message, extra: extra });
+        while (entries.length > 400) entries.shift();
+        localStorage.setItem(key, JSON.stringify(entries));
+      } catch (e) {}
+    }
+    window.onerror = function(msg, src, line, col, err) {
+      var d = document.getElementById('err');
+      d.style.display = 'block';
+      d.textContent = 'ERROR:\n' + msg + '\n\nFile: ' + src + '\nLine: ' + line + '\n\n' + (err && err.stack ? err.stack : '');
+      wwLogWindowError(msg + ' (' + src + ':' + line + ')', err ? { message: err.message, name: err.name } : undefined);
+    };
+    window.addEventListener('unhandledrejection', function(e) {
+      var d = document.getElementById('err');
+      d.style.display = 'block';
+      d.textContent += '\nPromise Error:\n' + (e.reason && e.reason.stack ? e.reason.stack : String(e.reason));
+      wwLogWindowError('Promise Error: ' + String(e.reason), e.reason ? { message: e.reason.message, name: e.reason.name } : undefined);
+    });
+  </script>
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

@@ -27,7 +27,7 @@ export function ensureWerwolf(host) {
     // Als <style> mit gefetchtem Text injizieren statt <link>: wird sofort und
     // zuverlässig im Shadow-DOM angewandt und behält den @import der Schriftarten
     // (den konstruierte Stylesheets verwerfen würden).
-    const cssHref = './werwolf/css/styles.shadow.css';
+    const cssHref = './js/games/werwolf/css/styles.shadow.css';
     try {
       const css = await fetch(cssHref).then(r => r.ok ? r.text() : Promise.reject(r.status));
       const style = document.createElement('style');
@@ -46,7 +46,7 @@ export function ensureWerwolf(host) {
     shadow.appendChild(root);
 
     // Werwolf-App laden und in die Shadow-Wurzel mounten (eigene Vue-Instanz).
-    const mod = await import('../werwolf/js/app.js');
+    const mod = await import('./games/werwolf/js/app.js');
     mod.setWwRoot(root);
     mod.mountWerwolf(root);
   })();

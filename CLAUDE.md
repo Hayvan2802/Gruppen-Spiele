@@ -24,18 +24,18 @@ Backend-Server (außer Firebase RTDB für den Echtzeit-Multiplayer).
 | 🕵️ **Imposter** | direkt in `js/app.js` | Lokal (1 Gerät) + Coop |
 | 🧩 **Codenames** | `js/games/codenames.js`, `codenames-words.js` | Lokal + Coop |
 | 🤔 **Wer bin ich?** | `js/games/werbinich.js`, `werbinich-words.js` | Lokal + Coop |
-| 🐺 **Werwolf** | eigenständige Unter-App unter `werwolf/` | Lokal + Coop |
+| 🐺 **Werwolf** | eigenständige Unter-App unter `js/games/werwolf/` | Lokal + Coop |
 
 > **Werwolf-Integration:** Werwolf ist eine vollständige, eigenständige App
-> (gleiche Architektur wie das Hauptprojekt) und liegt unter `werwolf/`. Sie wird
-> **nahtlos eingebettet** statt als zweite Seite geladen: `js/werwolf-embed.js`
-> mountet die Werwolf-App als **eigene Vue-Instanz in ein Shadow-DOM**-Element
-> (`#ww-host` im Haupt-Template).
+> (gleiche Architektur wie das Hauptprojekt) und liegt unter `js/games/werwolf/`.
+> Sie wird **nahtlos eingebettet** statt als zweite Seite geladen:
+> `js/werwolf-embed.js` mountet die Werwolf-App als **eigene Vue-Instanz in ein
+> Shadow-DOM**-Element (`#ww-host` im Haupt-Template).
 >
 > - **Warum Shadow-DOM:** Beide Apps teilen ~187 gleichnamige CSS-Klassen
 >   (`.btn`, `.screen`, `.top-bar` …). Das Shadow-DOM kapselt das Werwolf-CSS
 >   komplett ab. Dafür gibt es eine generierte Variante
->   `werwolf/css/styles.shadow.css`, in der nur die 9 globalen Selektoren
+>   `js/games/werwolf/css/styles.shadow.css`, in der nur die 9 globalen Selektoren
 >   (`:root`, `html`, `body`, `body.light` …) auf `.ww-root` umgeschrieben sind
 >   (alle Klassen/Keyframes bleiben unverändert, da das Shadow-DOM sie isoliert).
 > - **Nahtlos & schnell:** `state.screen='ww'` blendet den Host ein (kein Reload);
@@ -44,11 +44,12 @@ Backend-Server (außer Firebase RTDB für den Echtzeit-Multiplayer).
 >   vorgewärmt (`requestIdleCallback`).
 > - **Zurück:** durchgängiger `←`-Button der Haupt-App (`.ww-back-btn`,
 >   `closeWerwolf()`), wie bei den anderen Spielen.
-> - **Anpassungen in `werwolf/js/app.js`:** `mountWerwolf(el)`/`setWwRoot(el)`
+> - **Anpassungen in `js/games/werwolf/js/app.js`:** `mountWerwolf(el)`/`setWwRoot(el)`
 >   exportiert; Theme-Klasse und Toasts gehen auf `wwRoot` (das `.ww-root` im
 >   Shadow) statt `document.body`. Auto-Mount nur noch standalone
->   (`if (!window.__WW_EMBEDDED__)`), sodass `/werwolf/` als Seite weiter
->   funktioniert. Eigener Service Worker bleibt **deaktiviert**
+>   (`if (!window.__WW_EMBEDDED__)`), sodass `/js/games/werwolf/` als Seite weiter
+>   funktioniert (Redirect von `/werwolf/` → `/js/games/werwolf/` vorhanden).
+>   Eigener Service Worker bleibt **deaktiviert**
 >   (`WW_REGISTER_OWN_SW = false`). localStorage kollidiert nicht
 >   (`gs_`- vs. `ww_`-Präfix).
 
@@ -128,14 +129,15 @@ Gruppen-Spiele/
 │   │   ├── codenames.js          # Codenames-Spiellogik + State
 │   │   ├── codenames-words.js    # Codenames-Wortlisten (mehrsprachig)
 │   │   ├── werbinich.js          # "Wer bin ich?"-Logik + State
-│   │   └── werbinich-words.js    # "Wer bin ich?"-Kartendeck
+│   │   ├── werbinich-words.js    # "Wer bin ich?"-Kartendeck
+│   │   └── werwolf/              # 🐺 Eigenständige Werwolf-Unter-App (eigenes
+│   │                             #    index.html, js/, css/ — relative Pfade)
 │   ├── i18n/
 │   │   ├── index.js              # t(), Locale-Handling, SUPPORTED_LOCALES
 │   │   └── de|en|tr|fr|es|it|pl|ru|ar.js   # Übersetzungen
 │   └── vendor/firebase/          # Eingebundene Firebase-SDK-Module
 ├── icons/                  # PWA-Icons + Spiel-Icons (icons/games/)
-├── werwolf/                # 🐺 Eigenständige Werwolf-Unter-App (eigenes
-│                           #    index.html, js/, css/, sw.js — relative Pfade)
+├── werwolf/                # Redirect-Alias → js/games/werwolf/ (alter URL)
 ├── scripts/
 │   └── build.js            # Release-Skript (node scripts/build.js)
 ├── test/
