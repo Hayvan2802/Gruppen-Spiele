@@ -42,12 +42,13 @@ Gruppen-Spiele/
 │   │   ├── codenames.js        # Codenames-Logik & State
 │   │   ├── codenames-words.js  # Codenames-Wortlisten (mehrsprachig)
 │   │   ├── werbinich.js        # "Wer bin ich?"-Logik & State
-│   │   └── werbinich-words.js  # "Wer bin ich?"-Kartendeck
+│   │   ├── werbinich-words.js  # "Wer bin ich?"-Kartendeck
+│   │   └── werwolf/            # 🐺 Eigenständige Werwolf-Unter-App (Shadow DOM)
 │   ├── i18n/
 │   │   ├── index.js            # t(), Locale-Handling, SUPPORTED_LOCALES
 │   │   └── de|en|tr|fr|es|it|pl|ru|ar.js
 │   └── vendor/firebase/        # Eingebundene Firebase-SDK-Module
-├── werwolf/                # Eigenständige Werwolf-Unter-App (Shadow DOM)
+├── werwolf/                # Weiterleitung → js/games/werwolf/ (alter URL-Alias)
 ├── scripts/
 │   └── build.mjs           # Release-Skript (Version bumpen, buildinfo.js + sw.js)
 └── test/

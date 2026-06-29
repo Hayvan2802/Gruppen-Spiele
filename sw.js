@@ -20,15 +20,15 @@ const ASSETS = [
   // Werwolf sofort lädt (kein langsames Nachladen eines zweiten Vue-Bundles).
   // Die Firebase-SDK-Module der Unter-App lädt der Network-First-Handler erst
   // bei Bedarf (Coop) nach.
-  './werwolf/', './werwolf/index.html', './werwolf/manifest.json',
-  './werwolf/css/styles.css', './werwolf/css/styles.shadow.css',
-  './werwolf/js/vue.esm-browser.prod.js',
-  './werwolf/js/app.js', './werwolf/js/config.js', './werwolf/js/storage.js',
-  './werwolf/js/coop.js', './werwolf/js/firebase.js', './werwolf/js/debuglog.js',
-  './werwolf/js/buildinfo.js', './werwolf/js/i18n/index.js',
-  './werwolf/js/i18n/de.js', './werwolf/js/i18n/en.js', './werwolf/js/i18n/tr.js',
-  './werwolf/js/i18n/fr.js', './werwolf/js/i18n/es.js', './werwolf/js/i18n/it.js',
-  './werwolf/js/i18n/pl.js', './werwolf/js/i18n/ru.js', './werwolf/js/i18n/ar.js',
+  './js/games/werwolf/', './js/games/werwolf/index.html', './js/games/werwolf/manifest.json',
+  './js/games/werwolf/css/styles.css', './js/games/werwolf/css/styles.shadow.css',
+  './js/games/werwolf/js/vue.esm-browser.prod.js',
+  './js/games/werwolf/js/app.js', './js/games/werwolf/js/config.js', './js/games/werwolf/js/storage.js',
+  './js/games/werwolf/js/coop.js', './js/games/werwolf/js/firebase.js', './js/games/werwolf/js/debuglog.js',
+  './js/games/werwolf/js/buildinfo.js', './js/games/werwolf/js/i18n/index.js',
+  './js/games/werwolf/js/i18n/de.js', './js/games/werwolf/js/i18n/en.js', './js/games/werwolf/js/i18n/tr.js',
+  './js/games/werwolf/js/i18n/fr.js', './js/games/werwolf/js/i18n/es.js', './js/games/werwolf/js/i18n/it.js',
+  './js/games/werwolf/js/i18n/pl.js', './js/games/werwolf/js/i18n/ru.js', './js/games/werwolf/js/i18n/ar.js',
 ];
 
 self.addEventListener('install', e => {
