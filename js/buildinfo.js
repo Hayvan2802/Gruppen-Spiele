@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.87';
-export const BUILD_HASH = 'tests-auf-node-test-ci-n';
+export const BUILD      = '0.88';
+export const BUILD_HASH = 'e2e-tests-mit-playwright';
 
 export const CHANGELOG = [
   {
+    version: '0.88',
+    date: '29.06.2026',
+    changes: [
+    'E2E-Tests mit Playwright für alle Spiele (Imposter, Codenames, Wer bin ich?) hinzugefügt',
+    'Firebase RTDB Security Rules (database.rules.json) hinzugefügt',
+    ],
+  },
+{
     version: '0.87',
     date: '29.06.2026',
     changes: [
