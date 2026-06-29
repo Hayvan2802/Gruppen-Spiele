@@ -151,6 +151,9 @@ export async function leave() {
 
 export function getUid() { return fb ? fb.uid : null; }
 
+// Firebase-Verbindung zurücksetzen — nächster Verbindungsversuch initialisiert neu
+export function resetFb() { fb = null; }
+
 // Nachrichten-Typen
 export const MSG = {
   START:          'start',          // Host → alle: Rollenzuteilungen
