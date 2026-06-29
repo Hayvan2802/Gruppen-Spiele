@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.93';
-export const BUILD_HASH = 'titel-in-top-bar-kein-be';
+export const BUILD      = '0.94';
+export const BUILD_HASH = 'alle-verpassten-versione';
 
 export const CHANGELOG = [
   {
+    version: '0.94',
+    date: '29.06.2026',
+    changes: [
+    'Update-Fenster zeigt jetzt alle verpassten Versionen auf einmal und ist scrollbar',
+    'Multiplayer Bereit-Button zeigt jetzt „Nicht mehr bereit" statt verwirrenden Text',
+    ],
+  },
+{
     version: '0.93',
     date: '29.06.2026',
     changes: [
