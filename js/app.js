@@ -2842,8 +2842,9 @@ const App = {
     <!-- ── HISTORY SCREEN ── -->
     <!-- ══════════════════════════════════════════════════════════════════ -->
     <template v-if="state.screen === 'history'">
-      <div class="top-bar">
+      <div class="top-bar" style="justify-content:center;position:relative">
         <button class="back-corner icon-btn" @click="state.historyDetail ? state.historyDetail=null : state.screen='home'" title="Zurück">←</button>
+        <span style="font-weight:600;font-size:.95rem;color:var(--txt)">{{ state.historyDetail ? 'v' + state.historyDetail.version : 'Versionshistorie' }}</span>
       </div>
       <!-- Detailansicht einer Version -->
       <div v-if="state.historyDetail" style="padding:0 1.2rem 3rem;max-width:480px;margin:0 auto">
