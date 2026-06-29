@@ -1,5 +1,4 @@
 // firebase.js — lazy Firebase-Init für den Coop-Transport (RTDB + anonyme Auth).
-// iCloud Private Relay Fix: forceLongPolling() vor getDatabase() aufgerufen.
 // _app wird module-weit gespeichert, damit initializeApp() bei Retry nicht erneut
 // aufgerufen wird ("app already exists"-Fehler verhindert).
 import { log } from './debuglog.js';
@@ -27,10 +26,7 @@ export function ensureFirebase() {
           import('./vendor/firebase/firebase-database.js'),
         ]);
         if (!_app) {
-          // forceLongPolling vor getDatabase() — Fix für iCloud Private Relay.
-          // Nur beim ersten Initialisieren aufrufen.
           _app = appModule.getApps().length ? appModule.getApp() : appModule.initializeApp(firebaseConfig);
-          dbModule.forceLongPolling();
         }
         const auth = getAuth(_app);
         const db = dbModule.getDatabase(_app);

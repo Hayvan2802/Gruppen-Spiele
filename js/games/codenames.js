@@ -249,7 +249,7 @@ export async function cnCreateRoom() {
       if (h) h.uid = uid;
     },
     onError: (e) => {
-      cnState.coop.error = e.type==='code-taken' ? 'Code bereits vergeben!' : 'Verbindungsfehler.';
+      cnState.coop.error = e.type==='code-taken' ? 'Code bereits vergeben!' : `Verbindungsfehler. (${e.code || e.message || e.type || JSON.stringify(e)})`;
       cnState.coop.phase = 'hosting';
     },
     onJoin: (uid, data) => {
@@ -292,7 +292,7 @@ export async function cnJoinRoom() {
         e.type==='code-not-found' ? 'Raum nicht gefunden!'   :
         e.type==='room-full'      ? 'Raum ist voll!'         :
         e.type==='timeout'        ? 'Timeout — Private Relay? VPN ausschalten und nochmal versuchen.' :
-        'Verbindungsfehler.';
+        `Verbindungsfehler. (${e.code || e.message || e.type || JSON.stringify(e)})`;
     },
     onMessage: cnHandleCoopMsg,
     onClose:   () => { cnState.coop.phase='idle'; },
