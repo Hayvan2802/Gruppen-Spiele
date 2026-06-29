@@ -1206,7 +1206,7 @@ const App = {
         <div style="padding:1rem 0 .6rem;font-size:1.2rem;font-weight:900;color:var(--txt)">🤔 Wer bin ich?</div>
 
         <!-- SETUP -->
-        <template v-if="wbiState.phase === 'setup'">
+        <template v-if="wbiState.phase === 'setup' && wbiState.coop.phase !== 'playing' && wbiState.coop.phase !== 'result'">
           <!-- Spielmodus -->
           <div class="sec">
             <h2>📱 Spielmodus</h2>
@@ -1508,8 +1508,17 @@ const App = {
           <div class="wbi-card-wrap" style="text-align:center">
             <div class="wbi-for-label">Deine Karte (nur du siehst sie NICHT)</div>
             <div class="wbi-player-name">Du bist…</div>
-            <div class="wbi-card wbi-card-visible" style="margin:1rem 0">
-              <div class="wbi-card-front">
+            <div class="wbi-hint" v-if="!wbiState.coop.cardFlipped" style="margin-bottom:.5rem">
+              📱 Antippen um deine Karte kurz zu sehen — dann wieder antippen zum Verdecken.
+            </div>
+            <div class="wbi-card" :class="{'wbi-card-visible': wbiState.coop.cardFlipped}"
+              @click="wbiState.coop.cardFlipped = !wbiState.coop.cardFlipped"
+              style="cursor:pointer;margin:1rem 0;width:100%;max-width:340px">
+              <div v-if="!wbiState.coop.cardFlipped" class="wbi-card-back">
+                <div style="font-size:3rem;margin-bottom:.6rem">🤔</div>
+                <div style="font-size:.85rem;letter-spacing:.1em;color:var(--txt2);text-transform:uppercase">Antippen zum Aufdecken</div>
+              </div>
+              <div v-if="wbiState.coop.cardFlipped" class="wbi-card-front">
                 <div style="font-size:.75rem;color:var(--txt3);margin-bottom:.4rem">{{ wbiState.coop.myCard?.category }}</div>
                 <div class="wbi-word">{{ wbiState.coop.myCard?.word }}</div>
                 <div style="font-size:.78rem;color:var(--txt2);margin-top:.6rem">

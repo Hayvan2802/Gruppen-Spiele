@@ -70,6 +70,7 @@ export const wbiState = reactive({
     myReady: false,
     error: null,
     myCard: null,      // { word, category } — nur ich sehe meine Karte
+    cardFlipped: false, // Karte aufgedeckt (per Antippen)
     allCards: {},      // { uid: { word, category, guessed, skipped } } — Host verwaltet
     guesses: [],       // History der Runde
     roundOver: false,
@@ -308,8 +309,9 @@ export async function wbiStartCoopGame() {
   assignments.forEach(a => {
     wbiState.coop.allCards[a.uid] = { word: a.word, category: a.category, guessed: false, skipped: false };
   });
-  wbiState.coop.guesses  = [];
-  wbiState.coop.roundOver = false;
+  wbiState.coop.guesses   = [];
+  wbiState.coop.roundOver  = false;
+  wbiState.coop.cardFlipped = false;
 
   // Jeder bekommt nur seine eigene Karte
   for (const a of assignments) {
@@ -343,11 +345,11 @@ function wbiHandleCoopMsg(msg) {
   if (msg.type === 'WBI_START') {
     wbiState.coop.phase = 'playing';
     wbiState.coop.guesses = [];
-    if (msg.targetUid) return; // Ignore targeted
+    wbiState.coop.cardFlipped = false;
+    if (msg.targetUid) return;
   }
 
   if (msg.type === 'WBI_GUESS') {
-    // Spieler hat geraten — alle sehen's
     wbiState.coop.guesses.push({
       name:    msg.guesserName,
       word:    msg.word,
@@ -358,7 +360,6 @@ function wbiHandleCoopMsg(msg) {
       wbiState.coop.allCards[msg.author].guessed = msg.correct;
     }
     haptic(msg.correct ? 'success' : 'light');
-    // Prüfen ob alle fertig
     if (wbiState.coop.isHost) wbiCheckCoopDone();
   }
 
@@ -373,7 +374,6 @@ function wbiHandleCoopMsg(msg) {
 async function wbiCheckCoopDone() {
   const all = Object.values(wbiState.coop.allCards);
   if (all.every(c => c.guessed || c.skipped)) {
-    // Alle fertig → Ergebnis senden
     const results = wbiState.coop.players.map(p => {
       const card = wbiState.coop.allCards[p.uid];
       return { playerName: p.name, word: card?.word || '', guessed: card?.guessed || false };
@@ -381,19 +381,26 @@ async function wbiCheckCoopDone() {
     const scores = {};
     results.filter(r => r.guessed).forEach(r => { scores[r.playerName] = (scores[r.playerName] || 0) + 1; });
     await Coop.send({ type: 'WBI_RESULT', results, scores });
+    // Host empfängt eigene Nachrichten nicht → lokalen State direkt setzen
+    wbiState.results = results;
+    wbiState.scores  = scores;
+    wbiState.coop.phase = 'result';
+    haptic('success');
   }
 }
 
 export async function wbiSendGuess(correct) {
   const card = wbiState.coop.myCard;
   if (!card) return;
-  await Coop.send({
-    type:        'WBI_GUESS',
-    guesserName: wbiState.coop.myName || wbiState.coop.players.find(p => p.uid === wbiState.coop.myUid)?.name || '?',
-    word:        card.word,
-    correct,
-  });
+  const guesserName = wbiState.coop.myName || wbiState.coop.players.find(p => p.uid === wbiState.coop.myUid)?.name || '?';
+  await Coop.send({ type: 'WBI_GUESS', guesserName, word: card.word, correct });
+  // Eigene Nachrichten werden gefiltert → lokalen State selbst aktualisieren
+  wbiState.coop.guesses.push({ name: guesserName, word: card.word, correct, ts: Date.now() });
+  if (wbiState.coop.allCards[wbiState.coop.myUid]) {
+    wbiState.coop.allCards[wbiState.coop.myUid].guessed = correct;
+  }
   haptic(correct ? 'success' : 'light');
+  if (wbiState.coop.isHost) wbiCheckCoopDone();
 }
 
 export async function wbiCancelCoop() {
@@ -405,6 +412,7 @@ export async function wbiCancelCoop() {
   wbiState.coop.error        = null;
   wbiState.coop.myUid        = null;
   wbiState.coop.myCard       = null;
+  wbiState.coop.cardFlipped  = false;
   wbiState.coop.allCards     = {};
   wbiState.coop.guesses      = [];
 }
