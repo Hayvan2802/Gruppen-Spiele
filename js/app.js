@@ -130,22 +130,34 @@ const state = reactive({
 
   // Coop
   coop: {
-    phase: 'idle', // idle | hosting | lobby | joining | joined | myRole | coopVoting | coopResult
+    phase: 'idle', // idle|hosting|lobby|joining|joined|myRole|discussion|postTimer|coopVoting|coopResult
     code: '', codeDraft: '',
     myName: '', myUid: null,
     isHost: false,
+    hostUid: null,
     players: [],
     error: null,
     myRoleIsImposter: null,
     myWord: null,
-    cardRevealed: false,  // tap-to-reveal
-    lobbyPlayers: [],     // Gäste sehen die Lobby (broadcast vom Host)
+    coopWord: null,
+    cardRevealed: false,         // tap-to-reveal
+    cardConfirmedUids: [],       // UIDs die ihre Karte bestätigt haben
+    myCardConfirmed: false,
+    lobbyPlayers: [],            // Gäste sehen die Lobby (broadcast vom Host)
+    // Diskussion
+    coopTimerSeconds: 120,
+    coopTimerInterval: null,
+    // Post-Timer-Abstimmung
+    postTimerVotes: { extend: 0, vote: 0 },
+    postTimerVoters: [],
+    myPostTimerVote: null,
     // Abstimmung
     voteSelection: null,
     myVoteDone: false,
-    votesReceived: {},   // { voterUid: targetName } — nur Host sieht alle
-    voteResult: null,    // { eliminated, imposters, winner, tally }
-    allPlayers: [],      // snapshot aller Spieler für Ergebnisanzeige
+    votesReceived: {},           // { voterUid: targetName } — nur Host sieht alle
+    votesProgress: { count: 0, total: 0, voters: [] },
+    voteResult: null,            // { eliminated, imposters, winner, tally }
+    allPlayers: [],              // snapshot aller Spieler für Ergebnisanzeige
   },
 
   // Rollenverteilung
@@ -366,23 +378,32 @@ function nextReveal() {
 
 function startTimer() {
   clearInterval(state.timerInterval);
-  const totalSeconds = getTimerSeconds(state.roles.length);
   state.timerInterval = setInterval(() => {
     state.timerSeconds--;
-    // Töne: bei 30s, 15s, und ab 15s jeden Schritt
     if (state.timerSeconds === 30) playBeep(660, 0.2, 0.25);
     if (state.timerSeconds === 15) playBeep(880, 0.25, 0.3);
     if (state.timerSeconds <= 15 && state.timerSeconds > 0) playBeep(1100, 0.08, 0.15);
     if (state.timerSeconds <= 0) {
       clearInterval(state.timerInterval);
       playBeep(440, 0.5, 0.4);
-      setTimeout(() => { state.screen = 'voting'; state.stimmIdx = 0; }, 600);
+      haptic('medium');
+      setTimeout(() => { state.screen = 'postTimer'; }, 600);
     }
   }, 1000);
 }
 
 function skipTimer() {
   clearInterval(state.timerInterval);
+  state.screen = 'postTimer';
+}
+
+function localExtendDiscussion() {
+  state.timerSeconds = getTimerSeconds(state.roles.length);
+  state.screen = 'timer';
+  startTimer();
+}
+
+function localStartVoting() {
   state.screen = 'voting';
   state.stimmIdx = 0;
 }
@@ -504,6 +525,7 @@ async function createRoom() {
         if (p) p.ready = msg.ready;
         lobbyBroadcast();
       }
+      handleCoopMessage(msg);
     },
   });
 }
@@ -518,7 +540,11 @@ async function startCoopGame() {
   // allPlayers VOR dem Senden setzen — Host verarbeitet eigene Nachrichten nicht
   state.coop.allPlayers = assignments.map(a => ({ uid: a.uid, name: a.name, isImposter: a.isImposter }));
   state.coop.cardRevealed = false;
-  await Coop.send({ type: Coop.MSG.START, assignments });
+  state.coop.cardConfirmedUids = [];
+  state.coop.myCardConfirmed = false;
+  state.coop.hostUid = state.coop.myUid;
+  state.coop.coopWord = word;
+  await Coop.send({ type: Coop.MSG.START, assignments, hostUid: state.coop.myUid });
 
   // Host sieht auch seine eigene Karte
   const mine = assignments.find(a => a.uid === state.coop.myUid);
@@ -567,12 +593,19 @@ async function shareInviteLink() {
 }
 
 async function cancelCoop() {
+  clearInterval(state.coop.coopTimerInterval);
   await Coop.leave();
   state.coop.phase = 'idle'; state.coop.players = []; state.coop.error = null;
-  state.coop.myUid = null; state.coop.myRoleIsImposter = null; state.coop.myWord = null;
+  state.coop.myUid = null; state.coop.hostUid = null;
+  state.coop.myRoleIsImposter = null; state.coop.myWord = null; state.coop.coopWord = null;
   state.coop.voteResult = null; state.coop.votesReceived = {};
   state.coop.myVoteDone = false; state.coop.voteSelection = null;
   state.coop.lobbyPlayers = []; state.coop.cardRevealed = false;
+  state.coop.cardConfirmedUids = []; state.coop.myCardConfirmed = false;
+  state.coop.coopTimerSeconds = 120; state.coop.coopTimerInterval = null;
+  state.coop.postTimerVotes = { extend: 0, vote: 0 };
+  state.coop.postTimerVoters = []; state.coop.myPostTimerVote = null;
+  state.coop.votesProgress = { count: 0, total: 0, voters: [] };
 }
 
 function coopSelectVote(name) {
@@ -584,34 +617,137 @@ async function coopConfirmVote() {
   if (!state.coop.voteSelection || state.coop.myVoteDone) return;
   state.coop.myVoteDone = true;
   haptic('medium');
-  await Coop.send({ type: Coop.MSG.VOTE_CAST, targetName: state.coop.voteSelection });
+  if (state.coop.isHost) {
+    // Host verarbeitet eigene Stimme direkt
+    state.coop.votesReceived[state.coop.myUid] = state.coop.voteSelection;
+    const voterNames = Object.keys(state.coop.votesReceived)
+      .map(uid => state.coop.allPlayers.find(p => p.uid === uid)?.name || '?');
+    state.coop.votesProgress = { count: voterNames.length, total: state.coop.allPlayers.length, voters: voterNames };
+    await Coop.send({ type: Coop.MSG.VOTE_PROGRESS, count: voterNames.length, total: state.coop.allPlayers.length, voterNames });
+    if (voterNames.length >= state.coop.allPlayers.length) calcCoopResult();
+  } else {
+    // Gast sendet nur an Host (Stimme bleibt privat)
+    await Coop.sendTo(state.coop.hostUid, { type: Coop.MSG.VOTE_CAST, targetName: state.coop.voteSelection });
+  }
 }
 
 function startCoopVoting() {
-  // Host startet Abstimmungsphase
-  const candidates = state.coop.allPlayers.map(p => p.name);
   state.coop.phase = 'coopVoting';
   state.coop.votesReceived = {};
   state.coop.myVoteDone = false;
   state.coop.voteSelection = null;
-  Coop.send({ type: Coop.MSG.VOTE_START, candidates });
+  state.coop.votesProgress = { count: 0, total: state.coop.allPlayers.length, voters: [] };
+  Coop.send({ type: Coop.MSG.VOTE_START, candidates: state.coop.allPlayers.map(p => p.name) });
 }
 
 function calcCoopResult() {
-  const votes  = state.coop.votesReceived;
+  const votes   = state.coop.votesReceived;
   const players = state.coop.allPlayers;
-  const tally  = {};
+  const tally   = {};
   players.forEach(p => { tally[p.name] = 0; });
-  Object.values(votes).forEach(t => { tally[t] = (tally[t] || 0) + 1; });
-  const max = Math.max(...Object.values(tally));
+  Object.values(votes).forEach(v => { tally[v] = (tally[v] || 0) + 1; });
+  const max       = Math.max(...Object.values(tally));
   const eliminated = Object.keys(tally).filter(n => tally[n] === max);
   const imposters  = players.filter(p => p.isImposter).map(p => p.name);
-  const winner     = eliminated.some(n => imposters.includes(n)) ? 'village' : 'imposter';
-  const result     = { eliminated, imposters, winner, tally, word: state.roles[0]?.word || '' };
-  // Ergebnis an alle senden
+
+  // Verbleibende Spieler nach Eliminierung
+  const remaining          = players.filter(p => !eliminated.includes(p.name));
+  const remainingImposters = remaining.filter(p => p.isImposter).length;
+  const remainingVillagers = remaining.filter(p => !p.isImposter).length;
+
+  // Gewinnbedingung:
+  // Dorf gewinnt → alle Imposter eliminiert
+  // Imposter gewinnen → Imposter >= Dörfler (Gleichstand ist Imposter-Sieg)
+  let winner;
+  if (remainingImposters === 0) {
+    winner = 'village';
+  } else if (remainingImposters >= remainingVillagers) {
+    winner = 'imposter';
+  } else {
+    winner = 'imposter'; // Imposter überlebt → Imposter gewinnt diese Runde
+  }
+
+  const result = { eliminated, imposters, winner, tally, word: state.coop.coopWord || '' };
   Coop.send({ type: Coop.MSG.VOTE_RESULT, result });
   state.coop.voteResult = result;
   state.coop.phase = 'coopResult';
+  clearInterval(state.coop.coopTimerInterval);
+  haptic(winner === 'village' ? 'success' : 'error');
+}
+
+// ── Coop: Karten-Bestätigung ──────────────────────────────────────────────────
+async function confirmCard() {
+  if (state.coop.myCardConfirmed) return;
+  state.coop.myCardConfirmed = true;
+  if (!state.coop.cardConfirmedUids.includes(state.coop.myUid)) {
+    state.coop.cardConfirmedUids.push(state.coop.myUid);
+  }
+  await Coop.send({ type: Coop.MSG.CARD_CONFIRMED });
+  if (state.coop.isHost) checkAllConfirmed();
+}
+
+function checkAllConfirmed() {
+  if (state.coop.cardConfirmedUids.length >= state.coop.allPlayers.length) {
+    startDiscussion();
+  }
+}
+
+async function startDiscussion() {
+  state.coop.phase = 'discussion';
+  state.coop.coopTimerSeconds = 120;
+  clearInterval(state.coop.coopTimerInterval);
+  await Coop.send({ type: Coop.MSG.DISCUSSION_START });
+  startCoopTimer();
+}
+
+function startCoopTimer() {
+  clearInterval(state.coop.coopTimerInterval);
+  state.coop.coopTimerInterval = setInterval(() => {
+    if (state.coop.coopTimerSeconds > 0) {
+      state.coop.coopTimerSeconds--;
+      if (state.coop.coopTimerSeconds === 0) {
+        clearInterval(state.coop.coopTimerInterval);
+        state.coop.phase = 'postTimer';
+        haptic('medium');
+      }
+    }
+  }, 1000);
+}
+
+// ── Coop: Post-Timer-Abstimmung ────────────────────────────────────────────────
+async function sendPostTimerVote(choice) {
+  if (state.coop.myPostTimerVote) return;
+  state.coop.myPostTimerVote = choice;
+  if (!state.coop.postTimerVoters.includes(state.coop.myUid)) {
+    state.coop.postTimerVoters.push(state.coop.myUid);
+  }
+  state.coop.postTimerVotes[choice] = (state.coop.postTimerVotes[choice] || 0) + 1;
+  haptic('light');
+  await Coop.send({ type: Coop.MSG.POST_TIMER_VOTE, choice });
+  if (state.coop.isHost) checkPostTimerVotes();
+}
+
+function checkPostTimerVotes() {
+  if (state.coop.postTimerVoters.length >= state.coop.allPlayers.length) {
+    const ext  = state.coop.postTimerVotes.extend || 0;
+    const vote = state.coop.postTimerVotes.vote   || 0;
+    const result = ext > vote ? 'extend' : 'vote';
+    Coop.send({ type: Coop.MSG.POST_TIMER_RESULT, result });
+    applyPostTimerResult(result);
+  }
+}
+
+function applyPostTimerResult(result) {
+  if (result === 'extend') {
+    state.coop.coopTimerSeconds = 120;
+    state.coop.postTimerVotes  = { extend: 0, vote: 0 };
+    state.coop.postTimerVoters = [];
+    state.coop.myPostTimerVote = null;
+    state.coop.phase = 'discussion';
+    startCoopTimer();
+  } else {
+    startCoopVoting();
+  }
 }
 
 function handleCoopMessage(msg) {
@@ -626,35 +762,70 @@ function handleCoopMessage(msg) {
     if (mine) {
       state.coop.myRoleIsImposter = mine.isImposter;
       state.coop.myWord = mine.word;
+      if (!mine.isImposter) state.coop.coopWord = mine.word;
       state.coop.allPlayers = msg.assignments.map(a => ({ uid: a.uid, name: a.name, isImposter: a.isImposter }));
       state.coop.cardRevealed = false;
+      state.coop.cardConfirmedUids = [];
+      state.coop.myCardConfirmed = false;
+      state.coop.hostUid = msg.hostUid || null;
       state.coop.phase = 'myRole';
     }
   }
 
+  if (msg.type === Coop.MSG.CARD_CONFIRMED) {
+    if (!state.coop.cardConfirmedUids.includes(msg.author)) {
+      state.coop.cardConfirmedUids.push(msg.author);
+    }
+    if (state.coop.isHost) checkAllConfirmed();
+  }
+
+  if (msg.type === Coop.MSG.DISCUSSION_START) {
+    state.coop.phase = 'discussion';
+    state.coop.coopTimerSeconds = 120;
+    clearInterval(state.coop.coopTimerInterval);
+    startCoopTimer();
+  }
+
+  if (msg.type === Coop.MSG.POST_TIMER_VOTE) {
+    if (!state.coop.postTimerVoters.includes(msg.author)) {
+      state.coop.postTimerVoters.push(msg.author);
+      state.coop.postTimerVotes[msg.choice] = (state.coop.postTimerVotes[msg.choice] || 0) + 1;
+    }
+    if (state.coop.isHost) checkPostTimerVotes();
+  }
+
+  if (msg.type === Coop.MSG.POST_TIMER_RESULT) {
+    applyPostTimerResult(msg.result);
+  }
+
   if (msg.type === Coop.MSG.VOTE_START) {
-    // Abstimmung startet auf allen Geräten
     state.coop.phase = 'coopVoting';
     state.coop.myVoteDone = false;
     state.coop.voteSelection = null;
+    state.coop.votesProgress = { count: 0, total: state.coop.allPlayers.length, voters: [] };
   }
 
   if (msg.type === Coop.MSG.VOTE_CAST) {
-    // Nur Host zählt Stimmen
-    if (state.coop.isHost) {
+    // Nur Host empfängt Stimmen (targetUid-gefiltert)
+    if (state.coop.isHost && (!msg.targetUid || msg.targetUid === state.coop.myUid)) {
       state.coop.votesReceived[msg.author] = msg.targetName;
-      const total = state.coop.allPlayers.length;
-      const received = Object.keys(state.coop.votesReceived).length;
-      // Wenn alle gestimmt haben → Ergebnis berechnen
-      if (received >= total) calcCoopResult();
+      const voterNames = Object.keys(state.coop.votesReceived)
+        .map(uid => state.coop.allPlayers.find(p => p.uid === uid)?.name || '?');
+      state.coop.votesProgress = { count: voterNames.length, total: state.coop.allPlayers.length, voters: voterNames };
+      Coop.send({ type: Coop.MSG.VOTE_PROGRESS, count: voterNames.length, total: state.coop.allPlayers.length, voterNames });
+      if (voterNames.length >= state.coop.allPlayers.length) calcCoopResult();
     }
   }
 
+  if (msg.type === Coop.MSG.VOTE_PROGRESS) {
+    state.coop.votesProgress = { count: msg.count, total: msg.total, voters: msg.voterNames || [] };
+  }
+
   if (msg.type === Coop.MSG.VOTE_RESULT) {
-    // Alle empfangen das Ergebnis
     state.coop.voteResult = msg.result;
     state.coop.phase = 'coopResult';
-    haptic(msg.result.winner === 'village' ? 'success' : 'error');
+    clearInterval(state.coop.coopTimerInterval);
+    haptic(msg.result?.winner === 'village' ? 'success' : 'error');
   }
 }
 
@@ -717,7 +888,7 @@ const App = {
       loadLastNamesIntoSetup, dismissNamesHint, openWerwolf, closeWerwolf,
       saveCurrentConfig, loadConfig, removeConfig,
       openGameMenu, closeGameMenu, pauseGame, resumeGame, confirmEndGame,
-      startLocalGame, revealCard, nextReveal, skipTimer, selectVote, confirmVote, newGame, nextRound, resetGame,
+      startLocalGame, revealCard, nextReveal, skipTimer, localExtendDiscussion, localStartVoting, selectVote, confirmVote, newGame, nextRound, resetGame,
       KATEGORIEN, DEFAULT_KATEGORIEN,
       // Wer bin ich
       wbiState, WBI_KATEGORIEN, WBI_DEFAULT_KATEGORIEN,
@@ -729,6 +900,7 @@ const App = {
       showHostSetup, createRoom, startCoopGame,
       showJoinSetup, joinRoom, toggleReady, cancelCoop,
       getInviteLink, shareInviteLink,
+      confirmCard, sendPostTimerVote,
       coopSelectVote, coopConfirmVote, startCoopVoting,
       dismissWhatsNew, applyUpdate, checkForUpdate,
       exportLogToFile,
@@ -832,7 +1004,7 @@ const App = {
       </div>
     </div>
 
-    <!-- ── COOP: MEINE KARTE (Gast) ── -->
+    <!-- ── COOP: MEINE KARTE + BESTÄTIGUNG ── -->
     <div v-if="state.coop.phase === 'myRole'" class="modal-bg" style="z-index:400">
       <div class="modal" style="text-align:center">
         <div class="whatsnew-badge">🕵️ Deine Karte</div>
@@ -862,13 +1034,103 @@ const App = {
           </template>
         </div>
 
-        <div style="font-size:.78rem;color:var(--txt3);text-align:center">
-          {{ state.coop.isHost ? 'Du startest die Diskussion für alle.' : 'Warte bis der Host die Diskussion startet.' }}
+        <!-- Bestätigungs-Zähler -->
+        <div style="font-size:.82rem;color:var(--txt2);margin:.4rem 0">
+          <span style="font-weight:700;color:var(--gold)">{{ state.coop.cardConfirmedUids.length }}</span>
+          von {{ state.coop.allPlayers.length }} haben bestätigt
         </div>
-        <button class="btn btn-primary" style="margin-top:1rem"
-          @click="state.coop.isHost ? startCoopVoting() : (state.coop.phase = 'coopWaiting')">
-          {{ state.coop.isHost ? '▶ Abstimmung starten' : 'Verstanden ✓' }}
+        <div class="timer-players" style="margin:.4rem 0">
+          <div v-for="p in state.coop.allPlayers" :key="p.uid" class="timer-player-dot"
+            :style="{background: state.coop.cardConfirmedUids.includes(p.uid) ? 'rgba(16,163,74,.5)' : 'rgba(124,58,237,.2)'}">
+            {{ p.name[0].toUpperCase() }}
+          </div>
+        </div>
+
+        <!-- Karte bestätigen -->
+        <button class="btn btn-primary" style="margin-top:.8rem"
+          :disabled="state.coop.myCardConfirmed || !state.coop.cardRevealed"
+          @click="confirmCard">
+          {{ state.coop.myCardConfirmed ? '✓ Bestätigt — warte auf andere…' : 'Ich hab meine Karte verstanden ✓' }}
         </button>
+        <div v-if="!state.coop.cardRevealed && !state.coop.myCardConfirmed"
+          style="font-size:.73rem;color:var(--txt3);margin-top:.4rem">
+          👆 Erst Karte aufdecken
+        </div>
+      </div>
+    </div>
+
+    <!-- ── COOP: DISKUSSION (Timer 2 Min.) ── -->
+    <div v-if="state.coop.phase === 'discussion'" class="modal-bg" style="z-index:400">
+      <div class="modal" style="text-align:center">
+        <div class="whatsnew-badge">💬 DISKUSSION</div>
+        <h3 style="margin-bottom:.2rem">Jetzt diskutieren!</h3>
+        <p style="font-size:.8rem;color:var(--txt2);margin-bottom:.8rem">
+          Beschreibt das Wort abwechselnd — ohne es direkt zu sagen.<br>Wer verhält sich verdächtig?
+        </p>
+
+        <!-- Timer Ring -->
+        <div style="position:relative;width:150px;height:150px;margin:0 auto .8rem">
+          <svg width="150" height="150" viewBox="0 0 150 150">
+            <circle cx="75" cy="75" r="63" fill="none" stroke="var(--bdr2)" stroke-width="9"/>
+            <circle cx="75" cy="75" r="63" fill="none"
+              :stroke="state.coop.coopTimerSeconds <= 10 ? '#ef4444' : state.coop.coopTimerSeconds <= 30 ? '#f59e0b' : 'var(--gold)'"
+              stroke-width="9" stroke-linecap="round"
+              :stroke-dasharray="2 * Math.PI * 63"
+              :stroke-dashoffset="2 * Math.PI * 63 * (1 - state.coop.coopTimerSeconds / 120)"
+              style="transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset 1s linear,stroke .4s"/>
+          </svg>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;line-height:1">
+            <div style="font-size:2.4rem;font-weight:900"
+              :style="{color: state.coop.coopTimerSeconds <= 10 ? '#ef4444' : state.coop.coopTimerSeconds <= 30 ? '#f59e0b' : 'var(--gold)'}">
+              {{ state.coop.coopTimerSeconds }}
+            </div>
+            <div style="font-size:.62rem;color:var(--txt3);letter-spacing:.1em">SEK</div>
+          </div>
+        </div>
+
+        <div class="timer-players">
+          <div v-for="p in state.coop.allPlayers" :key="p.uid" class="timer-player-dot"
+            style="background:rgba(124,58,237,.25)">
+            {{ p.name[0].toUpperCase() }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── COOP: NACH DEM TIMER ── -->
+    <div v-if="state.coop.phase === 'postTimer'" class="modal-bg" style="z-index:400">
+      <div class="modal" style="text-align:center">
+        <div class="whatsnew-badge" style="background:var(--blood2)">⏰ ZEIT ABGELAUFEN</div>
+        <h3 style="margin-bottom:.3rem">Was jetzt?</h3>
+        <p style="font-size:.8rem;color:var(--txt2);margin-bottom:.5rem">
+          Stimmt ab: Noch eine Diskussionsrunde oder direkt zur Abstimmung?
+        </p>
+        <div style="font-size:.78rem;color:var(--txt3);margin-bottom:1rem">
+          {{ state.coop.postTimerVoters.length }} / {{ state.coop.allPlayers.length }} haben abgestimmt
+        </div>
+
+        <div v-if="!state.coop.myPostTimerVote" style="display:flex;gap:.6rem;margin-bottom:.8rem">
+          <button class="btn btn-ghost" style="flex:1;padding:.8rem .5rem;line-height:1.3" @click="sendPostTimerVote('extend')">
+            🔄 Noch eine<br>Runde
+            <div style="font-size:.7rem;opacity:.7;margin-top:.2rem">{{ state.coop.postTimerVotes.extend || 0 }} Stimmen</div>
+          </button>
+          <button class="btn btn-primary" style="flex:1;padding:.8rem .5rem;line-height:1.3" @click="sendPostTimerVote('vote')">
+            🗳 Abstimmung<br>starten
+            <div style="font-size:.7rem;opacity:.8;margin-top:.2rem">{{ state.coop.postTimerVotes.vote || 0 }} Stimmen</div>
+          </button>
+        </div>
+        <div v-else style="padding:.8rem 0;color:var(--txt2);margin-bottom:.8rem">
+          <div style="font-size:1.5rem;margin-bottom:.3rem">✓</div>
+          Deine Stimme: <strong>{{ state.coop.myPostTimerVote === 'extend' ? 'Noch eine Runde' : 'Abstimmung' }}</strong>
+          <br><span style="font-size:.75rem;color:var(--txt3)">Warte auf die anderen…</span>
+        </div>
+
+        <div class="timer-players">
+          <div v-for="p in state.coop.allPlayers" :key="p.uid" class="timer-player-dot"
+            :style="{background: state.coop.postTimerVoters.includes(p.uid) ? 'rgba(16,163,74,.5)' : 'rgba(124,58,237,.2)'}">
+            {{ p.name[0].toUpperCase() }}
+          </div>
+        </div>
       </div>
     </div>
 
@@ -900,29 +1162,28 @@ const App = {
       </div>
     </div>
 
-    <!-- ── COOP: WARTEN (Gast wartet auf Abstimmung) ── -->
-    <div v-if="state.coop.phase === 'coopWaiting'" class="modal-bg" style="z-index:400">
-      <div class="modal" style="text-align:center">
-        <div style="font-size:2.5rem;margin-bottom:.8rem">⏳</div>
-        <h3 style="color:var(--gold);margin-bottom:.5rem">Warte auf Abstimmung</h3>
-        <p class="confirm-msg">Der Host startet gleich die Abstimmung…</p>
-        <div class="timer-players" style="margin-top:1rem">
-          <div v-for="p in state.coop.allPlayers" :key="p.uid" class="timer-player-dot"
-            style="background:rgba(124,58,237,.25)">
-            {{ p.name[0].toUpperCase() }}
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- ── COOP: ABSTIMMUNG (jeder auf eigenem Handy) ── -->
     <div v-if="state.coop.phase === 'coopVoting'" class="modal-bg" style="z-index:400">
       <div class="modal" style="max-height:88vh;overflow-y:auto">
         <div class="whatsnew-badge" style="margin-bottom:.8rem">🗳 ABSTIMMUNG</div>
         <h3 style="margin-bottom:.3rem">Wer ist der Imposter?</h3>
-        <p style="font-size:.8rem;color:var(--txt2);margin-bottom:1rem">Wähle einen Spieler aus und bestätige.</p>
+
+        <!-- Fortschrittsanzeige: wer hat schon abgestimmt -->
+        <div style="margin-bottom:.8rem">
+          <div style="font-size:.78rem;color:var(--txt2);margin-bottom:.4rem">
+            <span style="font-weight:700;color:var(--gold)">{{ state.coop.votesProgress.count }}</span>
+            von {{ state.coop.votesProgress.total || state.coop.allPlayers.length }} haben abgestimmt
+          </div>
+          <div class="timer-players" style="gap:.3rem">
+            <div v-for="p in state.coop.allPlayers" :key="p.uid" class="timer-player-dot"
+              :style="{background: state.coop.votesProgress.voters?.includes(p.name) ? 'rgba(16,163,74,.5)' : 'rgba(124,58,237,.2)',fontSize:'.62rem'}">
+              {{ p.name[0].toUpperCase() }}
+            </div>
+          </div>
+        </div>
 
         <div v-if="!state.coop.myVoteDone">
+          <p style="font-size:.8rem;color:var(--txt2);margin-bottom:.8rem">Wähle einen Spieler aus und bestätige.</p>
           <!-- Kandidaten -->
           <div class="voting-options">
             <button v-for="p in state.coop.allPlayers.filter(p => p.uid !== state.coop.myUid)"
@@ -945,9 +1206,6 @@ const App = {
         <div v-else style="text-align:center;padding:1rem 0">
           <div style="font-size:2rem;margin-bottom:.6rem">✓</div>
           <p style="color:var(--txt2);font-size:.9rem">Deine Stimme wurde abgegeben.<br>Warte auf die anderen…</p>
-          <div v-if="state.coop.isHost" style="margin-top:.8rem;font-size:.78rem;color:var(--txt3)">
-            {{ Object.keys(state.coop.votesReceived).length }} / {{ state.coop.allPlayers.length }} Stimmen
-          </div>
         </div>
       </div>
     </div>
@@ -2337,8 +2595,39 @@ const App = {
         </div>
 
         <button class="timer-skip-btn" @click="skipTimer">
-          Abstimmung jetzt starten →
+          Weiter →
         </button>
+      </div>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- ── POST-TIMER SCREEN (Lokal) ── -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <template v-if="state.screen === 'postTimer'">
+      <div class="top-bar">
+        <button class="icon-btn" @click="openGameMenu" title="Spielmenü">⏸</button>
+      </div>
+      <div class="timer-screen">
+        <div class="timer-title" style="font-size:1.5rem">⏰ Zeit abgelaufen!</div>
+        <div class="timer-subtitle">Was möchtet ihr tun?</div>
+
+        <div style="display:flex;gap:.8rem;margin:1.5rem 0;width:100%;max-width:380px">
+          <button class="btn btn-ghost" style="flex:1;padding:1rem .5rem;font-size:.95rem;line-height:1.4"
+            @click="localExtendDiscussion">
+            🔄 Noch eine Runde<br>Diskussion
+          </button>
+          <button class="btn btn-primary" style="flex:1;padding:1rem .5rem;font-size:.95rem;line-height:1.4"
+            @click="localStartVoting">
+            🗳 Abstimmung<br>starten
+          </button>
+        </div>
+
+        <div class="timer-players">
+          <div v-for="r in state.roles" :key="r.name" class="timer-player-dot"
+            :style="{background: r.isImposter ? 'rgba(176,32,32,.3)' : 'rgba(124,58,237,.25)'}">
+            {{ r.name[0].toUpperCase() }}
+          </div>
+        </div>
       </div>
     </template>
 

@@ -156,20 +156,29 @@ export function resetFb() { fb = null; }
 
 // Nachrichten-Typen
 export const MSG = {
-  START:          'start',          // Host → alle: Rollenzuteilungen
-  READY:          'ready',          // Spieler → Host: Bereitschaft
-  RESULT:         'result',         // Host → alle: Spielergebnis
+  START:             'start',             // Host → alle: Rollenzuteilungen
+  READY:             'ready',             // Spieler → Host: Bereitschaft
+  RESULT:            'result',            // Host → alle: Spielergebnis
+
+  // Karten-Bestätigung
+  CARD_CONFIRMED:    'card_confirmed',    // Spieler → alle: Karte gesehen & bestätigt
+  DISCUSSION_START:  'discussion_start',  // Host → alle: Diskussionsphase startet (Timer)
+
+  // Post-Timer-Abstimmung
+  POST_TIMER_VOTE:   'post_timer_vote',   // Spieler → alle: 'extend' | 'vote'
+  POST_TIMER_RESULT: 'post_timer_result', // Host → alle: Ergebnis der Post-Timer-Wahl
 
   // Tagesphase — Abstimmung
-  VOTE_START:     'vote_start',     // Host → alle: Abstimmung beginnt (candidates[])
-  VOTE_CAST:      'vote_cast',      // Spieler → Host: Stimme (targetName)
-  VOTE_RESULT:    'vote_result',    // Host → alle: Ergebnis (eliminated, votes{})
+  VOTE_START:        'vote_start',        // Host → alle: Abstimmung beginnt (candidates[])
+  VOTE_CAST:         'vote_cast',         // Spieler → Host: Stimme (targetName)
+  VOTE_PROGRESS:     'vote_progress',     // Host → alle: Fortschritt (count, total, voterNames)
+  VOTE_RESULT:       'vote_result',       // Host → alle: Ergebnis (eliminated, votes{})
 
   // Nachtphase — Aktionen auf eigenem Gerät
-  NIGHT_START:    'night_start',    // Host → alle: Nacht beginnt (round)
-  NIGHT_REQUEST:  'night_request',  // Host → Rolle: Deine Aktion (roleId, targets[])
-  NIGHT_SUBMIT:   'night_submit',   // Spieler → Host: Aktion (roleId, targetName)
-  NIGHT_DONE:     'night_done',     // Host → alle: Nacht vorbei, Ergebnis (deaths[])
+  NIGHT_START:       'night_start',       // Host → alle: Nacht beginnt (round)
+  NIGHT_REQUEST:     'night_request',     // Host → Rolle: Deine Aktion (roleId, targets[])
+  NIGHT_SUBMIT:      'night_submit',      // Spieler → Host: Aktion (roleId, targetName)
+  NIGHT_DONE:        'night_done',        // Host → alle: Nacht vorbei, Ergebnis (deaths[])
 };
 
 // Sende an spezifischen Spieler (über ein geteiltes Event mit uid-Filter)
