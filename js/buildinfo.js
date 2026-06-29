@@ -1,9 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.84';
-export const BUILD_HASH = 'coop-diskussion-als-eige';
+export const BUILD      = '0.85';
+export const BUILD_HASH = 'projektstruktur-aufger-u';
 
 export const CHANGELOG = [
   {
+    version: '0.85',
+    date: '29.06.2026',
+    changes: [
+    'Projektstruktur aufgeräumt: scripts/, test/unit/, package.json, CI-Workflow, .gitignore',
+    ],
+  },
+{
     version: '0.84',
     date: '29.06.2026',
     changes: [
