@@ -1,9 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.89';
-export const BUILD_HASH = 'werwolf-e2e-tests-readme';
+export const BUILD      = '0.90';
+export const BUILD_HASH = 'zur-ck-button-in-version';
 
 export const CHANGELOG = [
   {
+    version: '0.90',
+    date: '29.06.2026',
+    changes: [
+    'Zurück-Button in der Versionshistorie nach oben links verschoben',
+    ],
+  },
+{
     version: '0.89',
     date: '29.06.2026',
     changes: [
