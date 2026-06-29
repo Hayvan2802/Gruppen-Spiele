@@ -1046,16 +1046,23 @@ const App = {
           </div>
         </div>
 
-        <!-- Karte bestätigen -->
-        <button class="btn btn-primary" style="margin-top:.8rem"
-          :disabled="state.coop.myCardConfirmed || !state.coop.cardRevealed"
-          @click="confirmCard">
-          {{ state.coop.myCardConfirmed ? '✓ Bestätigt — warte auf andere…' : 'Ich hab meine Karte verstanden ✓' }}
-        </button>
-        <div v-if="!state.coop.cardRevealed && !state.coop.myCardConfirmed"
-          style="font-size:.73rem;color:var(--txt3);margin-top:.4rem">
-          👆 Erst Karte aufdecken
-        </div>
+        <!-- Karte bestätigen: erst nach Aufdecken sichtbar -->
+        <template v-if="!state.coop.cardRevealed && !state.coop.myCardConfirmed">
+          <div style="font-size:.82rem;color:var(--txt3);margin-top:.6rem">
+            👆 Tippe die Karte an um sie aufzudecken
+          </div>
+        </template>
+        <template v-else-if="state.coop.myCardConfirmed">
+          <div style="margin-top:.8rem;padding:.7rem;background:rgba(16,163,74,.15);border-radius:12px;border:1px solid rgba(16,163,74,.3)">
+            <div style="font-size:1.3rem">✓</div>
+            <div style="font-size:.85rem;color:var(--green)">Bestätigt — warte auf andere…</div>
+          </div>
+        </template>
+        <template v-else>
+          <button class="btn-start" style="margin-top:.8rem" @click="confirmCard">
+            Ich hab meine Karte verstanden ✓
+          </button>
+        </template>
       </div>
     </div>
 
@@ -2304,7 +2311,10 @@ const App = {
                 </span>
               </li>
             </ul>
-            <button class="btn-pri" @click="startCoopGame" :disabled="state.coop.players.length < 2">{{ t('coop.startBtn') }}</button>
+            <button class="btn-start" style="margin-top:.8rem" @click="startCoopGame"
+              :disabled="state.coop.players.length < 2 || !state.coop.players.filter(p=>!p.isHost).every(p=>p.ready)">
+              ▶ Spiel starten ({{ state.coop.players.length }} Spieler)
+            </button>
             <button class="btn-sec" style="margin-top:.5rem" @click="cancelCoop">{{ t('coop.leave') }}</button>
           </div>
 

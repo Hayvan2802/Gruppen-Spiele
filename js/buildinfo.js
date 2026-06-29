@@ -1,9 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.80';
-export const BUILD_HASH = 'host-verarbeitet-spielna';
+export const BUILD      = '0.81';
+export const BUILD_HASH = 'karte-best-tigung-tippba';
 
 export const CHANGELOG = [
   {
+    version: '0.81',
+    date: '29.06.2026',
+    changes: [
+    'Bugfix: Karte-Bestätigen-Button im Multiplayer war nicht tippbar bevor Karte aufgedeckt wurde',
+    'Bugfix: Bestätigungs-Flow zeigt Button erst nach Aufdecken, Bestätigungszustand klar sichtbar',
+    'Lobby: "Spiel starten"-Button jetzt groß und farbig, zeigt Spielerzahl, nur aktiv wenn alle bereit',
+    ],
+  },
+{
     version: '0.80',
     date: '29.06.2026',
     changes: [
