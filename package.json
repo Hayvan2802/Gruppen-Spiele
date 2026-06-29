@@ -4,7 +4,7 @@
   "description": "Werbefreie Party-Games als PWA – Imposter, Codenames, Wer bin ich?, Werwolf",
   "private": true,
   "scripts": {
-    "build": "node scripts/build.js",
+    "build": "node scripts/build.mjs",
     "test:unit": "node test/unit/imposter.test.js",
     "test": "npm run test:unit"
   },
