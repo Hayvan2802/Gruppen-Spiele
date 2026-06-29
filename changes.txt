@@ -1,1 +1,2 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+Multiplayer-Verbindungsfehler beim Hosten behoben (Firebase App-Konflikt bei Retry verhindert)
