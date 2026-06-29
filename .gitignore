@@ -1,6 +1,13 @@
+# Betriebssystem-Dateien
 .DS_Store
 Thumbs.db
+
+# Logs (Diagnose-Logs werden über localStorage gespeichert, nicht im Repo)
 *.log
+
+# npm — node_modules nicht einchecken (kein Build-Schritt, aber Playwright etc. lokal installierbar)
 node_modules/
+
+# Playwright-Ausgaben (E2E-Test-Ergebnisse und Reports)
 test-results/
 playwright-report/

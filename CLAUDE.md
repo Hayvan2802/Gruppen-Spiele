@@ -157,11 +157,30 @@ Gruppen-Spiele/
 > unter `js/`. Änderungen am laufenden Spiel gehören nach `js/`, nicht nach `src/`.
 > Die Projektstruktur-Tabelle in der README beschreibt noch die alte `src/`-Welt.
 
+## Befehle
+
+```bash
+python3 -m http.server 8000   # lokaler Dev-Server (dann http://localhost:8000)
+npm test                       # Unit-Tests (node:test)
+node scripts/build.mjs         # Release schneiden (Version bumpen, buildinfo.js + sw.js generieren)
+node scripts/build.mjs --major # Major-Version bumpen
+```
+
+## Ablauf bei jeder Code-Änderung
+
+1. **Implementieren** — Code ändern, eine user-facing Zeile in `changes.txt` eintragen, `npm test` lokal laufen lassen.
+
+2. **PR + Auto-Merge** — Nach dem Push sofort automatisch einen PR erstellen, ohne darauf zu warten, gefragt zu werden. Direkt nach `mcp__github__create_pull_request` die Funktion `mcp__github__enable_pr_auto_merge` (Squash) aufrufen — noch bevor CI startet. Das überschreibt das Standard-Verhalten „PR nur auf ausdrückliche Anfrage erstellen".
+
+3. **Auf CI warten** — Der PR merged automatisch, sobald alle Checks grün sind.
+
+4. **Release schneiden** — Direkt nach jedem gemergten Feature-PR automatisch einen Release schneiden, ohne darauf zu warten, gefragt zu werden: `main` pullen → Branch `release/vX.Y` erstellen → `node scripts/build.mjs` ausführen → committen & pushen → PR erstellen → `mcp__github__enable_pr_auto_merge` (Squash) aufrufen. GitHub Pages deployt danach automatisch.
+
 ## Entwicklung
 
 ### Lokal ausführen
 
-Kein Build nötig. Einfach einen statischen Server im Repo-Root starten, z.B.:
+Kein Build nötig. Einen statischen Server im Repo-Root starten:
 
 ```bash
 python3 -m http.server 8000
@@ -176,64 +195,26 @@ zuverlässig — immer über HTTP servieren.
 ```bash
 npm test
 # oder direkt:
-node test/unit/imposter.test.js
+node --test test/unit/*.test.js
 ```
 
-`test/unit/imposter.test.js` enthält eigenständige Testfälle (mit Mock-Spiellogik) für die
-Imposter-Mechanik. Es ist **kein** Test-Framework eingebunden — reine
-`assert`-Helfer im File. Bei Änderungen an der Imposter-Logik die Tests
-aktualisieren bzw. ergänzen.
+`test/unit/imposter.test.js` nutzt den nativen `node:test`-Runner (Node ≥ 18).
+Tests sind nach `describe`-Blöcken gegliedert (Rollenzuteilung, Abstimmung, Timer …).
+Bei Änderungen an der Imposter-Logik die Tests aktualisieren bzw. ergänzen.
 
 ### Versionierung & Release
 
 **Single Source of Truth:** `.release-counter` hält die aktuelle Version
 im Format `Major.Minor`. Minor wird pro Release um 1 erhöht; Major nur auf
-ausdrückliche Anweisung (`node build.js --major`).
+ausdrückliche Anweisung (`node scripts/build.mjs --major`).
 
 **Generierte Dateien — niemals manuell editieren:**
 - `js/buildinfo.js` — Version, Datum, Changelog-Array
-- `sw.js` (Cache-String) — wird von `build.js` mitgepflegt
-
-**Release-Ablauf (zwei PRs):**
-
-```
-# A) Feature-/Fix-PR
-git checkout main && git pull
-git checkout -b feat/<name>
-# Code ändern
-# Eine user-facing Zeile in changes.txt eintragen
-npm test              # alle Tests grün
-git add … && git commit && git push
-# PR öffnen → squash-merge
-
-# B) Release-PR (separater PR nach dem Feature-Merge)
-git checkout main && git pull
-git checkout -b release/v<nächste-version>
-node scripts/build.js # bumpt .release-counter, schreibt buildinfo.js + sw.js,
-                      # leert changes.txt
-npm test              # sicherheitshalber nochmal
-git add js/buildinfo.js sw.js changes.txt .release-counter
-git commit -m "chore: v<version>"
-git push
-# PR öffnen → squash-merge → GitHub Pages deployt automatisch
-```
+- `sw.js` (Cache-String) — wird von `build.mjs` mitgepflegt
 
 **`changes.txt`** ist die Changelog-Quelle (eine Zeile pro Änderung, `#`
-startet Kommentare). `node scripts/build.js` liest sie, schreibt den Eintrag in
+startet Kommentare). `node scripts/build.mjs` liest sie, schreibt den Eintrag in
 `buildinfo.js` und leert sie danach.
-
-### Git-Workflow (verbindlich)
-
-**Jede Änderung wird über einen Pull Request eingebracht und anschließend
-gemergt** — niemals direkt auf `main` committen/pushen. Ablauf:
-
-1. Auf einem Feature-Branch arbeiten, `changes.txt` befüllen, committen.
-2. Branch pushen.
-3. **Pull Request** gegen `main` erstellen.
-4. Den PR **mergen** (Squash-Merge als Standard).
-5. Danach separaten **Release-PR** mit `node build.js` öffnen und mergen.
-
-Das gilt auch für kleine Doku-Änderungen.
 
 ### Konventionen
 

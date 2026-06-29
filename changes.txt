@@ -1,1 +1,2 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+Tests auf node:test umgestellt, CI auf Node 22, CLAUDE.md mit Auto-PR-Workflow aktualisiert
