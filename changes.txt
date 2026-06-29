@@ -1,2 +1,1 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
-Werwolf: Zurück-Button (←) im Spiel zuverlässig ausgeblendet (watch in setup() verschoben)
