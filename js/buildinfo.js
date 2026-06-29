@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.95';
-export const BUILD_HASH = 'datum-pro-version-anzeig';
+export const BUILD      = '0.96';
+export const BUILD_HASH = 'einstellungen-tabs-backu';
 
 export const CHANGELOG = [
   {
+    version: '0.96',
+    date: '29.06.2026',
+    time: '20:10',
+    changes: [
+    'Einstellungen: Tabs (Allgemein/Daten), Backup exportieren/importieren, erweitertes Diagnoseprotokoll',
+    ],
+  },
+{
     version: '0.95',
     date: '29.06.2026',
     time: '19:51',
