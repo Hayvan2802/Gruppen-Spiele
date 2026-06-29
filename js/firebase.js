@@ -1,6 +1,13 @@
 // firebase.js — lazy Firebase-Init für den Coop-Transport (RTDB + anonyme Auth).
 // _app wird module-weit gespeichert, damit initializeApp() bei Retry nicht erneut
 // aufgerufen wird ("app already exists"-Fehler verhindert).
+//
+// HINWEIS ZUM API-KEY: Firebase Web-API-Keys sind kein Secret und dürfen im
+// Client-Code stehen — das ist von Firebase/Google so vorgesehen und dokumentiert.
+// Sicherheit wird durch RTDB-Security-Rules (auth != null erforderlich) +
+// anonyme Auth + Domain-Einschränkung des Keys in der Google Cloud Console
+// gewährleistet, nicht durch Geheimhaltung des Keys. Daher kein .env nötig.
+// Siehe: https://firebase.google.com/docs/projects/api-keys
 import { log } from './debuglog.js';
 
 const firebaseConfig = {
