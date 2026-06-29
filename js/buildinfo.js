@@ -1,9 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.91';
-export const BUILD_HASH = 'verschiebe-werwolf-nach';
+export const BUILD      = '0.92';
+export const BUILD_HASH = 'werwolf-redirect-ordner';
 
 export const CHANGELOG = [
   {
+    version: '0.92',
+    date: '29.06.2026',
+    changes: [
+    'Werwolf-Ordner aus dem Root-Verzeichnis entfernt',
+    ],
+  },
+{
     version: '0.91',
     date: '29.06.2026',
     changes: [
