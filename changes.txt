@@ -1,1 +1,3 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+Update-Prüfung läuft jetzt alle 12 Sekunden statt alle 60 Sekunden
+Multiplayer: Verbindungsfehler zeigt jetzt "bitte erneut versuchen" und setzt Firebase zurück für sauberen Neustart
