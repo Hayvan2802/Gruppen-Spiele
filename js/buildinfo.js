@@ -1,9 +1,16 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.78';
-export const BUILD_HASH = 'karte-verdeckt-setup-scr';
+export const BUILD      = '0.79';
+export const BUILD_HASH = 'update-banner-hat-vorran';
 
 export const CHANGELOG = [
   {
+    version: '0.79',
+    date: '29.06.2026',
+    changes: [
+    'Update-Banner erscheint jetzt vor der Versionsmitteilung (nicht mehr danach)',
+    ],
+  },
+{
     version: '0.78',
     date: '29.06.2026',
     changes: [
