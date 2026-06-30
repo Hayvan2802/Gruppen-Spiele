@@ -172,7 +172,10 @@ node scripts/build.mjs --major # Major-Version bumpen
 
 2. **PR + Auto-Merge** — Nach dem Push sofort automatisch einen PR erstellen, ohne darauf zu warten, gefragt zu werden. Direkt nach `mcp__github__create_pull_request` die Funktion `mcp__github__enable_pr_auto_merge` (Squash) aufrufen — noch bevor CI startet. Das überschreibt das Standard-Verhalten „PR nur auf ausdrückliche Anfrage erstellen". Falls `enable_pr_auto_merge` wegen Rate-Limit fehlschlägt: direkt `mcp__github__merge_pull_request` (squash) aufrufen.
 
-3. **Auf CI warten** — Der PR merged automatisch, sobald alle Checks grün sind.
+3. **Auf CI warten — WICHTIG: es gibt ZWEI Required-Checks: „Unit Tests" UND „E2E Tests".** Der PR kann erst mergen, wenn **beide** grün sind. „E2E Tests" startet verzögert (queued/in_progress) und braucht meist 1–2 Min länger als die Unit-Tests. Solange ein Check noch pending/queued ist, lehnt `mcp__github__enable_pr_auto_merge` mit „unstable status (required checks are failing)" ab — das heißt **nicht**, dass etwas kaputt ist, sondern nur, dass E2E noch läuft.
+   - Auto-Merge bleibt nach erfolgreichem Aktivieren aktiv und merged von selbst, sobald beide Checks durch sind — dann nichts weiter nötig.
+   - Schlägt das Aktivieren mit „unstable status" fehl (E2E noch nicht fertig): **nicht aufgeben und nicht manuell mergen.** Per `mcp__github__pull_request_read` (`get_check_runs`) den E2E-Status prüfen und mit `send_later` (≈ 2–3 Min) eine Selbst-Erinnerung setzen, dann erneut prüfen — erst wenn **beide** Checks `success` sind, Auto-Merge aktivieren bzw. `merge_pull_request` (squash) aufrufen.
+   - Erst nach dem tatsächlichen Merge zu Schritt 4 (Release) übergehen.
 
 4. **Release schneiden** — Direkt nach jedem gemergten Feature-PR automatisch einen Release schneiden, ohne darauf zu warten, gefragt zu werden: `main` pullen → Branch `release/vX.Y` erstellen → `node scripts/build.mjs` ausführen → committen & pushen → PR erstellen → `mcp__github__enable_pr_auto_merge` (Squash) aufrufen. GitHub Pages deployt danach automatisch.
 
