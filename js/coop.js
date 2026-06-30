@@ -180,6 +180,7 @@ export const MSG = {
   VOTE_CAST:         'vote_cast',         // Spieler → Host: Stimme (targetName)
   VOTE_PROGRESS:     'vote_progress',     // Host → alle: Fortschritt (count, total, voterNames)
   VOTE_RESULT:       'vote_result',       // Host → alle: Ergebnis (eliminated, votes{})
+  VOTE_CONTINUE:     'vote_continue',     // Host → alle: Runde geht weiter (eliminated[], candidates[])
 
   // Timer überspringen (nur Host)
   TIMER_SKIP:        'timer_skip',
