@@ -484,11 +484,16 @@ function calcResult() {
 }
 
 function continueVoting() {
+  // Rausgewählte Spieler entfernen und Abstimmung zurücksetzen,
+  // dann zur neutralen Pause (Gerät weitergeben) — die eigentliche
+  // Abstimmung wird erst dort gestartet, damit niemand das
+  // Zwischenergebnis mit dem verbleibenden Imposter sieht.
   const { eliminated } = state.voteRoundResult;
   state.roles = state.roles.filter(r => !eliminated.includes(r.name));
   state.votes = {}; state.stimmIdx = 0; state.voteSelection = null;
   state.voteRoundResult = null;
-  state.screen = 'voting';
+  state.screen = 'votePause';
+  haptic('light');
 }
 
 function addCustomWord() {
@@ -2908,7 +2913,7 @@ const App = {
         <div class="surv-box" style="margin-bottom:1.2rem;text-align:left">
           <div style="font-size:.65rem;letter-spacing:.15em;color:var(--gold);text-transform:uppercase;margin-bottom:.6rem">Abstimmungsergebnis</div>
           <div v-for="r in state.roles" :key="r.name" class="surv-item">
-            <span>{{ r.name }}{{ r.isImposter ? ' 🕵️' : '' }}</span>
+            <span>{{ r.name }}{{ (r.isImposter && state.voteRoundResult.eliminated.includes(r.name)) ? ' 🕵️' : '' }}</span>
             <span style="margin-left:auto;color:var(--gold);font-weight:700">{{ state.voteRoundResult.tally[r.name] || 0 }}×</span>
             <span v-if="state.voteRoundResult.eliminated.includes(r.name)"
               style="background:rgba(124,58,237,.3);color:#c4b5fd;border-radius:20px;padding:2px 8px;font-size:.7rem;margin-left:.3rem">Raus</span>
@@ -2920,7 +2925,28 @@ const App = {
           weiterer Imposter ist noch im Spiel!
         </div>
 
-        <button class="btn-start" @click="continueVoting">🗳 Nächste Abstimmung</button>
+        <button class="btn-start" @click="continueVoting">Weiter →</button>
+        <button class="btn-sec" style="margin-top:.5rem" @click="state.screen='home'">🏠 Abbrechen</button>
+      </div>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- ── PAUSE VOR NÄCHSTER ABSTIMMUNG (Gerät weitergeben) ── -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <template v-if="state.screen === 'votePause'">
+      <div class="go-inner" style="text-align:center;padding-top:3rem">
+        <div class="wicon">🗳️</div>
+        <div class="wtitle">Nächste Runde</div>
+        <div class="wsub" style="margin-bottom:1.4rem">Gebt das Gerät reihum weiter — dann startet die nächste Abstimmung.</div>
+
+        <div class="timer-players" style="margin-bottom:1.6rem">
+          <div v-for="r in state.roles" :key="r.name" class="timer-player-dot"
+            style="background:rgba(124,58,237,.25)">
+            {{ r.name[0].toUpperCase() }}
+          </div>
+        </div>
+
+        <button class="btn-start" @click="localStartVoting">🗳 Abstimmung starten</button>
         <button class="btn-sec" style="margin-top:.5rem" @click="state.screen='home'">🏠 Abbrechen</button>
       </div>
     </template>
