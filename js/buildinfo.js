@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.97';
-export const BUILD_HASH = 'imposter-mehrrunden-abst';
+export const BUILD      = '0.98';
+export const BUILD_HASH = 'verbleibenden-imposter-i';
 
 export const CHANGELOG = [
   {
+    version: '0.98',
+    date: '30.06.2026',
+    time: '12:55',
+    changes: [
+    'Imposter: Beim Weiterabstimmen wird der verbleibende Imposter nicht mehr verraten und es gibt eine Pause zum Weitergeben des Geräts, bevor die nächste Abstimmung startet.',
+    ],
+  },
+{
     version: '0.97',
     date: '30.06.2026',
     time: '09:43',
