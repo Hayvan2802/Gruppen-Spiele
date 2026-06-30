@@ -1,2 +1,1 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
-Imposter Singleplayer: Abstimmung geht weiter wenn mehrere Imposter im Spiel sind; Eigene Wörter: Hinzufügen-Button funktioniert jetzt zuverlässig
