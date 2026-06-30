@@ -119,6 +119,7 @@ const state = reactive({
   updateReady: false,
   showSettingsModal: false,
   settingsTab: 'allgemein',
+  voteRoundResult: null, // { eliminated, tally, imposters } wenn Spiel nach Abstimmung weitergeht
   wwScreen: 'home',
   gameMenu: { active: false },
   gamePaused: false,
@@ -438,35 +439,63 @@ function calcResult() {
   const tally = {};
   state.roles.forEach(r => { tally[r.name] = 0; });
   Object.values(state.votes).forEach(t => { tally[t] = (tally[t] || 0) + 1; });
-  const max = Math.max(...Object.values(tally));
+  const max       = Math.max(...Object.values(tally));
   const eliminated = Object.keys(tally).filter(n => tally[n] === max);
   const imposters  = state.roles.filter(r => r.isImposter).map(r => r.name);
-  state.winner          = eliminated.some(n => imposters.includes(n)) ? 'village' : 'imposter';
-  state.eliminatedNames = eliminated;
+
+  // Verbleibende Spieler nach Eliminierung
+  const remaining          = state.roles.filter(r => !eliminated.includes(r.name));
+  const remainingImposters = remaining.filter(r => r.isImposter).length;
+  const remainingVillagers = remaining.filter(r => !r.isImposter).length;
+
   state.tally           = tally;
-  // Punkte vergeben
-  if (state.winner === 'village') {
-    state.roles.filter(r => !r.isImposter).forEach(r => {
-      state.scores[r.name] = (state.scores[r.name] || 0) + 1;
-    });
+  state.eliminatedNames = eliminated;
+
+  // Gewinnbedingung (identisch mit Coop-Logik):
+  // Dorf gewinnt → alle Imposter eliminiert
+  // Imposter gewinnen → Imposter >= Dörfler (Gleichstand ist Imposter-Sieg)
+  // Sonst → Spielzug-Ergebnis zeigen, dann weiterabstimmen
+  let winner;
+  if (remainingImposters === 0) {
+    winner = 'village';
+  } else if (remainingImposters >= remainingVillagers) {
+    winner = 'imposter';
   } else {
-    state.roles.filter(r => r.isImposter).forEach(r => {
-      state.scores[r.name] = (state.scores[r.name] || 0) + 2;
-    });
+    // Spiel geht weiter — Zwischenergebnis zeigen
+    state.voteRoundResult = { eliminated, tally, imposters };
+    state.screen = 'voteRound';
+    haptic('medium');
+    return;
   }
-  // Runde in Lobby-History speichern
+
+  state.winner = winner;
+  if (winner === 'village') {
+    state.roles.filter(r => !r.isImposter).forEach(r => { state.scores[r.name] = (state.scores[r.name] || 0) + 1; });
+  } else {
+    state.roles.filter(r => r.isImposter).forEach(r => { state.scores[r.name] = (state.scores[r.name] || 0) + 2; });
+  }
   state.lobbyHistory.push({
-    round:     state.roundsCurrent,
-    word:      state.roles[0]?.word || '',
-    winner:    state.winner,
-    imposters: imposters,
-    eliminated,
-    tally:     { ...tally },
-    roles:     state.roles.map(r => ({ name: r.name, isImposter: r.isImposter })),
-    ts:        Date.now(),
+    round: state.roundsCurrent, word: state.roles[0]?.word || '',
+    winner, imposters, eliminated, tally: { ...tally },
+    roles: state.roles.map(r => ({ name: r.name, isImposter: r.isImposter })), ts: Date.now(),
   });
   state.screen = 'result';
-  haptic(state.winner === 'village' ? 'success' : 'error');
+  haptic(winner === 'village' ? 'success' : 'error');
+}
+
+function continueVoting() {
+  const { eliminated } = state.voteRoundResult;
+  state.roles = state.roles.filter(r => !eliminated.includes(r.name));
+  state.votes = {}; state.stimmIdx = 0; state.voteSelection = null;
+  state.voteRoundResult = null;
+  state.screen = 'voting';
+}
+
+function addCustomWord() {
+  const w = state.customWordDraft.trim();
+  if (!w || state.customWords.includes(w)) return;
+  state.customWords.push(w);
+  state.customWordDraft = '';
 }
 
 function newGame() { state.screen = 'home'; }
@@ -672,21 +701,32 @@ function calcCoopResult() {
   // Gewinnbedingung:
   // Dorf gewinnt → alle Imposter eliminiert
   // Imposter gewinnen → Imposter >= Dörfler (Gleichstand ist Imposter-Sieg)
-  let winner;
+  // Sonst → nächste Abstimmungsrunde
   if (remainingImposters === 0) {
-    winner = 'village';
+    const result = { eliminated, imposters, winner: 'village', tally, word: state.coop.coopWord || '' };
+    Coop.send({ type: Coop.MSG.VOTE_RESULT, result });
+    state.coop.voteResult = result;
+    state.coop.phase = 'coopResult';
+    clearInterval(state.coop.coopTimerInterval);
+    haptic('success');
   } else if (remainingImposters >= remainingVillagers) {
-    winner = 'imposter';
+    const result = { eliminated, imposters, winner: 'imposter', tally, word: state.coop.coopWord || '' };
+    Coop.send({ type: Coop.MSG.VOTE_RESULT, result });
+    state.coop.voteResult = result;
+    state.coop.phase = 'coopResult';
+    clearInterval(state.coop.coopTimerInterval);
+    haptic('error');
   } else {
-    winner = 'imposter'; // Imposter überlebt → Imposter gewinnt diese Runde
+    // Spiel geht weiter — Host aktualisiert direkt, Clients über VOTE_CONTINUE
+    state.coop.allPlayers = state.coop.allPlayers.filter(p => !eliminated.includes(p.name));
+    state.coop.votesReceived = {};
+    state.coop.myVoteDone = false;
+    state.coop.voteSelection = null;
+    state.coop.votesProgress = { count: 0, total: state.coop.allPlayers.length, voters: [] };
+    state.coop.phase = 'coopVoting';
+    showToast(`${eliminated.join(', ')} raus — nächste Abstimmung!`);
+    Coop.send({ type: Coop.MSG.VOTE_CONTINUE, eliminated, candidates: state.coop.allPlayers.map(p => p.name) });
   }
-
-  const result = { eliminated, imposters, winner, tally, word: state.coop.coopWord || '' };
-  Coop.send({ type: Coop.MSG.VOTE_RESULT, result });
-  state.coop.voteResult = result;
-  state.coop.phase = 'coopResult';
-  clearInterval(state.coop.coopTimerInterval);
-  haptic(winner === 'village' ? 'success' : 'error');
 }
 
 // ── Coop: Karten-Bestätigung ──────────────────────────────────────────────────
@@ -864,6 +904,15 @@ function handleCoopMessage(msg) {
     clearInterval(state.coop.coopTimerInterval);
     haptic(msg.result?.winner === 'village' ? 'success' : 'error');
   }
+
+  if (msg.type === Coop.MSG.VOTE_CONTINUE) {
+    state.coop.allPlayers = state.coop.allPlayers.filter(p => !msg.eliminated.includes(p.name));
+    state.coop.myVoteDone = false;
+    state.coop.voteSelection = null;
+    state.coop.votesProgress = { count: 0, total: state.coop.allPlayers.length, voters: [] };
+    state.coop.phase = 'coopVoting';
+    showToast(`${msg.eliminated.join(', ')} raus — nächste Abstimmung!`);
+  }
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -1012,6 +1061,7 @@ const App = {
       coopSelectVote, coopConfirmVote, startCoopVoting,
       dismissWhatsNew, applyUpdate, checkForUpdate,
       exportLogToFile, exportBackup, importBackup,
+      continueVoting, addCustomWord,
       // Codenames
       cnState, cnSelectMode, cnStartLocal, cnGiveHint, cnRevealCard, cnPassTurn, cnReset,
       cnShowHostSetup, cnCreateRoom, cnShowJoinSetup, cnJoinRoom,
@@ -2598,9 +2648,8 @@ const App = {
                 <div style="display:flex;gap:.5rem">
                   <input class="ninput" v-model="state.customWordDraft"
                     placeholder="Wort eingeben..." style="flex:1;margin:0;padding:.5rem .7rem"
-                    @keydown.enter="state.customWordDraft.trim() && !state.customWords.includes(state.customWordDraft.trim()) && state.customWords.push(state.customWordDraft.trim()) && (state.customWordDraft='')" />
-                  <button class="btn-sec btn-sm" style="flex-shrink:0"
-                    @click="state.customWordDraft.trim() && !state.customWords.includes(state.customWordDraft.trim()) ? (state.customWords.push(state.customWordDraft.trim()), state.customWordDraft='') : null">
+                    @keydown.enter="addCustomWord" />
+                  <button class="btn-sec btn-sm" style="flex-shrink:0" @click="addCustomWord">
                     + Hinzufügen
                   </button>
                 </div>
@@ -2844,6 +2893,35 @@ const App = {
             {{ state.voteSelection ? '✓ ' + state.voteSelection + ' beschuldigen' : 'Spieler auswählen…' }}
           </button>
         </div>
+      </div>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- ── ZWISCHENERGEBNIS: Imposter raus, aber Spiel geht weiter ── -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <template v-if="state.screen === 'voteRound' && state.voteRoundResult">
+      <div class="go-inner" style="text-align:center;padding-top:3rem">
+        <div class="wicon">🕵️</div>
+        <div class="wtitle" style="color:var(--green)">Imposter erwischt!</div>
+        <div class="wsub" style="margin-bottom:1.4rem">Aber es gibt noch weitere Imposter…</div>
+
+        <div class="surv-box" style="margin-bottom:1.2rem;text-align:left">
+          <div style="font-size:.65rem;letter-spacing:.15em;color:var(--gold);text-transform:uppercase;margin-bottom:.6rem">Abstimmungsergebnis</div>
+          <div v-for="r in state.roles" :key="r.name" class="surv-item">
+            <span>{{ r.name }}{{ r.isImposter ? ' 🕵️' : '' }}</span>
+            <span style="margin-left:auto;color:var(--gold);font-weight:700">{{ state.voteRoundResult.tally[r.name] || 0 }}×</span>
+            <span v-if="state.voteRoundResult.eliminated.includes(r.name)"
+              style="background:rgba(124,58,237,.3);color:#c4b5fd;border-radius:20px;padding:2px 8px;font-size:.7rem;margin-left:.3rem">Raus</span>
+          </div>
+        </div>
+
+        <div style="font-size:.85rem;color:var(--txt2);margin-bottom:1.4rem;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:10px;padding:.7rem 1rem">
+          {{ state.roles.filter(r => r.isImposter && !state.voteRoundResult.eliminated.includes(r.name)).length }}
+          weiterer Imposter ist noch im Spiel!
+        </div>
+
+        <button class="btn-start" @click="continueVoting">🗳 Nächste Abstimmung</button>
+        <button class="btn-sec" style="margin-top:.5rem" @click="state.screen='home'">🏠 Abbrechen</button>
       </div>
     </template>
 
