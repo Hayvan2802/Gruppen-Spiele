@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.96';
-export const BUILD_HASH = 'einstellungen-tabs-backu';
+export const BUILD      = '0.97';
+export const BUILD_HASH = 'imposter-mehrrunden-abst';
 
 export const CHANGELOG = [
   {
+    version: '0.97',
+    date: '30.06.2026',
+    time: '09:43',
+    changes: [
+    'Imposter Singleplayer: Abstimmung geht weiter wenn mehrere Imposter im Spiel sind; Eigene Wörter: Hinzufügen-Button funktioniert jetzt zuverlässig',
+    ],
+  },
+{
     version: '0.96',
     date: '29.06.2026',
     time: '20:10',
