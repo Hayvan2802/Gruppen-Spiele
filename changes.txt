@@ -1,1 +1,2 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+Der Koop-Modus aller Spiele wird jetzt automatisch getestet – für mehr Stabilität beim gemeinsamen Spielen.

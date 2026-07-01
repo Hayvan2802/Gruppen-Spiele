@@ -205,6 +205,32 @@ node --test test/unit/*.test.js
 Tests sind nach `describe`-Blöcken gegliedert (Rollenzuteilung, Abstimmung, Timer …).
 Bei Änderungen an der Imposter-Logik die Tests aktualisieren bzw. ergänzen.
 
+#### Coop-Modus testen
+
+Der Echtzeit-Coop-Modus **aller Spiele** (Imposter, Werwolf, Codenames, Wer bin
+ich?) läuft über denselben Transport (`js/coop.js` + Firebase RTDB). Dafür gibt
+es zwei Testebenen unter `test/coop/` (siehe `test/coop/README.md`):
+
+```bash
+npm run test:coop        # OFFLINE: echte coop.js gegen In-Memory-Firebase (Loader-Hook)
+npm run test:coop:live   # ONLINE:  Live-Smoke gegen echtes Firebase (braucht Netz)
+```
+
+> **Wenn der Nutzer sagt „teste (online/offline) Coop" bzw. „prüf ob Coop geht":**
+> - **offline / im Repo / CI** → `npm run test:coop` (deterministisch, ohne Netz,
+>   ohne Zusatzpakete; prüft Raum-Lebenszyklus, Broadcast, Verbindungsabbruch,
+>   Fehlerfälle und den Nachrichten-Flow je Spiel). Ist als CI-Schritt im Job
+>   „Unit Tests" verdrahtet.
+> - **online / gegen echtes Firebase** → `npm run test:coop:live` (meldet sich
+>   anonym an, hostet/betritt einen Wegwerf-Raum, spielt je Spiel die
+>   Coop-Nachrichten durch, räumt auf; Exit-Code 0 = alles grün). Braucht
+>   ausgehenden Zugriff auf `*.firebasedatabase.app` — in abgeschotteten
+>   Sandboxes teils geblockt, dann lokal ausführen.
+>
+> Bei Änderungen an `coop.js` oder an den Coop-Nachrichten eines Spiels die
+> Flows in `test/coop/coop.transport.test.mjs` (und die Sequenzen im
+> Python-Smoke) mitpflegen.
+
 ### Versionierung & Release
 
 **Single Source of Truth:** `.release-counter` hält die aktuelle Version
