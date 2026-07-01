@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.101';
-export const BUILD_HASH = 'release-v0-100-82';
+export const BUILD      = '0.102';
+export const BUILD_HASH = 'theme-der-haupt-app-uebe';
 
 export const CHANGELOG = [
   {
+    version: '0.102',
+    date: '01.07.2026',
+    time: '20:01',
+    changes: [
+    'Werwolf übernimmt jetzt das Design (Hell/Dunkel/System) der App, statt immer im Dunkelmodus zu starten.',
+    ],
+  },
+{
     version: '0.101',
     date: '01.07.2026',
     time: '17:07',
