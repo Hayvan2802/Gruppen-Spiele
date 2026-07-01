@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.102';
-export const BUILD_HASH = 'theme-der-haupt-app-uebe';
+export const BUILD      = '0.103';
+export const BUILD_HASH = 'einstellungen-an-haupt-a';
 
 export const CHANGELOG = [
   {
+    version: '0.103',
+    date: '01.07.2026',
+    time: '21:04',
+    changes: [
+    'Werwolf-Einstellungen an die App angeglichen: Die Design-Auswahl heißt jetzt einheitlich 🌙 Dunkel / ☀️ Hell / 🔄 System.',
+    ],
+  },
+{
     version: '0.102',
     date: '01.07.2026',
     time: '20:01',
