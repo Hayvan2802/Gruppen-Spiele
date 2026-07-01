@@ -1,2 +1,1 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
-Werwolf-Einstellungen an die App angeglichen: Die Design-Auswahl heißt jetzt einheitlich 🌙 Dunkel / ☀️ Hell / 🔄 System.
