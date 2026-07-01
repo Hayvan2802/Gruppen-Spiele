@@ -17,6 +17,7 @@ import {
   wbiShareLink, wbiSendGuess, wbiCurrentCard, wbiRemainingCount, wbiGuessedCount,
 } from './games/werbinich.js';
 import { ALL_WORDS, KATEGORIEN, DEFAULT_KATEGORIEN, DONATE_URL, COOP_MAX_PLAYERS } from './config.js';
+import { calcVoteOutcome } from './games/imposter-logic.js';
 import * as Coop from './coop.js';
 import { log, exportLogToFile, logDeviceSnapshot, installGlobalErrorHandlers, installJankDetector } from './debuglog.js';
 import {
@@ -436,37 +437,20 @@ function confirmVote() {
 }
 
 function calcResult() {
-  const tally = {};
-  state.roles.forEach(r => { tally[r.name] = 0; });
-  Object.values(state.votes).forEach(t => { tally[t] = (tally[t] || 0) + 1; });
-  const max       = Math.max(...Object.values(tally));
-  const eliminated = Object.keys(tally).filter(n => tally[n] === max);
-  const imposters  = state.roles.filter(r => r.isImposter).map(r => r.name);
-
-  // Verbleibende Spieler nach Eliminierung
-  const remaining          = state.roles.filter(r => !eliminated.includes(r.name));
-  const remainingImposters = remaining.filter(r => r.isImposter).length;
-  const remainingVillagers = remaining.filter(r => !r.isImposter).length;
+  // Auswertung über die geteilte Logik (identisch mit Coop, siehe imposter-logic.js)
+  const { tally, eliminated, imposters, outcome } = calcVoteOutcome(state.roles, state.votes);
 
   state.tally           = tally;
   state.eliminatedNames = eliminated;
 
-  // Gewinnbedingung (identisch mit Coop-Logik):
-  // Dorf gewinnt → alle Imposter eliminiert
-  // Imposter gewinnen → Imposter >= Dörfler (Gleichstand ist Imposter-Sieg)
-  // Sonst → Spielzug-Ergebnis zeigen, dann weiterabstimmen
-  let winner;
-  if (remainingImposters === 0) {
-    winner = 'village';
-  } else if (remainingImposters >= remainingVillagers) {
-    winner = 'imposter';
-  } else {
+  if (outcome === 'continue') {
     // Spiel geht weiter — Zwischenergebnis zeigen
     state.voteRoundResult = { eliminated, tally, imposters };
     state.screen = 'voteRound';
     haptic('medium');
     return;
   }
+  const winner = outcome; // 'village' | 'imposter'
 
   state.winner = winner;
   if (winner === 'village') {
@@ -691,19 +675,11 @@ function startCoopVoting() {
 function calcCoopResult() {
   const votes   = state.coop.votesReceived;
   const players = state.coop.allPlayers;
-  const tally   = {};
-  players.forEach(p => { tally[p.name] = 0; });
-  Object.values(votes).forEach(v => { tally[v] = (tally[v] || 0) + 1; });
-  const max       = Math.max(...Object.values(tally));
-  const eliminated = Object.keys(tally).filter(n => tally[n] === max);
-  const imposters  = players.filter(p => p.isImposter).map(p => p.name);
+  // Auswertung über die geteilte Logik (identisch mit Lokal, siehe imposter-logic.js)
+  const { tally, eliminated, imposters, remainingImposters, remainingVillagers } =
+    calcVoteOutcome(players, votes);
 
-  // Verbleibende Spieler nach Eliminierung
-  const remaining          = players.filter(p => !eliminated.includes(p.name));
-  const remainingImposters = remaining.filter(p => p.isImposter).length;
-  const remainingVillagers = remaining.filter(p => !p.isImposter).length;
-
-  // Gewinnbedingung:
+  // Gewinnbedingung (identisch mit Lokal):
   // Dorf gewinnt → alle Imposter eliminiert
   // Imposter gewinnen → Imposter >= Dörfler (Gleichstand ist Imposter-Sieg)
   // Sonst → nächste Abstimmungsrunde

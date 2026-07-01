@@ -231,6 +231,27 @@ npm run test:coop:live   # ONLINE:  Live-Smoke gegen echtes Firebase (braucht Ne
 > Flows in `test/coop/coop.transport.test.mjs` (und die Sequenzen im
 > Python-Smoke) mitpflegen.
 
+#### Spiellogik & Singleplayer↔Multiplayer-Parität testen
+
+```bash
+npm run test:logic       # echte Spiellogik jedes Spiels + SP/MP-Parität (offline, in CI)
+```
+
+Prüft je Spiel gegen die **echten** Module (Browser-Deps gestubbt via Loader-Hook:
+Vue → Shim, Firebase → In-Memory-Fake), dass Einzelgerät- (lokal) und Coop-Modus
+**gleich ablaufen** und die Sieg-/Ablauflogik Sinn ergibt — inkl. Grenzfällen wie
+„2 gegen 2 → Angreifer (Imposter bzw. Wölfe) gewinnen automatisch". Details in
+`test/logic/README.md`.
+
+> **Wenn der Nutzer sagt „prüf ob Singleplayer wie Multiplayer läuft" / „teste die
+> Spiellogik":** → `npm run test:logic`.
+>
+> **Wichtig zur Parität:** Imposter-Sieglogik lebt zentral in
+> `js/games/imposter-logic.js` und wird von lokal (`calcResult`) UND Coop
+> (`calcCoopResult`) genutzt — bei Änderungen dort ändern, nicht duplizieren.
+> Codenames/Wer-bin-ich/Werwolf teilen ihre Logik ohnehin (dieselben Funktionen,
+> nur `Coop.send` hinter `coop.phase`-Prüfung) — modusneutral halten.
+
 ### Versionierung & Release
 
 **Single Source of Truth:** `.release-counter` hält die aktuelle Version

@@ -18,6 +18,8 @@ jobs:
         run: npm run test:unit
       - name: Coop-Transport-Test
         run: npm run test:coop
+      - name: Spiellogik & SP↔MP-Parität
+        run: npm run test:logic
 
   e2e:
     name: E2E Tests

@@ -9,8 +9,9 @@
     "test:unit": "node --test test/unit/*.test.js",
     "test:coop": "node --import ./test/coop/register-hook.mjs --test test/coop/*.test.mjs",
     "test:coop:live": "python3 test/coop/coop_live_smoke.py",
+    "test:logic": "node --import ./test/logic/register-hook.mjs --test test/logic/*.test.mjs",
     "test:e2e": "playwright test",
-    "test": "npm run test:unit && npm run test:coop && npm run test:e2e"
+    "test": "npm run test:unit && npm run test:coop && npm run test:logic && npm run test:e2e"
   },
   "engines": {
     "node": ">=18"

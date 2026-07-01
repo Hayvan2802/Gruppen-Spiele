@@ -5,7 +5,7 @@ const ASSETS = [
   './index.html', './css/styles.css',
   './js/app.js', './js/buildinfo.js', './js/werwolf-embed.js',
   './js/games/werbinich.js', './js/games/werbinich-words.js',
-  './js/games/codenames.js', './js/games/codenames-words.js', './js/config.js', './js/storage.js',
+  './js/games/codenames.js', './js/games/codenames-words.js', './js/games/imposter-logic.js', './js/config.js', './js/storage.js',
   './js/coop.js', './js/firebase.js', './js/debuglog.js',
   './js/i18n/index.js', './js/i18n/de.js', './js/i18n/en.js',
   './js/i18n/tr.js', './js/i18n/fr.js', './js/i18n/es.js',

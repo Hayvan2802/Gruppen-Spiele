@@ -1,1 +1,2 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+Einzelgerät- und Mehrgeräte-Modus laufen jetzt garantiert nach denselben Regeln – die Spiellogik aller Spiele wird zusätzlich automatisch getestet.
