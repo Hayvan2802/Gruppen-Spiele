@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.98';
-export const BUILD_HASH = 'verbleibenden-imposter-i';
+export const BUILD      = '0.99';
+export const BUILD_HASH = 'coop-tests-in-claude-md';
 
 export const CHANGELOG = [
   {
+    version: '0.99',
+    date: '01.07.2026',
+    time: '16:37',
+    changes: [
+    'Der Koop-Modus aller Spiele wird jetzt automatisch getestet – für mehr Stabilität beim gemeinsamen Spielen.',
+    ],
+  },
+{
     version: '0.98',
     date: '30.06.2026',
     time: '12:55',
