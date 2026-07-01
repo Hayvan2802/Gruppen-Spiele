@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.100';
-export const BUILD_HASH = 'sieglogik-in-geteiltes-m';
+export const BUILD      = '0.101';
+export const BUILD_HASH = 'release-v0-100-82';
 
 export const CHANGELOG = [
   {
+    version: '0.101',
+    date: '01.07.2026',
+    time: '17:07',
+    changes: [
+    'Singleplayer- (Einzelgerät) und Koop-Modus aller Spiele geprüft: Beide laufen nach denselben Regeln und funktionieren einwandfrei.',
+    ],
+  },
+{
     version: '0.100',
     date: '01.07.2026',
     time: '16:52',
