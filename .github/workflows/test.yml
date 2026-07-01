@@ -16,6 +16,8 @@ jobs:
           node-version: 22
       - name: Unit-Tests
         run: npm run test:unit
+      - name: Coop-Transport-Test
+        run: npm run test:coop
 
   e2e:
     name: E2E Tests
