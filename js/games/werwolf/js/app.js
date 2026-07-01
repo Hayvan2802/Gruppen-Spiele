@@ -1321,11 +1321,13 @@ const App = {
           <div class="drawer-section">
             <div class="drawer-section-title">Darstellung</div>
             <div class="srow" style="flex-direction:column;align-items:flex-start;gap:.6rem">
-              <div class="slabel">{{ t('settings.theme') }}</div>
+              <div class="slabel">Theme</div>
               <div class="theme-btns">
-                <button class="theme-btn" :class="{active:state.settings.theme==='dark'}" @click="setTheme('dark')">🌙 Dark</button>
-                <button class="theme-btn" :class="{active:state.settings.theme==='light'}" @click="setTheme('light')">☀️ Light</button>
-                <button class="theme-btn" :class="{active:state.settings.theme==='auto'}" @click="setTheme('auto')">⚙ Auto</button>
+                <button v-for="th in ['dark','light','auto']" :key="th"
+                  class="theme-btn" :class="{active: state.settings.theme===th}"
+                  @click="setTheme(th)">
+                  {{ th==='dark'?'🌙 Dunkel':th==='light'?'☀️ Hell':'🔄 System' }}
+                </button>
               </div>
             </div>
             <div class="srow" style="border:none">
