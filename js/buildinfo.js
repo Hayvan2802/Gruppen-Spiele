@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.99';
-export const BUILD_HASH = 'coop-tests-in-claude-md';
+export const BUILD      = '0.100';
+export const BUILD_HASH = 'sieglogik-in-geteiltes-m';
 
 export const CHANGELOG = [
   {
+    version: '0.100',
+    date: '01.07.2026',
+    time: '16:52',
+    changes: [
+    'Einzelgerät- und Mehrgeräte-Modus laufen jetzt garantiert nach denselben Regeln – die Spiellogik aller Spiele wird zusätzlich automatisch getestet.',
+    ],
+  },
+{
     version: '0.99',
     date: '01.07.2026',
     time: '16:37',
