@@ -191,6 +191,14 @@ function setTheme(t) {
   saveSettings(state.settings);
   applyTheme();
 }
+// Wird von der Haupt-App (Einbettung) aufgerufen, damit Werwolf DERSELBEN
+// Theme-Einstellung folgt wie der Rest der App (inkl. 'auto' = System). Bewusst
+// OHNE saveSettings — die eigenständige Werwolf-App behält ihre eigene Einstellung.
+export function applyThemeFromHost(theme) {
+  if (!theme) return;
+  state.settings.theme = theme;
+  applyTheme();
+}
 // System-Theme-Änderung live erkennen
 window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
   if (state.settings.theme === 'auto') applyTheme();
