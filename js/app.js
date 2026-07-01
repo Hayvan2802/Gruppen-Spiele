@@ -250,11 +250,16 @@ function checkForUpdate() {
 function applyTheme() {
   const theme = state.settings.theme;
   document.body.classList.remove('light','neon');
-  if (theme === 'neon') { document.body.classList.add('neon'); return; }
+  if (theme === 'neon') { document.body.classList.add('neon'); syncWerwolfTheme(theme); return; }
   const isLight = theme === 'auto'
     ? window.matchMedia('(prefers-color-scheme: light)').matches
     : theme === 'light';
   document.body.classList.toggle('light', isLight);
+  syncWerwolfTheme(theme);
+}
+// Eingebettetes Werwolf demselben Theme folgen lassen (falls schon geladen).
+function syncWerwolfTheme(theme) {
+  import('./werwolf-embed.js').then(m => m.syncWerwolfTheme(theme)).catch(() => {});
 }
 window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
   if (state.settings.theme === 'auto') applyTheme();
@@ -300,7 +305,7 @@ function openWerwolf() {
   state.screen = 'ww';
   state.wwScreen = 'home';
   const host = document.getElementById('ww-host');
-  if (host) import('./werwolf-embed.js').then(m => m.ensureWerwolf(host));
+  if (host) import('./werwolf-embed.js').then(m => m.ensureWerwolf(host, state.settings.theme));
 }
 function closeWerwolf() { state.screen = 'home'; state.wwScreen = 'home'; }
 
@@ -3046,7 +3051,7 @@ init();
 (function prewarmWerwolf() {
   const warm = () => {
     const host = document.getElementById('ww-host');
-    if (host) import('./werwolf-embed.js').then(m => m.ensureWerwolf(host)).catch(() => {});
+    if (host) import('./werwolf-embed.js').then(m => m.ensureWerwolf(host, state.settings.theme)).catch(() => {});
   };
   if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 4000 });
   else setTimeout(warm, 1500);

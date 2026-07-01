@@ -1,1 +1,2 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+Werwolf übernimmt jetzt das Design (Hell/Dunkel/System) der App, statt immer im Dunkelmodus zu starten.

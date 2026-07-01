@@ -11,11 +11,16 @@
 
 let mounted = false;
 let mountPromise = null;
+let wwMod = null;      // geladenes Werwolf-Modul (für spätere Theme-Syncs)
+let lastTheme = null;  // zuletzt gewünschtes Theme (falls Sync vor dem Mount kam)
 
 // Bettet Werwolf einmalig in den übergebenen Host ein. Mehrfachaufrufe sind
 // unschädlich (idempotent) — nützlich fürs Vorwärmen im Hintergrund.
-export function ensureWerwolf(host) {
-  if (mounted) return mountPromise;
+// `theme` (optional): Theme der Haupt-App, das Werwolf übernehmen soll, damit die
+// eingebettete App NICHT auf ihrem eigenen Default ('dark') hängen bleibt.
+export function ensureWerwolf(host, theme) {
+  if (theme != null) lastTheme = theme;
+  if (mounted) { if (wwMod && theme != null) wwMod.applyThemeFromHost(theme); return mountPromise; }
   mounted = true;
   mountPromise = (async () => {
     // Signal an werwolf/js/app.js: nicht selbst auf #app mounten.
@@ -47,8 +52,18 @@ export function ensureWerwolf(host) {
 
     // Werwolf-App laden und in die Shadow-Wurzel mounten (eigene Vue-Instanz).
     const mod = await import('./games/werwolf/js/app.js');
+    wwMod = mod;
     mod.setWwRoot(root);
     mod.mountWerwolf(root);
+    // Theme der Haupt-App übernehmen (überschreibt Werwolfs Init-Theme).
+    if (lastTheme != null) mod.applyThemeFromHost(lastTheme);
   })();
   return mountPromise;
+}
+
+// Theme-Sync von der Haupt-App: hält das eingebettete Werwolf mit dem globalen
+// Theme (dark/light/auto/neon) in Gleichklang. No-op, falls noch nicht gemountet.
+export function syncWerwolfTheme(theme) {
+  if (theme != null) lastTheme = theme;
+  if (wwMod && theme != null) wwMod.applyThemeFromHost(theme);
 }
