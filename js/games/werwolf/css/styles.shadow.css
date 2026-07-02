@@ -366,3 +366,9 @@
 .witch-info{background:rgba(91,33,182,.12);border:1px solid rgba(91,33,182,.3);border-radius:8px;padding:.5rem .8rem;margin-bottom:.7rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;}
 .witch-victim-label{font-size:.78rem;color:var(--blood2);font-family:'system-ui',Georgia,serif;}
 .witch-info strong{color:var(--txt);font-size:.85rem;}
+
+/* ── Jäger-Modal: dramatisches Aufploppen + Pfeil-Animation ─────────────── */
+.jaeger-modal{animation:jaegerPop .5s cubic-bezier(.34,1.56,.64,1);border:1px solid rgba(176,32,32,.45);box-shadow:0 0 40px rgba(176,32,32,.35);}
+.jaeger-shot-icon{font-size:3rem;text-align:center;margin-bottom:.3rem;animation:jaegerShake .9s ease-in-out .35s 2;transform-origin:50% 60%;}
+@keyframes jaegerPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.07)}100%{transform:scale(1);opacity:1}}
+@keyframes jaegerShake{0%,100%{transform:rotate(0) scale(1)}25%{transform:rotate(-14deg) scale(1.18)}75%{transform:rotate(10deg) scale(1.12)}}

@@ -81,6 +81,22 @@ describe('Imposter — Sieglogik (lokal & Coop geteilt)', async () => {
     assert.ok(res.eliminated.includes('A') && res.eliminated.includes('B'));
     assert.equal(res.outcome, 'village');
   });
+
+  test('Extremfall: totaler Gleichstand (jeder 1 Stimme) → alle raus, Imposter dabei → Dorf', () => {
+    const players = P([['A', true], ['B', false], ['C', false]]);
+    // Kreis-Voting: jeder bekommt genau 1 Stimme → alle eliminiert
+    const res = calcVoteOutcome(players, { A: 'B', B: 'C', C: 'A' });
+    assert.equal(res.eliminated.length, 3);
+    assert.equal(res.outcome, 'village'); // alle Imposter sind raus
+  });
+
+  test('Imposter-Mehrheit direkt nach Abstimmung: 5 Spieler, 2 Imposter, Imposter überstimmen → Imposter-Sieg', () => {
+    // 3 Sucher, 2 Imposter — Imposter + 1 Sucher wählen einen Sucher raus → 2 Imposter vs 2 Sucher → vorbei
+    const players = P([['S1', false], ['S2', false], ['S3', false], ['I1', true], ['I2', true]]);
+    const res = calcVoteOutcome(players, { I1: 'S1', I2: 'S1', S3: 'S1', S1: 'I1', S2: 'I1' });
+    assert.deepEqual(res.eliminated, ['S1']);
+    assert.equal(res.outcome, 'imposter');
+  });
 });
 
 describe('Imposter — Parität lokal↔Coop (Quell-Check)', () => {
@@ -146,6 +162,30 @@ describe('Codenames — Sieglogik (echte, geteilte Funktionen)', async () => {
     // Jeder Coop.send im Spielzug steht hinter der Bedingung — Logik selbst ist modusneutral
     assert.ok(/if \(cnState\.coop\.phase === 'playing'\)\s*\{\s*Coop\.send/.test(src));
   });
+
+  test('Hinweis „2" → 3 Rateversuche (Bonus); nach Verbrauch wechselt der Zug', () => {
+    setupBoard([CN_TYPE.RED, CN_TYPE.RED, CN_TYPE.RED, CN_TYPE.RED, CN_TYPE.BLUE, CN_TYPE.BLUE], 'red');
+    cnState.phase2 = 'hint';
+    cnState.hintDraft = 'Tiere';
+    cnState.hintCountDraft = 2;
+    cn.cnGiveHint();
+    assert.equal(cnState.guessesLeft, 3, 'Anzahl + 1 Bonus');
+    assert.equal(cnState.phase2, 'guess');
+    cnRevealCard(0); // richtig → 2 übrig
+    cnRevealCard(1); // richtig → 1 übrig
+    assert.equal(cnState.guessesLeft, 1);
+    cnRevealCard(2); // richtig → Versuche aufgebraucht → Zugwechsel
+    assert.equal(cnState.currentTeam, 'blue');
+    assert.equal(cnState.phase2, 'hint');
+    assert.equal(cnState.winner, null);
+  });
+
+  test('Gegnerische Karte aufgedeckt → deren letzte → GEGNER gewinnt sofort', () => {
+    setupBoard([CN_TYPE.BLUE, CN_TYPE.RED, CN_TYPE.RED], 'red'); // blau hat nur 1 Karte
+    cnRevealCard(0); // rot deckt die letzte blaue Karte auf
+    assert.equal(cnState.winner, 'blue', 'die aufgedeckte Farbe gewinnt — egal wer aufdeckt');
+    assert.equal(cnState.winReason, 'all-found');
+  });
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -183,6 +223,23 @@ describe('Wer bin ich — Ergebnis & Punkte (echte Funktionen)', async () => {
     assert.equal(wbiState.phase, 'result');
     assert.equal(wbiState.results.length, 3);
     assert.equal(wbiState.results.filter(r => r.guessed).length, 2);
+  });
+
+  test('Jeder Spieler bekommt eine Karte — auch mehr Spieler als Kartenpool', () => {
+    // localCards deckt immer alle Spieler ab (Pool wird modulo wiederverwendet)
+    assert.equal(wbiState.localCards.length, 3);
+    wbiState.localCards.forEach(c => {
+      assert.ok(c.word && c.word !== '', `${c.playerName} hat eine Karte`);
+      assert.equal(c.guessed, false);
+      assert.equal(c.skipped, false);
+    });
+  });
+
+  test('Nicht fertig, solange eine Karte offen ist', () => {
+    wbiMarkGuessed(0);
+    wbiMarkNotGuessed(1);
+    // Karte 2 noch offen → keine Ergebnisphase
+    assert.notEqual(wbiState.phase, 'result');
   });
 });
 
@@ -238,5 +295,102 @@ describe('Werwolf — Sieglogik', () => {
     assert.ok(/wolves\.length === 0/.test(src), 'Dorf-Siegbedingung');
     assert.ok(/alive\.length === 1 && solo\.length === 1/.test(src), 'Solo-Siegbedingung');
     assert.ok(/state\.lovers\.length === 2/.test(src), 'Verliebten-Siegbedingung');
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// WERWOLF — Hexe: Trank-Entscheidung und -Auflösung müssen übereinstimmen
+// ════════════════════════════════════════════════════════════════════════════
+describe('Werwolf — Hexe (Heil-/Gifttrank)', () => {
+  // Replik der korrigierten Logik: confirmNight entscheidet (hexeAction),
+  // resolveNight wirkt NUR über diese Entscheidung.
+  function hexeDecide(selection, wolfVictim, flags) {
+    if (selection === wolfVictim && !flags.healUsed) { flags.healUsed = true; return 'heal'; }
+    if (!flags.poisonUsed) { flags.poisonUsed = true; return 'poison'; }
+    return null;
+  }
+  function hexeResolve(action, target, wolfVictim) {
+    const saves = new Set(); const kills = new Set();
+    if (action === 'heal') saves.add(target);
+    else if (action === 'poison') kills.add(target);
+    if (wolfVictim !== undefined && !saves.has(wolfVictim)) kills.add(wolfVictim);
+    return { saved: [...saves], dead: [...kills] };
+  }
+
+  test('Heiltrank rettet das Wolfsopfer', () => {
+    const flags = { healUsed: false, poisonUsed: false };
+    const action = hexeDecide(3, 3, flags);
+    assert.equal(action, 'heal');
+    assert.deepEqual(hexeResolve(action, 3, 3).dead, []);
+  });
+
+  test('Gifttrank tötet ein anderes Ziel (Wolfsopfer stirbt zusätzlich)', () => {
+    const flags = { healUsed: false, poisonUsed: false };
+    const action = hexeDecide(5, 3, flags);
+    assert.equal(action, 'poison');
+    assert.deepEqual(hexeResolve(action, 5, 3).dead.sort(), [3, 5]);
+  });
+
+  test('KORRIGIERTER BUG: Heiltrank verbraucht + Ziel = Wolfsopfer → Gift wirkt (Opfer stirbt)', () => {
+    const flags = { healUsed: true, poisonUsed: false };
+    const action = hexeDecide(3, 3, flags);
+    assert.equal(action, 'poison', 'ohne Heiltrank ist die Wahl des Opfers ein Gifttrank');
+    assert.ok(hexeResolve(action, 3, 3).dead.includes(3), 'das Opfer darf NICHT fälschlich gerettet werden');
+  });
+
+  test('Beide Tränke verbraucht → keine Wirkung (nur Wolfsopfer stirbt)', () => {
+    const flags = { healUsed: true, poisonUsed: true };
+    const action = hexeDecide(5, 3, flags);
+    assert.equal(action, null);
+    assert.deepEqual(hexeResolve(action, 5, 3).dead, [3]);
+  });
+
+  test('Quell-Check: resolveNight nutzt state.hexeAction (nicht den Ziel-Vergleich)', () => {
+    const src = readSrc('js/games/werwolf/js/app.js');
+    assert.ok(/state\.hexeAction === 'heal'\) saves\.add/.test(src), 'Heilung über hexeAction');
+    assert.ok(/state\.hexeAction === 'poison'\) kills\.add/.test(src), 'Gift über hexeAction');
+    assert.ok(/state\.hexeAction = 'heal'/.test(src) && /state\.hexeAction = 'poison'/.test(src),
+      'confirmNight setzt die Entscheidung');
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// WERWOLF — Jäger: Rache-Schuss, Liebeskette, Ablauf-Reihenfolge
+// ════════════════════════════════════════════════════════════════════════════
+describe('Werwolf — Jäger (Rache-Schuss)', () => {
+  const src = readSrc('js/games/werwolf/js/app.js');
+
+  test('Verliebter Jäger stirbt → Liebeskette läuft trotzdem (kein früher return)', () => {
+    // Der Jäger-Zweig in killPlayer darf die Funktion nicht mehr verlassen,
+    // sonst überlebt der Partner des verliebten Jägers.
+    assert.ok(!/state\.jaegerModal = \{ active: true, cause \};\s*return;/.test(src),
+      'kein return direkt nach dem Öffnen des Jäger-Modals');
+    // Liebeskette existiert weiterhin rekursiv
+    assert.ok(/killPlayer\(partnerIdx, 'grief'\)/.test(src));
+  });
+
+  test('Jäger-Ziel stirbt über killPlayer (löst dessen Rollen-Mechanik aus)', () => {
+    assert.ok(/function confirmJaeger[\s\S]{0,400}killPlayer\(targetIdx, 'jaeger'\)/.test(src),
+      'confirmJaeger nutzt killPlayer statt rohem alive=false');
+  });
+
+  test('Sieg wird erst NACH aufgelöstem Jäger-Schuss gewertet', () => {
+    assert.ok(/function checkWin\(\) \{[\s\S]{0,200}if \(state\.jaegerModal\.active\) return false;/.test(src),
+      'checkWin wartet auf den Schuss');
+  });
+
+  test('Tages-Hinrichtung des Jägers schiebt den Nachtstart auf', () => {
+    assert.ok(/if \(state\.jaegerModal\.active\) \{ state\.afterJaeger = 'endDay'; return; \}/.test(src),
+      'confirmDay wartet auf den Schuss, bevor die Nacht beginnt');
+    assert.ok(/state\.afterJaeger === 'endDay'/.test(src), 'confirmJaeger setzt den Tag fort');
+  });
+
+  test('Jäger-Modal hat die Aufplopp-Animation (UI)', () => {
+    assert.ok(/jaeger-modal/.test(src), 'Template nutzt die Animations-Klasse');
+    for (const cssFile of ['js/games/werwolf/css/styles.css', 'js/games/werwolf/css/styles.shadow.css']) {
+      const css = readSrc(cssFile);
+      assert.ok(/@keyframes jaegerPop/.test(css), `${cssFile}: Pop-Animation definiert`);
+      assert.ok(/\.jaeger-modal\{animation:jaegerPop/.test(css), `${cssFile}: Modal animiert`);
+    }
   });
 });

@@ -105,12 +105,14 @@ const state = reactive({
   // Sonderflags
   healUsed: false,
   poisonUsed: false,
+  hexeAction: null,        // 'heal' | 'poison' | null — tatsächliche Trank-Entscheidung dieser Nacht
   lovUsed: false,
   lovers: [],
   amHit: false,
   ddRevealed: false,
   lastHeal: null,
   jaegerModal: { active: false },
+  afterJaeger: null,       // 'endDay' wenn nach dem Jäger-Schuss die Nacht starten soll
   nightWolfTarget: null,   // Wer von den Wölfen angegriffen wurde (für Hexe sichtbar)
   logVisible: true,        // Spielverlauf ein-/ausblendbar
   ritterWolfTarget: null,
@@ -409,13 +411,14 @@ function resetGameState() {
   state.round = 1; state.phase = 'night';
   state.nightPhaseStarted = false;
   state.jaegerModal.active = false;
+  state.afterJaeger = null;
   state.ritterWolfTarget = null;
   state.nightQueue = []; state.nightQueueIdx = 0;
   state.nightActions = {}; state.nightSelection = null;
   state.nightMultiSel = []; state.showNightHint = false;
   state.daySelection = null; state.showDayHint = false;
   state.gameLog = []; state.logNow = '';
-  state.healUsed = false; state.poisonUsed = false;
+  state.healUsed = false; state.poisonUsed = false; state.hexeAction = null;
   state.lovUsed = false; state.lovers = [];
   state.amHit = false; state.ddRevealed = false; state.lastHeal = null;
   state.winner = null;
@@ -687,15 +690,21 @@ function confirmNight() {
       addLog(`💉 Heiler schützt ${target?.name} diese Nacht.`, 'ev');
     }
     if (id === 'hexe') {
-      // Hexe: Heiltrank oder Gifttrank?
-      // Wenn Wolfopfer gewählt → Heiltrank (rettet)
+      // Hexe: Heiltrank oder Gifttrank? Die Entscheidung wird in state.hexeAction
+      // festgehalten und in resolveNight NUR darüber aufgelöst — sonst könnte
+      // z.B. ein Gift auf das Wolfsopfer fälschlich als Heilung wirken.
       if (state.nightSelection === state.nightWolfTarget && !state.healUsed) {
         state.healUsed = true;
+        state.hexeAction = 'heal';
         addLog(`🧪 Hexe setzt Heiltrank ein.`, 'ev');
       } else if (!state.poisonUsed) {
         state.poisonUsed = true;
+        state.hexeAction = 'poison';
         const target = state.players[state.nightSelection];
         addLog(`☠️ Hexe vergiftet ${target?.name}.`, 'ev');
+      } else {
+        state.hexeAction = null;
+        addLog(`🧪 Hexe hat keine Tränke mehr — nichts passiert.`, 'ev');
       }
     }
     if (id === 'seherin') {
@@ -753,20 +762,17 @@ function resolveNight() {
   const healed = state.nightActions['heiler'];
   if (healed !== undefined) { saves.add(healed); }
 
-  // Hexe: Heiltrank (rettet Wolfopfer) oder Gifttrank (tötet jemanden)
-  // Hexe-Logik: nightActions['hexe'] enthält das gewählte Ziel
-  // Wurde Wolfopfer gewählt → Heiltrank, sonst → Gifttrank (healUsed/poisonUsed bereits in confirmNight gesetzt)
+  // Hexe: Wirkung ausschließlich über die in confirmNight getroffene Entscheidung
+  // (state.hexeAction) — NICHT über einen Ziel-Vergleich, damit Log und Effekt
+  // nie auseinanderlaufen (z.B. Gift auf das Wolfsopfer bleibt Gift).
   const hexeTarget = state.nightActions['hexe'];
   const wolfVictim = state.nightActions['werwolf'] ?? state.nightActions['alphawerwolf'];
   if (hexeTarget !== undefined) {
-    if (hexeTarget === wolfVictim) {
-      // Heiltrank: Wolfopfer gerettet
-      saves.add(hexeTarget);
-    } else {
-      // Gifttrank: jemand anderes vergiftet
-      kills.add(hexeTarget);
-    }
+    if (state.hexeAction === 'heal') saves.add(hexeTarget);
+    else if (state.hexeAction === 'poison') kills.add(hexeTarget);
+    // hexeAction === null → beide Tränke verbraucht, keine Wirkung
   }
+  state.hexeAction = null;
 
   // Werwolf-Angriff
   if (wolfVictim !== undefined) {
@@ -802,13 +808,16 @@ function killPlayer(idx, cause) {
   const p = state.players[idx]; if (!p || !p.alive) return;
   p.alive = false;
   haptic('heavy');
-  const why = cause === 'wolf' ? t('log.killed') : t('log.executed');
+  const why = cause === 'wolf' ? t('log.killed')
+    : cause === 'jaeger' ? t('log.jaegerKill').replace(/\.+$/, '')
+    : t('log.executed');
   addLog(`💀 ${p.name} (${roleName(p.roleId)}) ${why}.`, cause === 'wolf' ? 'wolf' : 'ev');
 
+  // Jäger: Rache-Schuss anbieten — aber NICHT abbrechen, denn ein verliebter
+  // Jäger muss trotzdem seinen Partner mit in den Tod ziehen (Liebeskette unten).
   if (p.roleId === 'jaeger') {
     addLog(`🏹 ${t('log.jaeger')}`, 'ev');
     state.jaegerModal = { active: true, cause };
-    return;
   }
   if (p.roleId === 'ritter' && cause === 'wolf') {
     addLog(`⚔️ ${t('log.ritter')}`, 'ev');
@@ -829,22 +838,19 @@ function killPlayer(idx, cause) {
 
 function confirmJaeger(targetIdx) {
   state.jaegerModal.active = false;
-  if (targetIdx !== null) haptic('heavy');
   if (targetIdx !== null) {
-    const t2 = state.players[targetIdx];
-    if (t2 && t2.alive) {
-      t2.alive = false;
-      addLog(`🏹 ${t2.name} ${t('log.jaegerKill')}`, 'wolf');
-      if (state.lovers.length === 2 && state.lovers.includes(targetIdx)) {
-        const partner = state.lovers.find(l => l !== targetIdx);
-        if (partner !== undefined && state.players[partner]?.alive) {
-          state.players[partner].alive = false;
-          addLog(`💔 ${state.players[partner].name} ${t('log.lovDie')} ${t2.name}.`, 'ev');
-        }
-      }
-    }
+    haptic('heavy');
+    // Über killPlayer töten, damit die Rollen-Mechanik des Ziels korrekt
+    // ausgelöst wird (Liebeskette, zweiter Jäger, …) und das Log einheitlich ist.
+    killPlayer(targetIdx, 'jaeger');
+    // Hat der Schuss einen weiteren Jäger getroffen, ist das Modal wieder offen —
+    // dann erst dessen Schuss abwarten (afterJaeger bleibt gesetzt).
+    if (state.jaegerModal.active) return;
   }
-  checkWin();
+  if (checkWin()) { state.afterJaeger = null; return; }
+  // Starb der Jäger durch die Tages-Hinrichtung, wurde der Nachtstart aufgeschoben
+  // (siehe confirmDay) — jetzt, nach aufgelöstem Schuss, die Nacht beginnen.
+  if (state.afterJaeger === 'endDay') { state.afterJaeger = null; endDay(); }
 }
 
 function selectDay(i) { state.daySelection = i; state.showDayHint = false; }
@@ -855,13 +861,22 @@ function confirmDay() {
   if (p.roleId === 'dorfdepp' && !state.ddRevealed) {
     state.ddRevealed = true; addLog(`🤡 ${p.name} ${t('log.ddMsg')}`, 'ev'); endDay(); return;
   }
-  killPlayer(state.daySelection, 'day'); if (checkWin()) return; endDay();
+  killPlayer(state.daySelection, 'day');
+  // Jäger hingerichtet? → Nachtstart aufschieben, bis sein Schuss aufgelöst ist
+  // (confirmJaeger ruft dann checkWin + endDay). Sonst startet die Nacht mit
+  // einer Rollen-Reihenfolge, aus der der Jäger gleich jemanden herausschießt.
+  if (state.jaegerModal.active) { state.afterJaeger = 'endDay'; return; }
+  if (checkWin()) return;
+  endDay();
 }
 
 function skipDay() { addLog(`☀️ ${t('log.noExec')}`, 'dorf'); endDay(); }
 function endDay() { state.round++; buildNightQueue(); showNight(); }
 
 function checkWin() {
+  // Solange der Jäger-Schuss aussteht, keinen Sieger werten — der Schuss kann
+  // das Ergebnis noch ändern (confirmJaeger ruft checkWin danach erneut auf).
+  if (state.jaegerModal.active) return false;
   const alive = state.players.filter(p => p.alive);
   const wolves = alive.filter(p => ROLES[p.roleId].team === 'wolf');
   const dorf = alive.filter(p => ROLES[p.roleId].team === 'dorf');
@@ -1136,7 +1151,8 @@ const App = {
 
     <!-- ── JÄGER POPUP ── -->
     <div v-if="state.jaegerModal.active" class="modal-bg">
-      <div class="modal">
+      <div class="modal jaeger-modal">
+        <div class="jaeger-shot-icon">🏹</div>
         <div class="whatsnew-badge">🏹 Jäger</div>
         <h3>{{ t('jaeger.title') }}</h3>
         <p class="confirm-msg">{{ t('jaeger.sub') }}</p>
