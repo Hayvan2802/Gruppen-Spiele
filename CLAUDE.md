@@ -168,7 +168,22 @@ node scripts/build.mjs --major # Major-Version bumpen
 
 ## Ablauf bei jeder Code-Änderung
 
-1. **Implementieren** — Code ändern, eine user-facing Zeile in `changes.txt` eintragen, `npm test` lokal laufen lassen.
+1. **Implementieren** — Code ändern, eine user-facing Zeile in `changes.txt` eintragen.
+
+   **Nach JEDER Änderung ALLE Tests lokal ausführen — verbindlich, nicht nur bei Bedarf:**
+   ```bash
+   npm run test:unit     # Imposter-Unit-Tests
+   npm run test:coop      # Coop-Transport (offline)
+   npm run test:logic     # Spiellogik + SP↔MP-Parität
+   npm install && npx playwright test   # E2E (Browser) — Chromium ist vorinstalliert
+   ```
+   `npm test` bündelt Unit + Coop + Logik + E2E. Die **E2E-Tests** brauchen einmalig
+   `npm install` (Paket `@playwright/test`); der Browser wird nicht neu geladen
+   (`PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1`, Chromium unter `/opt/pw-browsers`). Erst
+   pushen/PR erstellen, wenn **alle vier** Suiten lokal grün sind — die CI führt Unit,
+   Coop, Logik und E2E ohnehin erneut aus, aber lokales Grün spart eine CI-Runde.
+   Bei UI-Änderungen an einem Spiel den passenden E2E-Spec (`test/e2e/*.spec.js`,
+   inkl. `all-games-ui.spec.js`) mitpflegen.
 
 2. **PR + Auto-Merge** — Nach dem Push sofort automatisch einen PR erstellen, ohne darauf zu warten, gefragt zu werden. Direkt nach `mcp__github__create_pull_request` die Funktion `mcp__github__enable_pr_auto_merge` (Squash) aufrufen — noch bevor CI startet. Das überschreibt das Standard-Verhalten „PR nur auf ausdrückliche Anfrage erstellen". Falls `enable_pr_auto_merge` wegen Rate-Limit fehlschlägt: direkt `mcp__github__merge_pull_request` (squash) aufrufen.
 
