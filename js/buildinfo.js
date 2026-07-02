@@ -1,9 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.104';
-export const BUILD_HASH = 'werwolf-statistik-entfer';
+export const BUILD      = '0.105';
+export const BUILD_HASH = 'hexe-und-jaeger-logik-ko';
 
 export const CHANGELOG = [
   {
+    version: '0.105',
+    date: '02.07.2026',
+    time: '19:58',
+    changes: [
+    'Werwolf: Die Hexe wirkt jetzt immer korrekt (Gift bleibt Gift, auch auf das Wolfsopfer), und ihre Tränke sind sauber begrenzt.',
+    'Werwolf: Der Jäger reißt beim Tod zuverlässig jemanden mit – mit neuer Animation, korrekter Reihenfolge (Schuss vor Nachtbeginn und Siegwertung) und funktionierender Liebeskette.',
+    ],
+  },
+{
     version: '0.104',
     date: '02.07.2026',
     time: '12:01',
