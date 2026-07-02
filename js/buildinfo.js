@@ -1,9 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.103';
-export const BUILD_HASH = 'einstellungen-an-haupt-a';
+export const BUILD      = '0.104';
+export const BUILD_HASH = 'werwolf-statistik-entfer';
 
 export const CHANGELOG = [
   {
+    version: '0.104',
+    date: '02.07.2026',
+    time: '12:01',
+    changes: [
+    'Neu: Dein Benutzername wird auf dem Gerät gespeichert, ist in den Einstellungen änderbar und wird in allen Multiplayer-Spielen automatisch vorausgefüllt.',
+    'Werwolf: Statistik entfernt und das Einstellungsmenü vollständig an die übrigen Spiele angeglichen.',
+    ],
+  },
+{
     version: '0.103',
     date: '01.07.2026',
     time: '21:04',
