@@ -7,7 +7,7 @@ import { log, exportLogToFile } from './debuglog.js';
 import {
   loadSettings, saveSettings, loadSeenVersion, saveSeenVersion,
   loadLastNames, saveLastNames, loadConfigs, saveConfig, deleteConfig,
-  loadStats, saveGameResult,
+  loadUserName, saveUserName,
 } from './storage.js';
 import { t, setLocale, detectLocale, i18nState, SUPPORTED_LOCALES } from './i18n/index.js';
 
@@ -42,12 +42,13 @@ const state = reactive({
   configNameDraft: '',
   showSavedNamesHint: false,
   lastSavedNames: loadLastNames(),
+  userName: loadUserName(),   // geräteweiter Benutzername (in Einstellungen änderbar)
 
   // Coop
   coop: {
     phase: 'idle',
     code: '', codeDraft: '',
-    myName: '', myUid: null,
+    myName: loadUserName(), myUid: null,
     isHost: false,
     players: [],
     error: null,
@@ -117,10 +118,6 @@ const state = reactive({
 
   // Rolle nochmal anzeigen
   roleRevealModal: { active: false, playerIdx: null, flipped: false, showTips: false },
-
-  // Statistiken
-  stats: loadStats(),
-  showStats: false,
 });
 
 // ─── UTILS ───────────────────────────────────────────────────────────────────
@@ -205,6 +202,13 @@ window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', ()
 });
 function applyLocale() { setLocale(state.settings.lang); }
 function setLang(id) { state.settings.lang = id; saveSettings(state.settings); applyLocale(); }
+// Geräteweiten Benutzernamen setzen (geteilt mit Gruppen-Spiele) + Coop-Feld übernehmen.
+function setUserName(n) {
+  const name = (n ?? '').slice(0, 20);
+  state.userName = name;
+  saveUserName(name);
+  state.coop.myName = name;
+}
 
 // ─── VERSION ─────────────────────────────────────────────────────────────────
 function maybeShowWhatsNew() {
@@ -473,26 +477,6 @@ async function exportGameLog() {
 }
 
 // ─── STATISTIKEN ─────────────────────────────────────────────────────────────
-const statsComputed = computed(() => {
-  const games = state.stats.games;
-  if (!games.length) return null;
-  const playerMap = {};
-  for (const g of games) {
-    for (const p of g.players) {
-      if (!playerMap[p.name]) playerMap[p.name] = { name: p.name, played: 0, won: 0, roles: {} };
-      const s = playerMap[p.name];
-      s.played++;
-      if (p.won) s.won++;
-      s.roles[p.roleId] = (s.roles[p.roleId] || 0) + 1;
-    }
-  }
-  return Object.values(playerMap).map(s => ({
-    ...s,
-    winRate: Math.round((s.won / s.played) * 100),
-    favRole: Object.entries(s.roles).sort((a, b) => b[1] - a[1])[0]?.[0] || null,
-  })).sort((a, b) => b.winRate - a.winRate);
-});
-
 // ─── COOP ABSTIMMUNG (Tagesphase) ───────────────────────────────────────────
 function startCoopVote() {
   // Host startet Abstimmung
@@ -897,18 +881,6 @@ function gameOver(winner) {
   state.screen = 'result';
   haptic('success');
   addLog(`🏆 ${t(`result.${winner === 'dorf' ? 'village' : winner}`)}`, 'ev');
-  // Statistik speichern
-  saveGameResult({
-    winner,
-    players: state.players.map(p => ({
-      name: p.name, roleId: p.roleId, survived: p.alive,
-      won: winner === 'lovers' ? state.lovers.includes(state.players.indexOf(p)) :
-           winner === 'wolf' ? ROLES[p.roleId].team === 'wolf' :
-           winner === 'dorf' ? ROLES[p.roleId].team !== 'wolf' :
-           winner === 'solo' ? ROLES[p.roleId].team === 'solo' : false,
-    })),
-  });
-  state.stats = loadStats();
 }
 
 function newGame() { state.screen = 'home'; }
@@ -924,10 +896,11 @@ async function showHostSetup() {
 async function createRoom() {
   const code = state.coop.codeDraft.replace(/\D/g, '').slice(0, 6);
   if (code.length !== 6) { state.coop.error = t('coop.codeHint'); return; }
+  const myName = (state.coop.myName || '').trim() || 'Host';
   state.coop.code = code; state.coop.error = null; state.coop.phase = 'lobby';
-  state.coop.players = [{ uid: 'host', name: 'Host', ready: true, isHost: true }];
+  state.coop.players = [{ uid: 'host', name: myName, ready: true, isHost: true }];
   await Coop.hostGame({
-    code, name: 'Host',
+    code, name: myName,
     onOpen: (uid) => { state.coop.myUid = uid; },
     onError: (e) => { state.coop.error = e.type === 'code-taken' ? t('coop.codeTaken') : t('coop.errorGeneric'); state.coop.phase = 'hosting'; },
     onJoin: (uid, data) => { if (!state.coop.players.find(p => p.uid === uid)) state.coop.players.push({ uid, name: data?.name || uid, ready: false, isHost: false }); },
@@ -946,7 +919,7 @@ async function startCoopGame() {
   state.players = assignments.map(a => ({ name: a.name, roleId: a.roleId, alive: true }));
   resetGameState(); state.revealIdx = 0; state.revealFlipped = false; state.screen = 'reveal';
 }
-function showJoinSetup() { state.coop.phase = 'joining'; state.coop.codeDraft = ''; state.coop.myName = ''; state.coop.error = null; state.coop.isHost = false; }
+function showJoinSetup() { state.coop.phase = 'joining'; state.coop.codeDraft = ''; state.coop.myName = loadUserName(); state.coop.error = null; state.coop.isHost = false; }
 async function joinRoom() {
   const name = state.coop.myName.trim();
   const code = state.coop.codeDraft.replace(/\D/g, '').slice(0, 6);
@@ -1040,9 +1013,9 @@ const App = {
       stdRoles, extraRoles, alivePlayers, nightRole, nightRoleDef,
       nightTargetList, nightIsDone, roleCountTotal, roleSummary, canStart,
       nightQueueIdx: computed(() => state.nightQueueIdx),
-      revealPlayer, revealRole2, rrPlayer, rrRole, statsComputed,
+      revealPlayer, revealRole2, rrPlayer, rrRole,
       t, i18nState, roleName, roleDesc, roleAbility, roleGoal, teamLabel,
-      setTheme, setLang, haptic, changePlayerCount, toggleRole, changeRole, selectMode,
+      setTheme, setLang, setUserName, haptic, changePlayerCount, toggleRole, changeRole, selectMode,
       openSeating, closeSeating, selectSeat, moveSeat,
       openGameMenu, closeGameMenu, pauseGame, resumeGame, confirmEndGame,
       getInviteLink, shareInviteLink,
@@ -1317,6 +1290,16 @@ const App = {
         </div>
         <div class="drawer-body">
 
+          <!-- Allgemein -->
+          <div class="drawer-section">
+            <div class="drawer-section-title">Allgemein</div>
+            <div class="srow">
+              <div><div class="slabel">Benutzername</div><div class="ssub">Für Multiplayer-Spiele</div></div>
+              <input class="ninput" type="text" maxlength="20" placeholder="Dein Name"
+                :value="state.userName" @input="setUserName($event.target.value)" style="max-width:150px;padding-left:.6rem"/>
+            </div>
+          </div>
+
           <!-- Darstellung -->
           <div class="drawer-section">
             <div class="drawer-section-title">Darstellung</div>
@@ -1343,27 +1326,6 @@ const App = {
         </div>
       </div>
     </template>
-
-    <!-- ── STATISTIKEN MODAL ── -->
-    <div v-if="state.showStats" class="modal-bg" @click.self="state.showStats=false">
-      <div class="modal modal-wide">
-        <div class="modal-head"><h2>{{ t('stats.title') }}</h2><button class="modal-close" @click="state.showStats=false">✕</button></div>
-        <div class="modal-body">
-          <div v-if="!statsComputed || !statsComputed.length" style="color:var(--txt2);font-size:.85rem;text-align:center;padding:1rem">{{ t('stats.noData') }}</div>
-          <template v-else>
-            <div v-for="s in statsComputed" :key="s.name" class="stat-row">
-              <div class="stat-name">{{ s.name }}</div>
-              <div class="stat-details">
-                <span>🎮 {{ s.played }}</span>
-                <span>🏆 {{ s.won }}</span>
-                <span class="stat-rate">{{ s.winRate }}%</span>
-                <span v-if="s.favRole">{{ ROLES[s.favRole]?.icon }} {{ roleName(s.favRole) }}</span>
-              </div>
-            </div>
-          </template>
-        </div>
-      </div>
-    </div>
 
     <!-- ── ROLLE NOCHMAL ANZEIGEN ── -->
     <div v-if="state.roleRevealModal.active" class="modal-bg" @click.self="closeRoleReveal">
@@ -1420,7 +1382,6 @@ const App = {
     <div v-if="state.screen==='home'" class="screen">
       <div class="top-bar">
         <a v-if="DONATE_URL" class="home-donate-btn icon-btn" :href="DONATE_URL" target="_blank" rel="noopener">☕ <span class="home-donate-heart">❤</span></a>
-        <button class="icon-btn" @click="state.showStats=true" title="Statistiken">📊</button>
         <button class="icon-btn" @click="state.showSettingsModal=true">⚙️</button>
       </div>
       <div style="max-width:680px;margin:0 auto;padding:0 1.4rem 4rem">

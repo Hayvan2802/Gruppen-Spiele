@@ -6,7 +6,7 @@ import { reactive, computed } from '../vue.esm-browser.prod.js';
 import { WBI_KATEGORIEN, WBI_ALL_CARDS, WBI_DEFAULT_KATEGORIEN } from './werbinich-words.js';
 import * as Coop from '../coop.js';
 import { log } from '../debuglog.js';
-import { loadSettings, saveSettings } from '../storage.js';
+import { loadSettings, saveSettings, loadUserName } from '../storage.js';
 
 export { WBI_KATEGORIEN, WBI_DEFAULT_KATEGORIEN };
 
@@ -63,7 +63,7 @@ export const wbiState = reactive({
   coop: {
     phase: 'idle',     // idle | hosting | lobby | joining | joined | playing | result
     code: '', codeDraft: '',
-    myName: '', myUid: null,
+    myName: loadUserName(), myUid: null,
     isHost: false,
     players: [],
     lobbyPlayers: [],  // Gäste: Spielerliste vom Host (WBI_LOBBY-Broadcast)
@@ -266,7 +266,7 @@ export async function wbiToggleReady() {
 export function wbiShowJoinSetup() {
   wbiState.coop.phase = 'joining';
   wbiState.coop.codeDraft = '';
-  wbiState.coop.myName = '';
+  wbiState.coop.myName = loadUserName();
   wbiState.coop.error = null;
   wbiState.coop.isHost = false;
 }

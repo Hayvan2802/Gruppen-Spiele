@@ -1,1 +1,3 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+Neu: Dein Benutzername wird auf dem Gerät gespeichert, ist in den Einstellungen änderbar und wird in allen Multiplayer-Spielen automatisch vorausgefüllt.
+Werwolf: Statistik entfernt und das Einstellungsmenü vollständig an die übrigen Spiele angeglichen.

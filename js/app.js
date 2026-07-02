@@ -23,6 +23,7 @@ import { log, exportLogToFile, logDeviceSnapshot, installGlobalErrorHandlers, in
 import {
   loadSettings, saveSettings, loadSeenVersion, saveSeenVersion,
   loadLastNames, saveLastNames, loadConfigs, saveConfig, deleteConfig,
+  loadUserName, saveUserName,
 } from './storage.js';
 import { t, setLocale, detectLocale, i18nState, SUPPORTED_LOCALES } from './i18n/index.js';
 
@@ -130,6 +131,7 @@ const state = reactive({
   savedConfigs: loadConfigs(),
   lastSavedNames: loadLastNames(),
   showSavedNamesHint: false,
+  userName: loadUserName(),   // geräteweiter Benutzername (in Einstellungen änderbar)
 
   // Setup
   gameMode: 'local',
@@ -141,7 +143,7 @@ const state = reactive({
   coop: {
     phase: 'idle', // idle|hosting|lobby|joining|joined|myRole|discussion|postTimer|coopVoting|coopResult
     code: '', codeDraft: '',
-    myName: '', myUid: null,
+    myName: loadUserName(), myUid: null,
     isHost: false,
     hostUid: null,
     players: [],
@@ -267,6 +269,15 @@ window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', ()
 function setTheme(th) { state.settings.theme = th; saveSettings(state.settings); applyTheme(); }
 function applyLocale() { setLocale(state.settings.lang); }
 function setLang(id) { state.settings.lang = id; saveSettings(state.settings); applyLocale(); }
+// Geräteweiten Benutzernamen setzen + in alle Coop-Namensfelder übernehmen.
+function setUserName(n) {
+  const name = (n ?? '').slice(0, 20);
+  state.userName = name;
+  saveUserName(name);
+  state.coop.myName = name;
+  cnState.coop.myName = name;
+  wbiState.coop.myName = name;
+}
 
 // ── Version / Update ──────────────────────────────────────────────────────────
 function maybeShowWhatsNew() {
@@ -584,7 +595,7 @@ async function startCoopGame() {
 }
 
 function showJoinSetup() {
-  state.coop.phase = 'joining'; state.coop.codeDraft = ''; state.coop.myName = ''; state.coop.error = null; state.coop.isHost = false;
+  state.coop.phase = 'joining'; state.coop.codeDraft = ''; state.coop.myName = loadUserName(); state.coop.error = null; state.coop.isHost = false;
 }
 
 async function joinRoom() {
@@ -1026,7 +1037,7 @@ const App = {
       timerPct, revealPlayer, currentVoter, voteOptions, imposters, maxImposterOptions, getTimerSeconds,
       newChangelogs,
       t, i18nState,
-      setTheme, setLang,
+      setTheme, setLang, setUserName,
       changePlayerCount, selectMode,
       loadLastNamesIntoSetup, dismissNamesHint, openWerwolf, closeWerwolf,
       saveCurrentConfig, loadConfig, removeConfig,
@@ -1483,6 +1494,15 @@ const App = {
 
           <!-- ── ALLGEMEIN ── -->
           <template v-if="state.settingsTab==='allgemein'">
+            <div class="drawer-section">
+              <div class="drawer-section-title">Allgemein</div>
+              <div class="srow">
+                <div><div class="slabel">Benutzername</div><div class="ssub">Für Multiplayer-Spiele</div></div>
+                <input class="ninput" type="text" maxlength="20" placeholder="Dein Name"
+                  :value="state.userName" @input="setUserName($event.target.value)" style="max-width:150px;padding-left:.6rem"/>
+              </div>
+            </div>
+
             <div class="drawer-section">
               <div class="drawer-section-title">Darstellung</div>
               <div class="srow">
