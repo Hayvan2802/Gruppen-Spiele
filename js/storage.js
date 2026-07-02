@@ -7,6 +7,7 @@ const K = {
   SEEN_VERSION: 'gs_seen_version',
   LAST_NAMES:   'gs_last_names',
   CONFIGS:      'gs_configs',
+  USERNAME:     'gs_username',
 };
 
 function load(key, fb) {
@@ -31,3 +32,7 @@ export function saveConfig(cfg) {
   save(K.CONFIGS, list.slice(0, 8));
 }
 export function deleteConfig(id)    { save(K.CONFIGS, loadConfigs().filter(c => c.id !== id)); }
+// Geräteweiter Benutzername — vorbelegt in allen Coop-Namensfeldern, in den
+// Einstellungen änderbar. Geteilt mit Werwolf (dort via 'gs_username').
+export function loadUserName()      { return load(K.USERNAME, ''); }
+export function saveUserName(n)     { save(K.USERNAME, (n || '').slice(0, 20)); }

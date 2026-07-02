@@ -7,7 +7,9 @@ const KEYS = {
   SEEN_VERSION: 'ww_seen_version',
   LAST_NAMES:   'ww_last_names',
   CONFIGS:      'ww_configs',
-  STATS:        'ww_stats',
+  // Geräteweiter Benutzername — GETEILT mit Gruppen-Spiele (gs_-Präfix), damit
+  // in beiden derselbe gespeicherte Name genutzt wird.
+  USERNAME:     'gs_username',
 };
 
 function load(key, fallback) {
@@ -43,12 +45,6 @@ export function deleteConfig(id) {
   save(KEYS.CONFIGS, loadConfigs().filter(c => c.id !== id));
 }
 
-// ─── Spielstatistiken ─────────────────────────────────────────────────────────
-// Stats: { games: [{winner, players:[{name,roleId,survived}], date}] }
-export function loadStats() { return load(KEYS.STATS, { games: [] }); }
-export function saveGameResult(result) {
-  const stats = loadStats();
-  stats.games.unshift({ ...result, date: Date.now() });
-  if (stats.games.length > 200) stats.games = stats.games.slice(0, 200);
-  save(KEYS.STATS, stats);
-}
+// ─── Benutzername (geräteweit, geteilt mit Gruppen-Spiele) ─────────────────────
+export function loadUserName() { return load(KEYS.USERNAME, ''); }
+export function saveUserName(n) { save(KEYS.USERNAME, (n || '').slice(0, 20)); }

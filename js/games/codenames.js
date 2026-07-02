@@ -8,6 +8,7 @@ import { reactive } from '../vue.esm-browser.prod.js';
 import { getCNWords } from './codenames-words.js';
 import * as Coop from '../coop.js';
 import { log } from '../debuglog.js';
+import { loadUserName } from '../storage.js';
 
 export const CN_TYPE = { RED: 'red', BLUE: 'blue', BLACK: 'black', NEUTRAL: 'neutral' };
 
@@ -21,7 +22,7 @@ export const cnState = reactive({
   coop: {
     phase: 'idle',  // idle | hosting | lobby | joining | joined | playing | gameover
     code: '', codeDraft: '',
-    myName: '', myUid: null,
+    myName: loadUserName(), myUid: null,
     isHost: false,
     players: [],    // [{ uid, name, role, isHost }]
     lobbyPlayers: [], // Gäste: Spielerliste vom Host (CN_LOBBY-Broadcast)
@@ -269,7 +270,7 @@ export async function cnCreateRoom() {
 export function cnShowJoinSetup() {
   cnState.coop.phase     = 'joining';
   cnState.coop.codeDraft = '';
-  cnState.coop.myName    = '';
+  cnState.coop.myName    = loadUserName();
   cnState.coop.error     = null;
   cnState.coop.isHost    = false;
   cnState.coop.myRole    = null;
