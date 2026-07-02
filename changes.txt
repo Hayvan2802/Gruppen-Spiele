@@ -1,3 +1,1 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
-Werwolf: Die Hexe wirkt jetzt immer korrekt (Gift bleibt Gift, auch auf das Wolfsopfer), und ihre Tränke sind sauber begrenzt.
-Werwolf: Der Jäger reißt beim Tod zuverlässig jemanden mit – mit neuer Animation, korrekter Reihenfolge (Schuss vor Nachtbeginn und Siegwertung) und funktionierender Liebeskette.
