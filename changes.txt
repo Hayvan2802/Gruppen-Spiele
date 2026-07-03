@@ -1,1 +1,2 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+Fehlerbehebung für die Homescreen-App: Nach Updates repariert sich die App jetzt selbst, wenn ein veralteter Zwischenspeicher das Laden verhindert.

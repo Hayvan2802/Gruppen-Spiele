@@ -32,7 +32,11 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).catch(() => {}));
+  // cache:'reload' umgeht den HTTP-Cache: verhindert, dass beim Update eine
+  // veraltete Datei (z.B. vom CDN-Edge) mit neuen Dateien gemischt gecacht wird.
+  e.waitUntil(caches.open(CACHE).then(c =>
+    c.addAll(ASSETS.map(u => new Request(u, { cache: 'reload' })))
+  ).catch(() => {}));
   // Kein skipWaiting — Nutzer entscheidet per Banner
 });
 
