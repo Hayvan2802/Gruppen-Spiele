@@ -1,4 +1,1 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
-Sieg-Bildschirme aller Spiele feiern jetzt mit Konfetti-Animation.
-Codenames: Alle bisherigen Hinweise sind jetzt unter dem Spielfeld sichtbar, und Karten decken sich mit Flip-Animation auf.
-Werwolf: Beim Raum-Erstellen kann jetzt (wie in den anderen Spielen) der eigene Name eingegeben werden.
