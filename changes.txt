@@ -1,5 +1,1 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
-Imposter: Die App zeigt jetzt an, wer die Hinweis-Runde beginnt – und neue Optionen lassen Imposter die Kategorie sehen oder einander kennen.
-Wer bin ich: Neuer Fragen-Zähler zeigt, wie viele Ja/Nein-Fragen jeder schon gestellt hat.
-Codenames: Fortschrittsbalken für beide Teams und ein Serien-Punktestand über mehrere Partien.
-Werwolf: Sanfter Übergang zwischen Tag- und Nachtphase.
