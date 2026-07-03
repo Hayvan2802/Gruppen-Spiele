@@ -1,1 +1,2 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+Multiplayer: Die Lobby zeigt jetzt einen QR-Code – Mitspieler scannen ihn einfach und treten direkt dem Raum bei (Imposter, Codenames, Wer bin ich).

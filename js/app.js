@@ -20,6 +20,7 @@ import {
 import { ALL_WORDS, KATEGORIEN, DEFAULT_KATEGORIEN, DONATE_URL, COOP_MAX_PLAYERS } from './config.js';
 import { calcVoteOutcome, decorateImposters, pickStartPlayer, pickWordPair } from './games/imposter-logic.js';
 import { playSound, setSoundEnabled } from './sound.js';
+import { qrSvg } from './qrcode.js';
 import * as Coop from './coop.js';
 import { log, exportLogToFile, logDeviceSnapshot, installGlobalErrorHandlers, installJankDetector } from './debuglog.js';
 import {
@@ -1125,6 +1126,11 @@ const App = {
     const currentVoter = computed(() => state.roles[state.stimmIdx]);
     const voteOptions  = computed(() => state.roles.filter(r => r.name !== currentVoter.value?.name && (!state.voteCandidates || state.voteCandidates.includes(r.name))));
     const imposters    = computed(() => state.roles.filter(r => r.isImposter).map(r => r.name));
+    // Einladungs-QR-Codes für die Host-Lobbys (leer, solange kein Raumcode existiert)
+    const inviteBase   = () => window.location.origin + window.location.pathname;
+    const impInviteQr  = computed(() => { try { return state.coop.code ? qrSvg(`${inviteBase()}?code=${state.coop.code}`) : ''; } catch { return ''; } });
+    const cnInviteQr   = computed(() => { try { return cnState.coop.code ? qrSvg(`${inviteBase()}?cn=${cnState.coop.code}`) : ''; } catch { return ''; } });
+    const wbiInviteQr  = computed(() => { try { return wbiState.coop.code ? qrSvg(`${inviteBase()}?wbi=${wbiState.coop.code}`) : ''; } catch { return ''; } });
     // Alle Versionen die der Nutzer noch nicht gesehen hat (neueste zuerst)
     const newChangelogs = computed(() => {
       const seen = loadSeenVersion();
@@ -1138,6 +1144,7 @@ const App = {
     return {
       state, BUILD, CHANGELOG, DONATE_URL, SUPPORTED_LOCALES,
       timerPct, revealPlayer, currentVoter, voteOptions, imposters, maxImposterOptions, getTimerSeconds,
+      impInviteQr, cnInviteQr, wbiInviteQr,
       newChangelogs,
       t, i18nState,
       setTheme, setLang, setUserName, setSound,
@@ -1853,6 +1860,8 @@ const App = {
                 <span class="invite-code">{{ wbiState.coop.code }}</span>
                 <button class="btn-sec btn-sm" @click="wbiShareLink">🔗 Link teilen</button>
               </div>
+              <div v-if="wbiInviteQr" class="invite-qr" v-html="wbiInviteQr"></div>
+              <div v-if="wbiInviteQr" class="invite-qr-hint">📱 Zum Beitreten scannen</div>
               <div class="coop-hint">Spieler in der Lobby</div>
               <ul class="lobby-list">
                 <li v-for="p in wbiState.coop.players" :key="p.uid" class="lobby-item">
@@ -2273,6 +2282,8 @@ const App = {
                 <span class="invite-code">{{ cnState.coop.code }}</span>
                 <button class="btn-sec btn-sm" @click="cnShareLink">🔗 Link teilen</button>
               </div>
+              <div v-if="cnInviteQr" class="invite-qr" v-html="cnInviteQr"></div>
+              <div v-if="cnInviteQr" class="invite-qr-hint">📱 Zum Beitreten scannen</div>
               <div class="coop-hint">Spieler & Rollen ({{ cnState.coop.players.length }})</div>
               <div style="font-size:.75rem;color:var(--txt2);margin-bottom:.8rem;line-height:1.5">
                 Als Host weist du jedem Spieler eine Rolle zu.<br>
@@ -2674,6 +2685,8 @@ const App = {
               <span class="invite-code">{{ state.coop.code }}</span>
               <button class="btn-sec btn-sm" @click="shareInviteLink">🔗 Link teilen</button>
             </div>
+            <div v-if="impInviteQr" class="invite-qr" v-html="impInviteQr"></div>
+            <div v-if="impInviteQr" class="invite-qr-hint">📱 Zum Beitreten scannen</div>
             <div class="coop-hint">{{ t('coop.waiting') }}</div>
             <ul class="lobby-list">
               <li v-for="p in state.coop.players" :key="p.uid" class="lobby-item">

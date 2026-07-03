@@ -1550,3 +1550,8 @@ body.neon .btn-start {
 .wbi-qcount{display:flex;align-items:center;gap:.3rem;margin-left:auto;}
 .wbi-qbtn{width:1.5rem;height:1.5rem;border-radius:6px;border:1px solid var(--bdr);background:var(--sur);color:var(--txt);font-size:.9rem;font-weight:700;cursor:pointer;line-height:1;}
 .wbi-qnum{font-size:.78rem;color:var(--txt2);min-width:2.4rem;text-align:center;}
+
+/* ── Einladungs-QR-Code in den Coop-Lobbys ──────────────────────────────── */
+.invite-qr{display:flex;justify-content:center;margin:.7rem 0 .2rem;}
+.invite-qr svg{width:150px;height:150px;border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,.35);}
+.invite-qr-hint{text-align:center;font-size:.72rem;color:var(--txt3);margin-bottom:.7rem;}
