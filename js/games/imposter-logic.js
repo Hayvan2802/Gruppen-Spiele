@@ -72,11 +72,30 @@ export function pickStartPlayer(names) {
   return names[Math.floor(Math.random() * names.length)];
 }
 
-export function calcVoteOutcome(players, votes) {
-  const names = players.map(p => p.name);
-  const { tally, eliminated } = tallyVotes(names, votes);
+// Optionen:
+//   candidates → nur diese Namen stehen zur Wahl (Stichwahl)
+//   isRunoff   → dies IST bereits die Stichwahl
+//
+// GLEICHSTAND-REGEL: Haben mehrere Spieler die meisten Stimmen, scheidet
+// NIEMAND sofort aus. Stattdessen:
+//   • normale Abstimmung → outcome 'tie' → automatische Stichwahl (tied[])
+//   • Stichwahl wieder unentschieden → outcome 'continue' ohne Eliminierung
+// Es fliegt also immer höchstens EIN Spieler pro Abstimmung raus.
+export function calcVoteOutcome(players, votes, { candidates = null, isRunoff = false } = {}) {
+  const names = (candidates && candidates.length) ? candidates : players.map(p => p.name);
+  const { tally, eliminated: top } = tallyVotes(names, votes);
   const imposters = players.filter(p => p.isImposter).map(p => p.name);
 
+  if (top.length > 1) {
+    return {
+      tally, eliminated: [], tied: top, imposters,
+      remainingImposters: players.filter(p => p.isImposter).length,
+      remainingVillagers: players.filter(p => !p.isImposter).length,
+      outcome: isRunoff ? 'continue' : 'tie',
+    };
+  }
+
+  const eliminated         = top;
   const remaining          = players.filter(p => !eliminated.includes(p.name));
   const remainingImposters = remaining.filter(p => p.isImposter).length;
   const remainingVillagers = remaining.filter(p => !p.isImposter).length;
@@ -86,5 +105,5 @@ export function calcVoteOutcome(players, votes) {
   else if (remainingImposters >= remainingVillagers) outcome = 'imposter';
   else outcome = 'continue';
 
-  return { tally, eliminated, imposters, remainingImposters, remainingVillagers, outcome };
+  return { tally, eliminated, tied: [], imposters, remainingImposters, remainingVillagers, outcome };
 }

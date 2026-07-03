@@ -74,20 +74,43 @@ describe('Imposter — Sieglogik (lokal & Coop geteilt)', async () => {
     assert.deepEqual(eliminated, ['B']);
   });
 
-  test('Gleichstand → mehrere eliminated; ist der Imposter dabei, gewinnt das Dorf', () => {
+  test('GLEICHSTAND-REGEL: 2:2 → NIEMAND fliegt, automatische Stichwahl (tie)', () => {
     const players = P([['A', true], ['B', false], ['C', false], ['D', false]]);
-    // 2:2 zwischen A (Imposter) und B → beide raus → keine Imposter mehr → Dorf
+    // 2:2 zwischen A (Imposter) und B → früher flogen beide raus (falsch!)
     const res = calcVoteOutcome(players, { A: 'B', C: 'B', B: 'A', D: 'A' });
-    assert.ok(res.eliminated.includes('A') && res.eliminated.includes('B'));
+    assert.equal(res.outcome, 'tie');
+    assert.deepEqual(res.eliminated, []);
+    assert.deepEqual([...res.tied].sort(), ['A', 'B']);
+  });
+
+  test('GEMELDETER BUG: 5 Spieler, 1 Imposter, Stimmen 2/2/1 → Stichwahl statt "Imposter erwischt"', () => {
+    // Imposter I bekommt 2 Stimmen, Sucher S1 bekommt 2, S2 bekommt 1 →
+    // NICHT Dorf-Sieg (früher flogen I und S1 beide raus), sondern Stichwahl I vs S1.
+    const players = P([['I', true], ['S1', false], ['S2', false], ['S3', false], ['S4', false]]);
+    const res = calcVoteOutcome(players, { S1: 'I', S2: 'I', I: 'S1', S3: 'S1', S4: 'S2' });
+    assert.equal(res.outcome, 'tie', 'Gleichstand darf kein Sieg sein');
+    assert.deepEqual(res.eliminated, [], 'niemand scheidet bei Gleichstand aus');
+    assert.deepEqual([...res.tied].sort(), ['I', 'S1']);
+  });
+
+  test('Stichwahl mit klarem Sieger → normales Ergebnis (nur Kandidaten zählen)', () => {
+    const players = P([['I', true], ['S1', false], ['S2', false], ['S3', false], ['S4', false]]);
+    // Stichwahl zwischen I und S1 — jetzt gewinnt das Dorf eindeutig
+    const res = calcVoteOutcome(players,
+      { S1: 'I', S2: 'I', S3: 'I', S4: 'I', I: 'S1' },
+      { candidates: ['I', 'S1'], isRunoff: true });
+    assert.deepEqual(res.eliminated, ['I']);
     assert.equal(res.outcome, 'village');
   });
 
-  test('Extremfall: totaler Gleichstand (jeder 1 Stimme) → alle raus, Imposter dabei → Dorf', () => {
-    const players = P([['A', true], ['B', false], ['C', false]]);
-    // Kreis-Voting: jeder bekommt genau 1 Stimme → alle eliminiert
-    const res = calcVoteOutcome(players, { A: 'B', B: 'C', C: 'A' });
-    assert.equal(res.eliminated.length, 3);
-    assert.equal(res.outcome, 'village'); // alle Imposter sind raus
+  test('Stichwahl endet WIEDER unentschieden → niemand raus, Runde geht weiter', () => {
+    const players = P([['I', true], ['S1', false], ['S2', false], ['S3', false], ['S4', false]]);
+    const res = calcVoteOutcome(players,
+      { S1: 'I', S2: 'I', I: 'S1', S3: 'S1' },
+      { candidates: ['I', 'S1'], isRunoff: true });
+    assert.equal(res.outcome, 'continue');
+    assert.deepEqual(res.eliminated, []);
+    assert.equal(res.remainingImposters, 1, 'Imposter ist weiterhin im Spiel');
   });
 
   test('Imposter-Mehrheit direkt nach Abstimmung: 5 Spieler, 2 Imposter, Imposter überstimmen → Imposter-Sieg', () => {
