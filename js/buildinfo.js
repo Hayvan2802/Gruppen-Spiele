@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.110';
-export const BUILD_HASH = 'stichwahl-bei-gleichstan';
+export const BUILD      = '0.111';
+export const BUILD_HASH = 'eigener-vanilla-qr-encod';
 
 export const CHANGELOG = [
   {
+    version: '0.111',
+    date: '03.07.2026',
+    time: '19:40',
+    changes: [
+    'Multiplayer: Die Lobby zeigt jetzt einen QR-Code – Mitspieler scannen ihn einfach und treten direkt dem Raum bei (Imposter, Codenames, Wer bin ich).',
+    ],
+  },
+{
     version: '0.110',
     date: '03.07.2026',
     time: '15:49',
