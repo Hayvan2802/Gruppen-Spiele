@@ -44,10 +44,52 @@
     function gsLogError(msg, extra) {
       try { var e=JSON.parse(localStorage.getItem('gs_debuglog'))||[]; e.push({ts:Date.now(),category:'window',message:msg,extra:extra}); while(e.length>400)e.shift(); localStorage.setItem('gs_debuglog',JSON.stringify(e)); } catch(x){}
     }
+    // ── Selbstheilung bei kaputtem Cache ─────────────────────────────────────
+    // Nach einem Update kann der HTTP-Cache (v.a. in der Homescreen-App, die einen
+    // EIGENEN Cache hat) eine veraltete Modul-Datei zu einem neuen app.js liefern
+    // → "Importing binding name ... is not found". Heilung: alle bereits geladenen
+    // JS-Dateien mit cache:'reload' frisch holen, SW-Caches leeren, neu laden.
+    // Läuft automatisch genau EINMAL pro Sitzung (Schleifen-Schutz).
+    function gsSelfHeal() {
+      try {
+        var p = [];
+        try {
+          performance.getEntriesByType('resource').forEach(function(r){
+            if (/\.js(\?|$)/.test(r.name)) p.push(fetch(r.name,{cache:'reload'}).catch(function(){}));
+          });
+        } catch(x){}
+        p.push(fetch('./js/app.js',{cache:'reload'}).catch(function(){}));
+        var clean = Promise.all(p).then(function(){
+          if (window.caches && caches.keys) return caches.keys().then(function(ks){ return Promise.all(ks.map(function(k){ return caches.delete(k); })); });
+        }).then(function(){
+          if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) return navigator.serviceWorker.getRegistrations().then(function(rs){ return Promise.all(rs.map(function(r){ return r.unregister(); })); });
+        });
+        clean.then(function(){ location.reload(); }, function(){ location.reload(); });
+      } catch(x) { location.reload(); }
+    }
     window.onerror = function(msg,src,line,col,err) {
       var d=document.getElementById('err'); d.style.display='block';
       d.textContent='ERROR:\n'+msg+'\n\nFile: '+src+'\nLine: '+line+'\n\n'+(err&&err.stack?err.stack:'');
       gsLogError(msg+' ('+src+':'+line+')',err?{message:err.message,name:err.name}:undefined);
+      // Modul-/Importfehler = kaputter Cache → einmal automatisch reparieren
+      var isBoot = /Importing binding|import|module|Unexpected token/i.test(String(msg));
+      var healed = false;
+      try { healed = sessionStorage.getItem('gs_heal_attempted') === '1'; } catch(x){}
+      if (isBoot && !healed) {
+        try { sessionStorage.setItem('gs_heal_attempted','1'); } catch(x){}
+        d.textContent += '\n\n🔄 Repariere Cache und lade neu…';
+        gsSelfHeal();
+        return;
+      }
+      // Manuelle Reparatur anbieten (falls Auto-Heilung schon versucht wurde)
+      if (!document.getElementById('err-heal-btn')) {
+        var b=document.createElement('button');
+        b.id='err-heal-btn';
+        b.textContent='🔄 Cache reparieren & neu laden';
+        b.style.cssText='display:block;margin-top:16px;padding:10px 16px;background:#7c3aed;color:#fff;border:0;border-radius:8px;font-size:14px;font-family:inherit';
+        b.onclick=function(){ try{sessionStorage.removeItem('gs_heal_attempted');}catch(x){} gsSelfHeal(); };
+        d.appendChild(b);
+      }
     };
     window.addEventListener('unhandledrejection',function(e){
       var d=document.getElementById('err'); d.style.display='block';
