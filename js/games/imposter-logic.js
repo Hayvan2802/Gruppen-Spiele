@@ -31,14 +31,32 @@ export function tallyVotes(names, votes) {
 //   • Imposter gewinnen → Imposter >= Dörfler (Gleichstand ist Imposter-Sieg;
 //                          z. B. 3 Sucher + 2 Imposter, ein Sucher stirbt → 2:2)
 //   • sonst            → nächste Abstimmungsrunde ('continue')
+// Wortpaar für den Undercover-Modus wählen (geteilt lokal/Coop).
+// pool: [{ word, category }] → { word, undercoverWord, category }
+// Der Imposter bekommt ein ÄHNLICHES Wort — bevorzugt aus derselben Kategorie.
+export function pickWordPair(pool) {
+  if (!pool || !pool.length) return { word: '', undercoverWord: '', category: '' };
+  const main = pool[Math.floor(Math.random() * pool.length)];
+  let candidates = pool.filter(e => e.category === main.category && e.word !== main.word);
+  if (!candidates.length) candidates = pool.filter(e => e.word !== main.word);
+  const second = candidates.length
+    ? candidates[Math.floor(Math.random() * candidates.length)]
+    : main; // Extremfall: nur 1 Wort im Pool → identisch (Modus greift dann nicht)
+  return { word: main.word, undercoverWord: second.word, category: main.category };
+}
+
 // Imposter-Rollen um die optionalen Setup-Infos anreichern (geteilt lokal/Coop):
-//   knowCategory → Imposter sehen die Kategorie des Rundenworts
-//   knowPartners → bei 2+ Impostern sehen sie die Namen der Mit-Imposter
+//   knowCategory   → Imposter sehen die Kategorie des Rundenworts
+//   knowPartners   → bei 2+ Impostern sehen sie die Namen der Mit-Imposter
+//   undercoverWord → UNDERCOVER-MODUS: Imposter bekommen ein ähnliches Wort und
+//                    wissen NICHT, dass sie Imposter sind (Kategorie/Partner-
+//                    Hinweise entfallen dann bewusst — sie würden alles verraten).
 // Mutiert nichts — liefert neue Rollen-Objekte.
-export function decorateImposters(roles, { knowCategory = false, knowPartners = false, category = '' } = {}) {
+export function decorateImposters(roles, { knowCategory = false, knowPartners = false, category = '', undercoverWord = '' } = {}) {
   const imposterNames = roles.filter(r => r.isImposter).map(r => r.name);
   return roles.map(r => {
     if (!r.isImposter) return { ...r };
+    if (undercoverWord) return { ...r, word: undercoverWord, undercover: true };
     const extra = {};
     if (knowCategory && category) extra.category = category;
     if (knowPartners && imposterNames.length > 1) {

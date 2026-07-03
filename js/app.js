@@ -18,7 +18,8 @@ import {
   wbiBumpQuestions,
 } from './games/werbinich.js';
 import { ALL_WORDS, KATEGORIEN, DEFAULT_KATEGORIEN, DONATE_URL, COOP_MAX_PLAYERS } from './config.js';
-import { calcVoteOutcome, decorateImposters, pickStartPlayer } from './games/imposter-logic.js';
+import { calcVoteOutcome, decorateImposters, pickStartPlayer, pickWordPair } from './games/imposter-logic.js';
+import { playSound, setSoundEnabled } from './sound.js';
 import * as Coop from './coop.js';
 import { log, exportLogToFile, logDeviceSnapshot, installGlobalErrorHandlers, installJankDetector } from './debuglog.js';
 import {
@@ -72,16 +73,25 @@ function shuffle(arr) {
   }
   return a;
 }
-function rndWord() {
-  // Wörter aus gewählten Kategorien + eigene Wörter → { word, category }
-  // (Kategorie wird für die Option „Imposter kennt die Kategorie" gebraucht)
+function buildWordPool() {
+  // Wörter aus gewählten Kategorien + eigene Wörter → [{ word, category }]
   let pool = [];
   state.selectedKats.forEach(k => { if (KATEGORIEN[k]) pool.push(...KATEGORIEN[k].map(w => ({ word: w, category: k }))); });
   state.customWords.forEach(w => pool.push({ word: w, category: '✏️ Eigene Wörter' }));
   if (!pool.length) {
     Object.entries(KATEGORIEN).forEach(([k, words]) => pool.push(...words.map(w => ({ word: w, category: k }))));
   }
+  return pool;
+}
+function rndWord() {
+  const pool = buildWordPool();
   return pool[Math.floor(Math.random() * pool.length)];
+}
+// Rundenwörter je nach Modus: normal → nur word; Undercover → word + ähnliches Imposter-Wort
+function rndRoundWords() {
+  if (state.undercoverMode) return pickWordPair(buildWordPool());
+  const { word, category } = rndWord();
+  return { word, undercoverWord: '', category };
 }
 function genId()   { return Math.random().toString(36).slice(2, 10); }
 function haptic(style = 'light') {
@@ -144,6 +154,7 @@ const state = reactive({
   imposterCount: 1,
   impKnowCategory: false,  // Option: Imposter sieht die Wort-Kategorie
   impKnowPartners: false,  // Option: Imposter kennen einander (bei 2+)
+  undercoverMode: false,   // Option: Imposter bekommt ähnliches Wort, weiß nichts davon
   startPlayer: '',         // wer die Hinweis-Runde beginnt (lokal)
 
   // Coop
@@ -159,8 +170,10 @@ const state = reactive({
     myWord: null,
     myCategory: null,   // Kategorie-Hinweis für Imposter (Option)
     myPartners: null,   // Mit-Imposter-Namen (Option, 2+ Imposter)
+    myUndercover: false, // Undercover-Modus: ich sehe ein Wort, weiß aber nicht ob echt
     startPlayer: '',    // wer die Hinweis-Runde beginnt
     coopWord: null,
+    undercoverWord: '', // Host: das Imposter-Wort (für die Auflösung im Ergebnis)
     cardRevealed: false,         // tap-to-reveal
     cardConfirmedUids: [],       // UIDs die ihre Karte bestätigt haben
     myCardConfirmed: false,
@@ -279,6 +292,7 @@ window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', ()
 function setTheme(th) { state.settings.theme = th; saveSettings(state.settings); applyTheme(); }
 function applyLocale() { setLocale(state.settings.lang); }
 function setLang(id) { state.settings.lang = id; saveSettings(state.settings); applyLocale(); }
+function setSound(on) { state.settings.sound = !!on; saveSettings(state.settings); setSoundEnabled(on); if (on) playSound('vote'); }
 // Geräteweiten Benutzernamen setzen + in alle Coop-Namensfelder übernehmen.
 function setUserName(n) {
   const name = (n ?? '').slice(0, 20);
@@ -377,12 +391,12 @@ function startLocalGame() {
   saveLastNames(names);
   state.lastSavedNames = names;
 
-  const { word, category } = rndWord();
+  const { word, undercoverWord, category } = rndRoundWords();
   const shuffled = shuffle(names);
   const impIdx   = new Set(shuffle([...Array(shuffled.length).keys()]).slice(0, state.imposterCount));
   state.roles    = decorateImposters(
     shuffled.map((name, i) => ({ name, isImposter: impIdx.has(i), word })),
-    { knowCategory: state.impKnowCategory, knowPartners: state.impKnowPartners, category },
+    { knowCategory: state.impKnowCategory, knowPartners: state.impKnowPartners, category, undercoverWord },
   );
   state.startPlayer  = pickStartPlayer(names);
 
@@ -403,7 +417,7 @@ function startLocalGame() {
   haptic('success');
 }
 
-function revealCard() { state.revealFlipped = true; haptic('medium'); }
+function revealCard() { state.revealFlipped = true; haptic('medium'); playSound('reveal'); }
 
 function nextReveal() {
   if (state.revealIdx + 1 >= state.roles.length) {
@@ -459,6 +473,7 @@ function confirmVote() {
   state.votes[voter] = state.voteSelection;
   state.voteSelection = null;
   haptic('medium');
+  playSound('vote');
   if (state.stimmIdx + 1 >= state.roles.length) {
     calcResult();
   } else {
@@ -495,6 +510,7 @@ function calcResult() {
   });
   state.screen = 'result';
   haptic(winner === 'village' ? 'success' : 'error');
+  playSound(winner === 'village' ? 'win' : 'lose');
 }
 
 function continueVoting() {
@@ -528,12 +544,12 @@ function nextRound() {
   state.timerSeconds = getTimerSeconds(state.playerCount);
   clearInterval(state.timerInterval);
   const names = state.playerNames.slice(0, state.playerCount).map((n,i) => n.trim() || `Spieler ${i+1}`);
-  const { word, category } = rndWord();
+  const { word, undercoverWord, category } = rndRoundWords();
   const shuffled = shuffle(names);
   const impIdx = new Set(shuffle([...Array(shuffled.length).keys()]).slice(0, state.imposterCount));
   state.roles = decorateImposters(
     shuffled.map((name,i) => ({ name, isImposter: impIdx.has(i), word })),
-    { knowCategory: state.impKnowCategory, knowPartners: state.impKnowPartners, category },
+    { knowCategory: state.impKnowCategory, knowPartners: state.impKnowPartners, category, undercoverWord },
   );
   state.startPlayer = pickStartPlayer(names);
   state.screen = 'reveal';
@@ -593,12 +609,12 @@ async function createRoom() {
 
 async function startCoopGame() {
   const players  = state.coop.players;
-  const { word, category } = rndWord();
+  const { word, undercoverWord, category } = rndRoundWords();
   const impIdx   = new Set(shuffle([...Array(players.length).keys()]).slice(0, state.imposterCount));
-  // Geteilte Logik wie lokal: Optionen (Kategorie/Partner) an die Imposter-Rollen hängen
+  // Geteilte Logik wie lokal: Optionen (Kategorie/Partner/Undercover) an die Imposter-Rollen hängen
   const assignments = decorateImposters(
     players.map((p, i) => ({ uid: p.uid, name: p.name, isImposter: impIdx.has(i), word })),
-    { knowCategory: state.impKnowCategory, knowPartners: state.impKnowPartners, category },
+    { knowCategory: state.impKnowCategory, knowPartners: state.impKnowPartners, category, undercoverWord },
   );
   const startPlayer = pickStartPlayer(players.map(p => p.name));
   // allPlayers VOR dem Senden setzen — Host verarbeitet eigene Nachrichten nicht
@@ -608,6 +624,7 @@ async function startCoopGame() {
   state.coop.myCardConfirmed = false;
   state.coop.hostUid = state.coop.myUid;
   state.coop.coopWord = word;
+  state.coop.undercoverWord = undercoverWord || '';
   state.coop.startPlayer = startPlayer;
   await Coop.send({ type: Coop.MSG.START, assignments, hostUid: state.coop.myUid, startPlayer });
 
@@ -616,6 +633,7 @@ async function startCoopGame() {
   if (mine) {
     state.coop.myRoleIsImposter = mine.isImposter; state.coop.myWord = mine.word;
     state.coop.myCategory = mine.category || null; state.coop.myPartners = mine.partners || null;
+    state.coop.myUndercover = !!mine.undercover;
     state.coop.phase = 'myRole';
   }
 }
@@ -726,19 +744,21 @@ function calcCoopResult() {
   // Imposter gewinnen → Imposter >= Dörfler (Gleichstand ist Imposter-Sieg)
   // Sonst → nächste Abstimmungsrunde
   if (remainingImposters === 0) {
-    const result = { eliminated, imposters, winner: 'village', tally, word: state.coop.coopWord || '' };
+    const result = { eliminated, imposters, winner: 'village', tally, word: state.coop.coopWord || '', undercoverWord: state.coop.undercoverWord || '' };
     Coop.send({ type: Coop.MSG.VOTE_RESULT, result });
     state.coop.voteResult = result;
     state.coop.phase = 'coopResult';
     clearInterval(state.coop.coopTimerInterval);
     haptic('success');
+    playSound('win');
   } else if (remainingImposters >= remainingVillagers) {
-    const result = { eliminated, imposters, winner: 'imposter', tally, word: state.coop.coopWord || '' };
+    const result = { eliminated, imposters, winner: 'imposter', tally, word: state.coop.coopWord || '', undercoverWord: state.coop.undercoverWord || '' };
     Coop.send({ type: Coop.MSG.VOTE_RESULT, result });
     state.coop.voteResult = result;
     state.coop.phase = 'coopResult';
     clearInterval(state.coop.coopTimerInterval);
     haptic('error');
+    playSound('lose');
   } else {
     // Spiel geht weiter — Host aktualisiert direkt, Clients über VOTE_CONTINUE
     state.coop.allPlayers = state.coop.allPlayers.filter(p => !eliminated.includes(p.name));
@@ -854,6 +874,7 @@ function handleCoopMessage(msg) {
       state.coop.myWord = mine.word;
       state.coop.myCategory = mine.category || null;
       state.coop.myPartners = mine.partners || null;
+      state.coop.myUndercover = !!mine.undercover;
       if (!mine.isImposter) state.coop.coopWord = mine.word;
       state.coop.allPlayers = msg.assignments.map(a => ({ uid: a.uid, name: a.name, isImposter: a.isImposter }));
       state.coop.cardRevealed = false;
@@ -929,6 +950,7 @@ function handleCoopMessage(msg) {
     state.coop.phase = 'coopResult';
     clearInterval(state.coop.coopTimerInterval);
     haptic(msg.result?.winner === 'village' ? 'success' : 'error');
+    playSound(msg.result?.winner === 'village' ? 'win' : 'lose');
   }
 
   if (msg.type === Coop.MSG.VOTE_CONTINUE) {
@@ -943,7 +965,7 @@ function handleCoopMessage(msg) {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 function init() {
-  applyTheme(); applyLocale();
+  applyTheme(); applyLocale(); setSoundEnabled(state.settings.sound);
   logDeviceSnapshot();
   installGlobalErrorHandlers();
   installJankDetector();
@@ -1066,7 +1088,7 @@ const App = {
       timerPct, revealPlayer, currentVoter, voteOptions, imposters, maxImposterOptions, getTimerSeconds,
       newChangelogs,
       t, i18nState,
-      setTheme, setLang, setUserName,
+      setTheme, setLang, setUserName, setSound,
       changePlayerCount, selectMode,
       loadLastNamesIntoSetup, dismissNamesHint, openWerwolf, closeWerwolf,
       saveCurrentConfig, loadConfig, removeConfig,
@@ -1209,7 +1231,7 @@ const App = {
             <div style="font-size:.72rem;color:var(--txt3);margin-top:.2rem">(nur du siehst die Karte)</div>
           </template>
           <template v-else>
-            <div v-if="state.coop.myRoleIsImposter">
+            <div v-if="state.coop.myRoleIsImposter && !state.coop.myUndercover">
               <div style="font-size:3rem;margin:.4rem 0">🕵️</div>
               <div style="font-size:1.2rem;font-weight:900;color:var(--blood2)">DU BIST DER IMPOSTER!</div>
               <p class="confirm-msg" style="margin:.4rem 0">Du kennst das Wort nicht. Tu so als ob!</p>
@@ -1321,7 +1343,7 @@ const App = {
       <div v-if="state.coop.showCardPeek" class="modal-bg" style="z-index:410"
         @click.self="state.coop.showCardPeek=false">
         <div class="modal" style="text-align:center">
-          <div v-if="state.coop.myRoleIsImposter">
+          <div v-if="state.coop.myRoleIsImposter && !state.coop.myUndercover">
             <div style="font-size:3rem;margin-bottom:.5rem">🕵️</div>
             <div style="font-size:1.1rem;font-weight:900;color:var(--blood2)">DU BIST DER IMPOSTER!</div>
             <p style="font-size:.85rem;color:var(--txt2);margin-top:.4rem">Du kennst das Wort nicht. Tu so als ob!</p>
@@ -1478,6 +1500,12 @@ const App = {
             <span v-for="n in state.coop.voteResult.imposters" :key="n"
               style="background:rgba(176,32,32,.3);color:#f87171;border-radius:20px;padding:2px 10px;font-size:.78rem;margin-left:4px">{{ n }}</span>
           </div>
+          <div v-if="state.coop.voteResult.word" style="margin-bottom:.5rem;font-size:.85rem">
+            <span style="color:var(--txt3)">Wort: </span><strong>{{ state.coop.voteResult.word }}</strong>
+            <template v-if="state.coop.voteResult.undercoverWord">
+              · <span style="color:var(--txt3)">🎭 Imposter-Wort: </span><strong style="color:#f87171">{{ state.coop.voteResult.undercoverWord }}</strong>
+            </template>
+          </div>
           <div style="border-top:1px solid var(--bdr);padding-top:.6rem">
             <div style="font-size:.65rem;letter-spacing:.15em;color:var(--txt3);text-transform:uppercase;margin-bottom:.5rem">Stimmen</div>
             <div v-for="p in state.coop.allPlayers" :key="p.uid" class="surv-item">
@@ -1534,6 +1562,11 @@ const App = {
                 <div><div class="slabel">Benutzername</div><div class="ssub">Für Multiplayer-Spiele</div></div>
                 <input class="ninput" type="text" maxlength="20" placeholder="Dein Name"
                   :value="state.userName" @input="setUserName($event.target.value)" style="max-width:150px;padding-left:.6rem"/>
+              </div>
+              <div class="srow">
+                <div><div class="slabel">Sound-Effekte</div><div class="ssub">Dezente Töne bei Aufdecken, Abstimmung & Sieg</div></div>
+                <input type="checkbox" :checked="state.settings.sound" @change="setSound($event.target.checked)"
+                  style="width:1.2rem;height:1.2rem;accent-color:var(--pri)"/>
               </div>
             </div>
 
@@ -2690,17 +2723,26 @@ const App = {
               ⚠ Mehr Imposter als Spieler möglich!
             </div>
 
-            <!-- Optionale Imposter-Hilfen -->
+            <!-- Undercover-Modus -->
             <label class="imp-opt">
-              <input type="checkbox" v-model="state.impKnowCategory"/>
-              <span><strong>Imposter sieht die Kategorie</strong><br>
-              <small>Macht es für den Imposter leichter mitzureden</small></span>
+              <input type="checkbox" v-model="state.undercoverMode"/>
+              <span><strong>🎭 Undercover-Modus</strong><br>
+              <small>Der Imposter bekommt ein ähnliches Wort — und weiß selbst nicht, dass er der Imposter ist!</small></span>
             </label>
-            <label class="imp-opt" v-if="state.imposterCount >= 2">
-              <input type="checkbox" v-model="state.impKnowPartners"/>
-              <span><strong>Imposter kennen einander</strong><br>
-              <small>Beim Aufdecken sehen sie die Namen der Mit-Imposter</small></span>
-            </label>
+
+            <!-- Optionale Imposter-Hilfen (im Undercover-Modus sinnlos → ausgeblendet) -->
+            <template v-if="!state.undercoverMode">
+              <label class="imp-opt">
+                <input type="checkbox" v-model="state.impKnowCategory"/>
+                <span><strong>Imposter sieht die Kategorie</strong><br>
+                <small>Macht es für den Imposter leichter mitzureden</small></span>
+              </label>
+              <label class="imp-opt" v-if="state.imposterCount >= 2">
+                <input type="checkbox" v-model="state.impKnowPartners"/>
+                <span><strong>Imposter kennen einander</strong><br>
+                <small>Beim Aufdecken sehen sie die Namen der Mit-Imposter</small></span>
+              </label>
+            </template>
           </div>
 
           <!-- Kategorien -->
@@ -2827,7 +2869,7 @@ const App = {
 
         <!-- Karte: komplett klickbar zum Aufdecken -->
         <div class="rev-card"
-          :class="{ flipped: state.revealFlipped, imposter: state.revealFlipped && revealPlayer?.isImposter }"
+          :class="{ flipped: state.revealFlipped, imposter: state.revealFlipped && revealPlayer?.isImposter && !revealPlayer?.undercover }"
           @click="!state.revealFlipped && revealCard()"
           :style="{ cursor: !state.revealFlipped ? 'pointer' : 'default' }">
           <div v-if="!state.revealFlipped" class="card-back">
@@ -2835,7 +2877,8 @@ const App = {
             <span class="cbt" style="font-size:.85rem;margin-top:.8rem;display:block">👆 ANTIPPEN ZUM AUFDECKEN</span>
           </div>
           <div v-else class="card-front">
-            <template v-if="revealPlayer?.isImposter">
+            <!-- Undercover-Imposter sieht eine ganz normale Wort-Karte (weiß nichts!) -->
+            <template v-if="revealPlayer?.isImposter && !revealPlayer?.undercover">
               <span class="cfi" style="font-size:3.5rem">🕵️</span>
               <div style="display:inline-block;background:rgba(176,32,32,.25);border:1px solid rgba(176,32,32,.5);border-radius:8px;padding:.3rem .9rem;font-size:.75rem;font-weight:700;color:#f87171;letter-spacing:.08em;margin:.4rem 0">IMPOSTER</div>
               <div class="cfa" style="margin-top:.6rem">Du kennst das Wort nicht.<br>Tu so als ob — lass dich nicht erwischen!</div>
@@ -3055,7 +3098,10 @@ const App = {
         <div class="wsub">{{ state.winner === 'village' ? t('result.caughtSub') : t('result.winsSub') }}</div>
 
         <div class="surv-box" style="margin-bottom:1rem">
-          <h3>🔍 {{ t('result.word') }}: <span style="color:var(--txt);font-size:1rem">{{ state.roles[0]?.word }}</span></h3>
+          <h3>🔍 {{ t('result.word') }}: <span style="color:var(--txt);font-size:1rem">{{ (state.roles.find(r => !r.isImposter) || state.roles[0])?.word }}</span></h3>
+          <div v-if="state.roles.some(r => r.undercover)" style="font-size:.85rem;color:var(--txt2);margin-top:.3rem">
+            🎭 Imposter-Wort: <strong style="color:#f87171">{{ state.roles.find(r => r.undercover)?.word }}</strong>
+          </div>
           <div style="margin:.6rem 0">
             <span style="font-size:.78rem;color:var(--txt3)">{{ t('result.imposter') }}: </span>
             <span v-for="n in imposters" :key="n" style="background:rgba(124,58,237,.3);color:#c4b5fd;border-radius:20px;padding:2px 10px;font-size:.78rem;margin-left:4px">{{ n }}</span>

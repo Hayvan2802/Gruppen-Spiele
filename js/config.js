@@ -1,7 +1,7 @@
 // config.js — Gruppen-Spiele Konfiguration v0.20
 export const DONATE_URL      = '';
 export const COOP_MAX_PLAYERS = 16;
-export const DEFAULT_SETTINGS = { theme: 'dark', lang: 'de' };
+export const DEFAULT_SETTINGS = { theme: 'dark', lang: 'de', sound: false };
 
 // Timer-Dauer wird dynamisch in app.js berechnet
 
