@@ -1,9 +1,19 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.105';
-export const BUILD_HASH = 'hexe-und-jaeger-logik-ko';
+export const BUILD      = '0.106';
+export const BUILD_HASH = 'sieg-konfetti-codenames';
 
 export const CHANGELOG = [
   {
+    version: '0.106',
+    date: '03.07.2026',
+    time: '04:15',
+    changes: [
+    'Sieg-Bildschirme aller Spiele feiern jetzt mit Konfetti-Animation.',
+    'Codenames: Alle bisherigen Hinweise sind jetzt unter dem Spielfeld sichtbar, und Karten decken sich mit Flip-Animation auf.',
+    'Werwolf: Beim Raum-Erstellen kann jetzt (wie in den anderen Spielen) der eigene Name eingegeben werden.',
+    ],
+  },
+{
     version: '0.105',
     date: '02.07.2026',
     time: '19:58',
