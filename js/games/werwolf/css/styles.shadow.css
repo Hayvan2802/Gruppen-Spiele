@@ -372,3 +372,21 @@
 .jaeger-shot-icon{font-size:3rem;text-align:center;margin-bottom:.3rem;animation:jaegerShake .9s ease-in-out .35s 2;transform-origin:50% 60%;}
 @keyframes jaegerPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.07)}100%{transform:scale(1);opacity:1}}
 @keyframes jaegerShake{0%,100%{transform:rotate(0) scale(1)}25%{transform:rotate(-14deg) scale(1.18)}75%{transform:rotate(10deg) scale(1.12)}}
+
+/* ── Sieg-Konfetti (rein CSS, respektiert reduzierte Bewegung) ──────────── */
+.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:500;}
+.confetti i{position:absolute;top:-5vh;width:9px;height:14px;border-radius:2px;opacity:.9;animation:confettiFall 3.6s linear infinite;}
+.confetti i:nth-child(1){left:4%;background:#f87171;animation-delay:0s;animation-duration:3.1s}
+.confetti i:nth-child(2){left:13%;background:#fbbf24;animation-delay:.5s;animation-duration:3.8s}
+.confetti i:nth-child(3){left:22%;background:#4ade80;animation-delay:1.1s;animation-duration:3.3s}
+.confetti i:nth-child(4){left:31%;background:#60a5fa;animation-delay:.2s;animation-duration:4s}
+.confetti i:nth-child(5){left:40%;background:#c084fc;animation-delay:1.6s;animation-duration:3.5s}
+.confetti i:nth-child(6){left:49%;background:#f472b6;animation-delay:.8s;animation-duration:3.2s}
+.confetti i:nth-child(7){left:58%;background:#fbbf24;animation-delay:1.9s;animation-duration:3.9s}
+.confetti i:nth-child(8){left:67%;background:#4ade80;animation-delay:.4s;animation-duration:3.4s}
+.confetti i:nth-child(9){left:76%;background:#f87171;animation-delay:1.3s;animation-duration:3.7s}
+.confetti i:nth-child(10){left:85%;background:#60a5fa;animation-delay:.7s;animation-duration:3.1s}
+.confetti i:nth-child(11){left:92%;background:#c084fc;animation-delay:1.7s;animation-duration:3.6s}
+.confetti i:nth-child(12){left:97%;background:#f472b6;animation-delay:.1s;animation-duration:4.1s}
+@keyframes confettiFall{0%{transform:translateY(-6vh) rotate(0deg)}100%{transform:translateY(112vh) rotate(560deg)}}
+@media (prefers-reduced-motion: reduce){.confetti{display:none}}

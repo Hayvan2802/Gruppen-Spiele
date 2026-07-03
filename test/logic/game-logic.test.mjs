@@ -186,6 +186,23 @@ describe('Codenames — Sieglogik (echte, geteilte Funktionen)', async () => {
     assert.equal(cnState.winner, 'blue', 'die aufgedeckte Farbe gewinnt — egal wer aufdeckt');
     assert.equal(cnState.winReason, 'all-found');
   });
+
+  test('Hinweis-Historie: sammelt Hinweise mit Team und wird bei Neustart geleert', () => {
+    setupBoard([CN_TYPE.RED, CN_TYPE.RED, CN_TYPE.BLUE], 'red');
+    cnState.hintHistory = [];
+    cnState.phase2 = 'hint';
+    cnState.hintDraft = 'Tiere'; cnState.hintCountDraft = 2;
+    cn.cnGiveHint();
+    cn.cnPassTurn();
+    cnState.hintDraft = 'Wasser'; cnState.hintCountDraft = 1;
+    cn.cnGiveHint();
+    assert.deepEqual(cnState.hintHistory, [
+      { team: 'red', hint: 'Tiere', count: 2 },
+      { team: 'blue', hint: 'Wasser', count: 1 },
+    ]);
+    cnStartLocal(); // Neustart leert die Historie
+    assert.deepEqual(cnState.hintHistory, []);
+  });
 });
 
 // ════════════════════════════════════════════════════════════════════════════
