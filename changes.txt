@@ -1,2 +1,1 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
-Imposter: Bei Stimmengleichheit fliegt niemand mehr sofort raus – es gibt automatisch eine Stichwahl, und der Zwischenstand zeigt ehrlich, ob wirklich ein Imposter erwischt wurde.
