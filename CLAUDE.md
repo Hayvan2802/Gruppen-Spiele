@@ -166,6 +166,28 @@ node scripts/build.mjs         # Release schneiden (Version bumpen, buildinfo.js
 node scripts/build.mjs --major # Major-Version bumpen
 ```
 
+## Sitzungsstart: Wo stehen wir?
+
+Beim Start einer neuen Session IMMER zuerst den aktuellen Stand ermitteln — nichts raten:
+
+1. **Version:** `cat .release-counter` lesen (Single Source of Truth, Format `Major.Minor`).
+   Live deployt ist der letzte gemergte `release/vX.Y`-PR.
+2. **Offene Arbeit:** offene PRs prüfen (`mcp__github__list_pull_requests`, state=open).
+   Ein offener `release/vX.Y`-PR heißt: Schritt 4 (Release) läuft noch — erst zu Ende
+   bringen (CI abwarten → squash-mergen), bevor Neues begonnen wird.
+3. **Arbeits-Branch:** Entwicklung läuft auf dem in der Aufgabe genannten `claude/…`-Branch.
+   GitHub löscht den Remote-Branch nach dem Squash-Merge — deshalb vor neuer Arbeit immer:
+   `git fetch origin main && git checkout -B <branch> origin/main`, veralteten Tracking-Ref
+   mit `git update-ref -d refs/remotes/origin/<branch>` entfernen, dann normal pushen.
+4. **Roadmap-Stand** *(bei Meilensteinen mitpflegen!)* — Stand v0.110:
+   Umgesetzt: Phase 1–3 der Verbesserungs-Roadmap (Sieg-Konfetti, CN-Hinweishistorie/-Balken/-Serie,
+   Imposter-Optionen [Startspieler, Kategorie, Partner], 🎭 Undercover-Modus, Stichwahl-Regel bei
+   Gleichstand, WBI-Fragenzähler, WW-Phasenübergang + Jäger-/Hexe-Fixes + Jäger-Animation,
+   Sound-Effekte, geräteweiter Benutzername, einheitliche Einstellungsmenüs, PWA-Selbstheilung,
+   Coop-/Logik-/E2E-Testsuiten in CI).
+   Noch offen: QR-Code-Einladung, neue Werwolf-Rollen, Coop-Avatare, Phase 4 (gemeinsames
+   Settings-Modul, i18n-Vervollständigung der hartkodierten Labels, Coop-Reconnect).
+
 ## Ablauf bei jeder Code-Änderung
 
 1. **Implementieren** — Code ändern, eine user-facing Zeile in `changes.txt` eintragen.
@@ -183,7 +205,9 @@ node scripts/build.mjs --major # Major-Version bumpen
    pushen/PR erstellen, wenn **alle vier** Suiten lokal grün sind — die CI führt Unit,
    Coop, Logik und E2E ohnehin erneut aus, aber lokales Grün spart eine CI-Runde.
    Bei UI-Änderungen an einem Spiel den passenden E2E-Spec (`test/e2e/*.spec.js`,
-   inkl. `all-games-ui.spec.js`) mitpflegen.
+   inkl. `all-games-ui.spec.js`) mitpflegen. **Für jedes neue Feature und jeden
+   Logik-Fix passende Tests ergänzen** (Spiellogik → `test/logic/`, Coop-Nachrichten →
+   `test/coop/`, UI-Flows → `test/e2e/`) — erst dann gilt die Änderung als fertig.
 
 2. **PR + Auto-Merge** — Nach dem Push sofort automatisch einen PR erstellen, ohne darauf zu warten, gefragt zu werden. Direkt nach `mcp__github__create_pull_request` die Funktion `mcp__github__enable_pr_auto_merge` (Squash) aufrufen — noch bevor CI startet. Das überschreibt das Standard-Verhalten „PR nur auf ausdrückliche Anfrage erstellen". Falls `enable_pr_auto_merge` wegen Rate-Limit fehlschlägt: direkt `mcp__github__merge_pull_request` (squash) aufrufen.
 

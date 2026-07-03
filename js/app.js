@@ -156,6 +156,9 @@ const state = reactive({
   impKnowPartners: false,  // Option: Imposter kennen einander (bei 2+)
   undercoverMode: false,   // Option: Imposter bekommt ähnliches Wort, weiß nichts davon
   startPlayer: '',         // wer die Hinweis-Runde beginnt (lokal)
+  voteCandidates: null,    // Stichwahl: nur diese Namen stehen zur Wahl (null = alle)
+  voteIsRunoff: false,     // aktuelle Abstimmung IST die Stichwahl
+  voteTie: null,           // { candidates, tally } → Gleichstand-Screen
 
   // Coop
   coop: {
@@ -172,6 +175,8 @@ const state = reactive({
     myPartners: null,   // Mit-Imposter-Namen (Option, 2+ Imposter)
     myUndercover: false, // Undercover-Modus: ich sehe ein Wort, weiß aber nicht ob echt
     startPlayer: '',    // wer die Hinweis-Runde beginnt
+    voteCandidates: null, // Stichwahl: nur diese Namen stehen zur Wahl (null = alle)
+    voteIsRunoff: false,  // aktuelle Abstimmung IST die Stichwahl
     coopWord: null,
     undercoverWord: '', // Host: das Imposter-Wort (für die Auflösung im Ergebnis)
     cardRevealed: false,         // tap-to-reveal
@@ -404,6 +409,7 @@ function startLocalGame() {
   state.revealFlipped = false;
   state.votes        = {};
   state.stimmIdx     = 0;
+  state.voteCandidates = null; state.voteIsRunoff = false; state.voteTie = null;
   state.winner       = null;
   state.eliminatedNames = [];
   state.tally        = {};
@@ -483,14 +489,27 @@ function confirmVote() {
 
 function calcResult() {
   // Auswertung über die geteilte Logik (identisch mit Coop, siehe imposter-logic.js)
-  const { tally, eliminated, imposters, outcome } = calcVoteOutcome(state.roles, state.votes);
+  const { tally, eliminated, tied, imposters, remainingImposters, outcome } =
+    calcVoteOutcome(state.roles, state.votes, { candidates: state.voteCandidates, isRunoff: state.voteIsRunoff });
 
   state.tally           = tally;
   state.eliminatedNames = eliminated;
 
+  if (outcome === 'tie') {
+    // Gleichstand → automatische Stichwahl zwischen den Gleichplatzierten
+    state.voteTie = { candidates: tied, tally };
+    state.screen = 'voteTie';
+    haptic('medium');
+    return;
+  }
+  // Nach der Auswertung stehen wieder alle zur Wahl
+  state.voteCandidates = null; state.voteIsRunoff = false;
+
   if (outcome === 'continue') {
-    // Spiel geht weiter — Zwischenergebnis zeigen
-    state.voteRoundResult = { eliminated, tally, imposters };
+    // Spiel geht weiter — Zwischenergebnis zeigen (eliminated kann leer sein:
+    // Stichwahl endete erneut unentschieden → niemand scheidet aus)
+    const caught = eliminated.filter(n => imposters.includes(n)).length;
+    state.voteRoundResult = { eliminated, tally, imposters, caught, remainingImposters };
     state.screen = 'voteRound';
     haptic('medium');
     return;
@@ -526,6 +545,17 @@ function continueVoting() {
   haptic('light');
 }
 
+// Stichwahl starten: nur die Gleichplatzierten stehen zur Wahl, alle stimmen neu ab
+function startRunoff() {
+  if (!state.voteTie) return;
+  state.voteCandidates = [...state.voteTie.candidates];
+  state.voteIsRunoff   = true;
+  state.voteTie        = null;
+  state.votes = {}; state.stimmIdx = 0; state.voteSelection = null;
+  state.screen = 'voting';
+  haptic('medium');
+}
+
 function addCustomWord() {
   const w = state.customWordDraft.trim();
   if (!w || state.customWords.includes(w)) return;
@@ -539,6 +569,7 @@ function nextRound() {
   state.roundsCurrent++;
   state.revealIdx = 0; state.revealFlipped = false;
   state.votes = {}; state.stimmIdx = 0;
+  state.voteCandidates = null; state.voteIsRunoff = false; state.voteTie = null;
   state.winner = null; state.eliminatedNames = []; state.tally = {};
   state.voteSelection = null;
   state.timerSeconds = getTimerSeconds(state.playerCount);
@@ -728,6 +759,7 @@ function startCoopVoting() {
   state.coop.votesReceived = {};
   state.coop.myVoteDone = false;
   state.coop.voteSelection = null;
+  state.coop.voteCandidates = null; state.coop.voteIsRunoff = false;
   state.coop.votesProgress = { count: 0, total: state.coop.allPlayers.length, voters: [] };
   Coop.send({ type: Coop.MSG.VOTE_START, candidates: state.coop.allPlayers.map(p => p.name) });
 }
@@ -736,8 +768,24 @@ function calcCoopResult() {
   const votes   = state.coop.votesReceived;
   const players = state.coop.allPlayers;
   // Auswertung über die geteilte Logik (identisch mit Lokal, siehe imposter-logic.js)
-  const { tally, eliminated, imposters, remainingImposters, remainingVillagers } =
-    calcVoteOutcome(players, votes);
+  const { tally, eliminated, tied, imposters, remainingImposters, remainingVillagers, outcome } =
+    calcVoteOutcome(players, votes, { candidates: state.coop.voteCandidates, isRunoff: state.coop.voteIsRunoff });
+
+  if (outcome === 'tie') {
+    // Gleichstand → automatische Stichwahl zwischen den Gleichplatzierten
+    state.coop.voteCandidates = [...tied];
+    state.coop.voteIsRunoff = true;
+    state.coop.votesReceived = {};
+    state.coop.myVoteDone = false;
+    state.coop.voteSelection = null;
+    state.coop.votesProgress = { count: 0, total: state.coop.allPlayers.length, voters: [] };
+    state.coop.phase = 'coopVoting';
+    showToast('Gleichstand — Stichwahl!');
+    Coop.send({ type: Coop.MSG.VOTE_CONTINUE, eliminated: [], candidates: tied, runoff: true });
+    return;
+  }
+  // Nach der Auswertung stehen wieder alle zur Wahl
+  state.coop.voteCandidates = null; state.coop.voteIsRunoff = false;
 
   // Gewinnbedingung (identisch mit Lokal):
   // Dorf gewinnt → alle Imposter eliminiert
@@ -767,7 +815,7 @@ function calcCoopResult() {
     state.coop.voteSelection = null;
     state.coop.votesProgress = { count: 0, total: state.coop.allPlayers.length, voters: [] };
     state.coop.phase = 'coopVoting';
-    showToast(`${eliminated.join(', ')} raus — nächste Abstimmung!`);
+    showToast(eliminated.length ? `${eliminated.join(', ')} raus — nächste Abstimmung!` : 'Niemand scheidet aus — nächste Abstimmung!');
     Coop.send({ type: Coop.MSG.VOTE_CONTINUE, eliminated, candidates: state.coop.allPlayers.map(p => p.name) });
   }
 }
@@ -926,6 +974,7 @@ function handleCoopMessage(msg) {
     state.coop.phase = 'coopVoting';
     state.coop.myVoteDone = false;
     state.coop.voteSelection = null;
+    state.coop.voteCandidates = null; state.coop.voteIsRunoff = false;
     state.coop.votesProgress = { count: 0, total: state.coop.allPlayers.length, voters: [] };
   }
 
@@ -957,9 +1006,12 @@ function handleCoopMessage(msg) {
     state.coop.allPlayers = state.coop.allPlayers.filter(p => !msg.eliminated.includes(p.name));
     state.coop.myVoteDone = false;
     state.coop.voteSelection = null;
+    state.coop.voteCandidates = msg.runoff ? (msg.candidates || null) : null;
+    state.coop.voteIsRunoff = !!msg.runoff;
     state.coop.votesProgress = { count: 0, total: state.coop.allPlayers.length, voters: [] };
     state.coop.phase = 'coopVoting';
-    showToast(`${msg.eliminated.join(', ')} raus — nächste Abstimmung!`);
+    showToast(msg.runoff ? 'Gleichstand — Stichwahl!'
+      : (msg.eliminated.length ? `${msg.eliminated.join(', ')} raus — nächste Abstimmung!` : 'Niemand scheidet aus — nächste Abstimmung!'));
   }
 }
 
@@ -1071,7 +1123,7 @@ const App = {
     const maxImposterOptions = computed(() => [1, 2, 3, 4, 5]);
     const revealPlayer = computed(() => state.roles[state.revealIdx]);
     const currentVoter = computed(() => state.roles[state.stimmIdx]);
-    const voteOptions  = computed(() => state.roles.filter(r => r.name !== currentVoter.value?.name));
+    const voteOptions  = computed(() => state.roles.filter(r => r.name !== currentVoter.value?.name && (!state.voteCandidates || state.voteCandidates.includes(r.name))));
     const imposters    = computed(() => state.roles.filter(r => r.isImposter).map(r => r.name));
     // Alle Versionen die der Nutzer noch nicht gesehen hat (neueste zuerst)
     const newChangelogs = computed(() => {
@@ -1110,7 +1162,7 @@ const App = {
       coopSelectVote, coopConfirmVote, startCoopVoting,
       dismissWhatsNew, applyUpdate, checkForUpdate,
       exportLogToFile, exportBackup, importBackup,
-      continueVoting, addCustomWord,
+      continueVoting, startRunoff, addCustomWord,
       // Codenames
       cnState, cnSelectMode, cnStartLocal, cnGiveHint, cnRevealCard, cnPassTurn, cnReset,
       cnShowHostSetup, cnCreateRoom, cnShowJoinSetup, cnJoinRoom,
@@ -1433,7 +1485,8 @@ const App = {
     <!-- ── COOP: ABSTIMMUNG (jeder auf eigenem Handy) ── -->
     <div v-if="state.coop.phase === 'coopVoting'" class="modal-bg" style="z-index:400">
       <div class="modal" style="max-height:88vh;overflow-y:auto">
-        <div class="whatsnew-badge" style="margin-bottom:.8rem">🗳 ABSTIMMUNG</div>
+        <div class="whatsnew-badge" style="margin-bottom:.8rem">{{ state.coop.voteIsRunoff ? '⚖️ STICHWAHL' : '🗳 ABSTIMMUNG' }}</div>
+        <div v-if="state.coop.voteIsRunoff" class="start-player-badge" style="margin-bottom:.6rem">Gleichstand — nur die Gleichplatzierten stehen zur Wahl</div>
         <h3 style="margin-bottom:.3rem">Wer ist der Imposter?</h3>
 
         <!-- Fortschrittsanzeige: wer hat schon abgestimmt -->
@@ -1454,7 +1507,7 @@ const App = {
           <p style="font-size:.8rem;color:var(--txt2);margin-bottom:.8rem">Wähle einen Spieler aus und bestätige.</p>
           <!-- Kandidaten -->
           <div class="voting-options">
-            <button v-for="p in state.coop.allPlayers.filter(p => p.uid !== state.coop.myUid)"
+            <button v-for="p in state.coop.allPlayers.filter(p => p.uid !== state.coop.myUid && (!state.coop.voteCandidates || state.coop.voteCandidates.includes(p.name)))"
               :key="p.uid" class="voting-option"
               :class="{'voting-option-selected': state.coop.voteSelection === p.name}"
               @click="coopSelectVote(p.name)">
@@ -3008,6 +3061,7 @@ const App = {
         </div>
 
         <div class="voting-title">🕵️ Wer ist der Imposter?</div>
+        <div v-if="state.voteIsRunoff" class="start-player-badge" style="margin-top:-.2rem">⚖️ Stichwahl — nur die Gleichplatzierten stehen zur Wahl</div>
 
         <!-- Kandidaten -->
         <div class="voting-options">
@@ -3037,9 +3091,15 @@ const App = {
     <!-- ══════════════════════════════════════════════════════════════════ -->
     <template v-if="state.screen === 'voteRound' && state.voteRoundResult">
       <div class="go-inner" style="text-align:center;padding-top:3rem">
-        <div class="wicon">🕵️</div>
-        <div class="wtitle" style="color:var(--green)">Imposter erwischt!</div>
-        <div class="wsub" style="margin-bottom:1.4rem">Aber es gibt noch weitere Imposter…</div>
+        <div class="wicon">{{ state.voteRoundResult.caught ? '🕵️' : (state.voteRoundResult.eliminated.length ? '😬' : '🤝') }}</div>
+        <div class="wtitle" :style="{color: state.voteRoundResult.caught ? 'var(--green)' : 'var(--gold)'}">
+          {{ state.voteRoundResult.caught ? 'Imposter erwischt!' : (state.voteRoundResult.eliminated.length ? 'Daneben — kein Imposter!' : 'Wieder Gleichstand!') }}
+        </div>
+        <div class="wsub" style="margin-bottom:1.4rem">
+          {{ state.voteRoundResult.caught ? 'Aber es gibt noch weitere Imposter…'
+             : (state.voteRoundResult.eliminated.length ? state.voteRoundResult.eliminated.join(', ') + ' war kein Imposter.'
+             : 'Auch die Stichwahl endete unentschieden — niemand scheidet aus.') }}
+        </div>
 
         <div class="surv-box" style="margin-bottom:1.2rem;text-align:left">
           <div style="font-size:.65rem;letter-spacing:.15em;color:var(--gold);text-transform:uppercase;margin-bottom:.6rem">Abstimmungsergebnis</div>
@@ -3052,11 +3112,31 @@ const App = {
         </div>
 
         <div style="font-size:.85rem;color:var(--txt2);margin-bottom:1.4rem;background:rgba(124,58,237,.1);border:1px solid rgba(124,58,237,.25);border-radius:10px;padding:.7rem 1rem">
-          {{ state.roles.filter(r => r.isImposter && !state.voteRoundResult.eliminated.includes(r.name)).length }}
-          weiterer Imposter ist noch im Spiel!
+          Noch {{ state.voteRoundResult.remainingImposters }} Imposter im Spiel — weiter geht's!
         </div>
 
         <button class="btn-start" @click="continueVoting">Weiter →</button>
+        <button class="btn-sec" style="margin-top:.5rem" @click="state.screen='home'">🏠 Abbrechen</button>
+      </div>
+    </template>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- ── STICHWAHL: Gleichstand zwischen mehreren Spielern ── -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <template v-if="state.screen === 'voteTie' && state.voteTie">
+      <div class="go-inner" style="text-align:center;padding-top:3rem">
+        <div class="wicon">🤝</div>
+        <div class="wtitle" style="color:var(--gold)">Gleichstand!</div>
+        <div class="wsub" style="margin-bottom:1.2rem">Mehrere Spieler haben die meisten Stimmen.<br>Es kommt zur Stichwahl — nur sie stehen zur Wahl, alle stimmen erneut ab.</div>
+
+        <div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.6rem">
+          <span v-for="n in state.voteTie.candidates" :key="n"
+            style="background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.45);color:var(--gold);border-radius:20px;padding:.35rem 1rem;font-weight:700">
+            {{ n }} · {{ state.voteTie.tally[n] || 0 }}×
+          </span>
+        </div>
+
+        <button class="btn-start" @click="startRunoff">⚖️ Stichwahl starten</button>
         <button class="btn-sec" style="margin-top:.5rem" @click="state.screen='home'">🏠 Abbrechen</button>
       </div>
     </template>
