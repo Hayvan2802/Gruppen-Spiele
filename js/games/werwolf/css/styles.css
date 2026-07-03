@@ -389,3 +389,8 @@ body.light .glog{background:var(--sur);}
 .confetti i:nth-child(12){left:97%;background:#f472b6;animation-delay:.1s;animation-duration:4.1s}
 @keyframes confettiFall{0%{transform:translateY(-6vh) rotate(0deg)}100%{transform:translateY(112vh) rotate(560deg)}}
 @media (prefers-reduced-motion: reduce){.confetti{display:none}}
+
+/* ── Tag/Nacht-Übergang: sanftes Einblenden beim Phasenwechsel ──────────── */
+.phase-fade{animation:phaseFade .55s ease;}
+@keyframes phaseFade{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.phase-fade{animation:none}}

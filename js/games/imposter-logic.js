@@ -31,6 +31,29 @@ export function tallyVotes(names, votes) {
 //   • Imposter gewinnen → Imposter >= Dörfler (Gleichstand ist Imposter-Sieg;
 //                          z. B. 3 Sucher + 2 Imposter, ein Sucher stirbt → 2:2)
 //   • sonst            → nächste Abstimmungsrunde ('continue')
+// Imposter-Rollen um die optionalen Setup-Infos anreichern (geteilt lokal/Coop):
+//   knowCategory → Imposter sehen die Kategorie des Rundenworts
+//   knowPartners → bei 2+ Impostern sehen sie die Namen der Mit-Imposter
+// Mutiert nichts — liefert neue Rollen-Objekte.
+export function decorateImposters(roles, { knowCategory = false, knowPartners = false, category = '' } = {}) {
+  const imposterNames = roles.filter(r => r.isImposter).map(r => r.name);
+  return roles.map(r => {
+    if (!r.isImposter) return { ...r };
+    const extra = {};
+    if (knowCategory && category) extra.category = category;
+    if (knowPartners && imposterNames.length > 1) {
+      extra.partners = imposterNames.filter(n => n !== r.name);
+    }
+    return { ...r, ...extra };
+  });
+}
+
+// Zufälligen Startspieler für die Hinweis-Runde wählen (geteilt lokal/Coop).
+export function pickStartPlayer(names) {
+  if (!names || !names.length) return '';
+  return names[Math.floor(Math.random() * names.length)];
+}
+
 export function calcVoteOutcome(players, votes) {
   const names = players.map(p => p.name);
   const { tally, eliminated } = tallyVotes(names, votes);

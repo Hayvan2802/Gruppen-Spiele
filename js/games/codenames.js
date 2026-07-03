@@ -52,6 +52,7 @@ export const cnState = reactive({
   // Ergebnis
   winner: null,
   winReason: '',
+  series: { red: 0, blue: 0 },  // Serien-Punktestand über mehrere Partien
 
   // UI
   showSecretMap: false,
@@ -184,6 +185,8 @@ function cnProcessReveal(idx, realType) {
 }
 
 function cnFinish() {
+  // Serien-Punkt genau einmal pro Partie (Guard: Phase noch nicht gameover)
+  if (cnState.phase !== 'gameover' && cnState.winner) cnState.series[cnState.winner]++;
   cnState.phase = 'gameover';
   if (cnState.coop.phase === 'playing') {
     Coop.send({ type:'CN_END', winner:cnState.winner, reason:cnState.winReason });
@@ -449,6 +452,8 @@ function cnHandleCoopMsg(msg) {
   }
 
   if (msg.type === 'CN_END') {
+    // Serien-Punkt nur, falls lokal noch nicht gezählt (Guard wie in cnFinish)
+    if (cnState.phase !== 'gameover' && msg.winner) cnState.series[msg.winner]++;
     cnState.winner    = msg.winner;
     cnState.winReason = msg.reason;
     cnState.phase     = 'gameover';

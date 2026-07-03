@@ -1653,7 +1653,8 @@ const App = {
       <div class="top-bar">
         <button class="icon-btn" @click="openGameMenu" title="Spielmenü" style="color:#e07070">⏸</button>
       </div>
-      <div class="game-inner">
+      <!-- :key="state.phase" remountet den Inhalt bei Nacht↔Tag → Übergangs-Animation -->
+      <div class="game-inner phase-fade" :key="state.phase">
         <div class="game-hdr">
           <div class="phase-badge"><span class="phicon">{{ state.phase==='night'?'🌙':'☀️' }}</span><span>{{ state.phase==='night'?t('game.night'):t('game.day') }} {{ state.round }}</span></div>
           <div class="rinfo">{{ t('game.round') }} {{ state.round }}</div>
