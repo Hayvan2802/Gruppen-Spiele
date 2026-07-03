@@ -1425,6 +1425,7 @@ const App = {
 
     <!-- ── COOP: ERGEBNIS ── -->
     <div v-if="state.coop.phase === 'coopResult' && state.coop.voteResult" class="modal-bg" style="z-index:400">
+      <div class="confetti" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
       <div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto">
         <div style="font-size:3.5rem;margin-bottom:.6rem">
           {{ state.coop.voteResult.winner === 'village' ? '🎉' : '🕵️' }}
@@ -2026,6 +2027,7 @@ const App = {
 
         <!-- ERGEBNIS -->
         <template v-if="wbiState.phase === 'result' || wbiState.coop.phase === 'result'">
+          <div class="confetti" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
           <div class="go-inner" style="padding-top:1rem">
             <div class="wicon">🎉</div>
             <div class="wtitle">Runde vorbei!</div>
@@ -2348,10 +2350,21 @@ const App = {
             </button>
           </div>
 
+          <!-- Hinweis-Historie -->
+          <div v-if="cnState.hintHistory.length" class="cn-hint-history">
+            <div class="cn-hint-history-title">💬 Bisherige Hinweise</div>
+            <div v-for="(h,i) in cnState.hintHistory" :key="i" class="cn-hint-history-item">
+              <span>{{ h.team==='red' ? '🔴' : '🔵' }}</span>
+              <span class="cn-hint-history-word">{{ h.hint }}</span>
+              <span class="cn-hint-history-count">× {{ h.count }}</span>
+            </div>
+          </div>
+
         </template>
 
         <!-- ── GAME OVER ── -->
         <template v-if="cnState.phase === 'gameover'">
+          <div class="confetti" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
           <div class="go-inner" style="padding-top:1rem">
             <div class="wicon">{{ cnState.winner === 'red' ? '🔴' : '🔵' }}</div>
             <div class="wtitle"
@@ -2959,6 +2972,7 @@ const App = {
       <div class="top-bar">
         <button class="icon-btn" @click="state.showSettingsModal=true" title="Einstellungen">⚙️</button>
       </div>
+      <div class="confetti" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
       <div class="go-inner">
         <div class="wicon">{{ state.winner === 'village' ? '🎉' : '🕵️' }}</div>
         <div class="wtitle" :style="{color: state.winner==='village' ? 'var(--green)' : 'var(--blood2)'}">

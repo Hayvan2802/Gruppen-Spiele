@@ -47,6 +47,7 @@ export const cnState = reactive({
   hintCountDraft: 1,
   guessesLeft: 0,
   phase2: 'hint',   // 'hint' | 'guess'
+  hintHistory: [],  // [{ team, hint, count }] — alle bisherigen Hinweise der Partie
 
   // Ergebnis
   winner: null,
@@ -113,6 +114,7 @@ export function cnStartLocal() {
   cnState.hint         = '';
   cnState.hintCount    = 0;
   cnState.guessesLeft  = 0;
+  cnState.hintHistory  = [];
   cnState.phase2       = 'hint';
   cnState.winner       = null;
   cnState.winReason    = '';
@@ -128,6 +130,7 @@ export function cnGiveHint() {
   cnState.hint        = hint;
   cnState.hintCount   = cnState.hintCountDraft;
   cnState.guessesLeft = cnState.hintCountDraft + 1; // +1 Bonus
+  cnState.hintHistory.push({ team: cnState.currentTeam, hint, count: cnState.hintCountDraft });
   cnState.hintDraft   = '';
   cnState.phase2      = 'guess';
   haptic('medium');
@@ -207,6 +210,7 @@ export function cnReset() {
   cnState.winner       = null;
   cnState.hint         = '';
   cnState.hintDraft    = '';
+  cnState.hintHistory  = [];
   cnState.phase2       = 'hint';
   cnState.showSecretMap = false;
   cnState.cnMenu       = false;
@@ -340,6 +344,7 @@ export async function cnStartCoopGame() {
   cnState.hint        = '';
   cnState.hintCount   = 0;
   cnState.guessesLeft = 0;
+  cnState.hintHistory = [];
   cnState.phase2      = 'hint';
   cnState.winner      = null;
   cnState.showSecretMap = false;
@@ -395,6 +400,7 @@ function cnHandleCoopMsg(msg) {
     cnState.hint        = '';
     cnState.hintCount   = 0;
     cnState.guessesLeft = 0;
+    cnState.hintHistory = [];
     cnState.phase2      = 'hint';
     cnState.winner      = null;
     cnState.showSecretMap = false;
@@ -418,6 +424,7 @@ function cnHandleCoopMsg(msg) {
     cnState.hint        = msg.hint;
     cnState.hintCount   = msg.count;
     cnState.guessesLeft = msg.count + 1;
+    cnState.hintHistory.push({ team: msg.team, hint: msg.hint, count: msg.count });
     cnState.phase2      = 'guess';
     haptic('light');
     toast(`Hinweis: "${msg.hint}" (${msg.count})`);

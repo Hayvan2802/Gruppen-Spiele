@@ -906,6 +906,7 @@ function genCode() { return String(Math.floor(100000 + Math.random() * 900000));
 
 async function showHostSetup() {
   state.coop.phase = 'hosting'; state.coop.codeDraft = '';
+  state.coop.myName = loadUserName();
   state.coop.players = []; state.coop.error = null; state.coop.isHost = true;
 }
 async function createRoom() {
@@ -1520,6 +1521,7 @@ const App = {
           <template v-else-if="state.coop.phase==='hosting'">
             <div class="sec"><h2>{{ t('coop.code') }}</h2>
               <div class="coop-box">
+                <input class="name-input-big" v-model="state.coop.myName" type="text" maxlength="20" :placeholder="t('coop.namePlaceholder')" style="margin-bottom:.5rem"/>
                 <p class="coop-hint">{{ t('coop.codeSub') }}</p>
                 <input class="code-input" v-model="state.coop.codeDraft" type="text" maxlength="6" inputmode="numeric" pattern="[0-9]*" placeholder="123456" @input="state.coop.codeDraft=state.coop.codeDraft.replace(/\\D/g,'').slice(0,6)" style="margin-bottom:.5rem"/>
                 <div v-if="state.coop.error" class="coop-error">{{ state.coop.error }}</div>
@@ -1747,6 +1749,7 @@ const App = {
     <!-- ═══ RESULT ═══ -->
     <div v-if="state.screen==='result'" class="screen">
       <div class="top-bar"><button class="icon-btn" @click="state.showSettingsModal=true">⚙️</button></div>
+      <div class="confetti" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
       <div class="go-inner">
         <div class="wicon">{{ state.winner==='wolf'?'🐺':state.winner==='dorf'?'🏡':state.winner==='lovers'?'💘':'🔪' }}</div>
         <div class="wtitle">{{ t('result.'+(state.winner==='dorf'?'village':state.winner)) }}</div>
