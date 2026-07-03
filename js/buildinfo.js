@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.107';
-export const BUILD_HASH = 'imposter-optionen-starts';
+export const BUILD      = '0.108';
+export const BUILD_HASH = 'selbstheilung-bei-kaputt';
 
 export const CHANGELOG = [
   {
+    version: '0.108',
+    date: '03.07.2026',
+    time: '09:35',
+    changes: [
+    'Fehlerbehebung für die Homescreen-App: Nach Updates repariert sich die App jetzt selbst, wenn ein veralteter Zwischenspeicher das Laden verhindert.',
+    ],
+  },
+{
     version: '0.107',
     date: '03.07.2026',
     time: '09:19',
