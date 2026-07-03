@@ -1,9 +1,18 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.108';
-export const BUILD_HASH = 'selbstheilung-bei-kaputt';
+export const BUILD      = '0.109';
+export const BUILD_HASH = 'undercover-modus-imposte';
 
 export const CHANGELOG = [
   {
+    version: '0.109',
+    date: '03.07.2026',
+    time: '14:41',
+    changes: [
+    'Imposter: Neuer 🎭 Undercover-Modus – der Imposter bekommt ein ähnliches Wort und weiß selbst nicht, dass er der Imposter ist!',
+    'Neue, dezente Sound-Effekte bei Imposter (Aufdecken, Abstimmung, Sieg) – in den Einstellungen einschaltbar.',
+    ],
+  },
+{
     version: '0.108',
     date: '03.07.2026',
     time: '09:35',
