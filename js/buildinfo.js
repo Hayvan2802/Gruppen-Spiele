@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.109';
-export const BUILD_HASH = 'undercover-modus-imposte';
+export const BUILD      = '0.110';
+export const BUILD_HASH = 'stichwahl-bei-gleichstan';
 
 export const CHANGELOG = [
   {
+    version: '0.110',
+    date: '03.07.2026',
+    time: '15:49',
+    changes: [
+    'Imposter: Bei Stimmengleichheit fliegt niemand mehr sofort raus – es gibt automatisch eine Stichwahl, und der Zwischenstand zeigt ehrlich, ob wirklich ein Imposter erwischt wurde.',
+    ],
+  },
+{
     version: '0.109',
     date: '03.07.2026',
     time: '14:41',
