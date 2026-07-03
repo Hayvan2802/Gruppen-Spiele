@@ -1529,3 +1529,24 @@ body.neon .btn-start {
 .cn-card-revealed{animation:cnReveal .45s cubic-bezier(.34,1.4,.64,1);}
 @keyframes cnReveal{0%{transform:rotateY(90deg) scale(.9)}100%{transform:rotateY(0) scale(1)}}
 @media (prefers-reduced-motion: reduce){.cn-card-revealed{animation:none}}
+
+/* ── Imposter: Setup-Optionen, Karten-Extras, Startspieler ──────────────── */
+.imp-opt{display:flex;align-items:flex-start;gap:.6rem;margin-top:.7rem;padding:.6rem .7rem;background:var(--sur);border:1px solid var(--bdr);border-radius:10px;cursor:pointer;font-size:.82rem;color:var(--txt2);}
+.imp-opt input{margin-top:.15rem;accent-color:var(--pri);width:1.05rem;height:1.05rem;flex:none;}
+.imp-opt strong{color:var(--txt);font-size:.85rem;}
+.imp-opt small{color:var(--txt3);}
+.imp-extra{margin-top:.45rem;background:rgba(176,32,32,.12);border:1px solid rgba(176,32,32,.3);border-radius:8px;padding:.4rem .7rem;font-size:.8rem;color:var(--txt2);}
+.imp-extra strong{color:#f87171;}
+.start-player-badge{display:inline-block;background:rgba(201,168,76,.14);border:1px solid rgba(201,168,76,.4);border-radius:20px;padding:.35rem .9rem;font-size:.82rem;color:var(--txt2);margin:.3rem 0 .5rem;}
+.start-player-badge strong{color:var(--gold);}
+
+/* ── Codenames: Team-Fortschrittsbalken ─────────────────────────────────── */
+.cn-progress{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.6rem;}
+.cn-prog-row{display:flex;align-items:center;gap:.5rem;font-size:.8rem;}
+.cn-prog-track{flex:1;height:8px;border-radius:4px;background:var(--sur);border:1px solid var(--bdr);overflow:hidden;}
+.cn-prog-fill{height:100%;border-radius:4px;transition:width .4s ease;}
+.cn-prog-num{min-width:1.4rem;text-align:right;color:var(--txt2);font-weight:700;}
+/* ── Wer bin ich: Fragen-Zähler ─────────────────────────────────────────── */
+.wbi-qcount{display:flex;align-items:center;gap:.3rem;margin-left:auto;}
+.wbi-qbtn{width:1.5rem;height:1.5rem;border-radius:6px;border:1px solid var(--bdr);background:var(--sur);color:var(--txt);font-size:.9rem;font-weight:700;cursor:pointer;line-height:1;}
+.wbi-qnum{font-size:.78rem;color:var(--txt2);min-width:2.4rem;text-align:center;}

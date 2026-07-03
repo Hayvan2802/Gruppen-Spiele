@@ -79,6 +79,7 @@ export const wbiState = reactive({
   // Ergebnis
   results: [],         // [{ playerName, word, guessed }]
   scores: {},          // { name: punkte }
+  questionCounts: {},  // { name: gestellte Ja/Nein-Fragen } — Zähler für die Diskussion
 });
 
 // ── Karten-Pool ───────────────────────────────────────────────────────────────
@@ -113,8 +114,16 @@ export function wbiStartLocal() {
   wbiState.discussCardVisible = false;
   wbiState.results          = [];
   wbiState.scores           = {};
+  wbiState.questionCounts   = {};
   wbiState.phase            = 'local-reveal';
   haptic('success');
+}
+
+// Fragen-Zähler der Diskussionsphase (+1 / −1, nie unter 0)
+export function wbiBumpQuestions(name, delta) {
+  const next = (wbiState.questionCounts[name] || 0) + delta;
+  wbiState.questionCounts[name] = Math.max(0, next);
+  haptic('light');
 }
 
 export function wbiShowCard()  { wbiState.showCard = true; wbiState.cardSeen = true; haptic('medium'); }
@@ -197,6 +206,7 @@ export function wbiRestart() {
   wbiState.discussCardVisible = false;
   wbiState.results           = [];
   wbiState.scores            = {};
+  wbiState.questionCounts    = {};
 }
 
 // ── Coop ──────────────────────────────────────────────────────────────────────

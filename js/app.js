@@ -15,9 +15,10 @@ import {
   wbiRestart, wbiSelectMode, wbiShowHostSetup, wbiCreateRoom,
   wbiShowJoinSetup, wbiJoinRoom, wbiStartCoopGame, wbiCancelCoop, wbiToggleReady,
   wbiShareLink, wbiSendGuess, wbiCurrentCard, wbiRemainingCount, wbiGuessedCount,
+  wbiBumpQuestions,
 } from './games/werbinich.js';
 import { ALL_WORDS, KATEGORIEN, DEFAULT_KATEGORIEN, DONATE_URL, COOP_MAX_PLAYERS } from './config.js';
-import { calcVoteOutcome } from './games/imposter-logic.js';
+import { calcVoteOutcome, decorateImposters, pickStartPlayer } from './games/imposter-logic.js';
 import * as Coop from './coop.js';
 import { log, exportLogToFile, logDeviceSnapshot, installGlobalErrorHandlers, installJankDetector } from './debuglog.js';
 import {
@@ -72,11 +73,14 @@ function shuffle(arr) {
   return a;
 }
 function rndWord() {
-  // Wörter aus gewählten Kategorien + eigene Wörter
+  // Wörter aus gewählten Kategorien + eigene Wörter → { word, category }
+  // (Kategorie wird für die Option „Imposter kennt die Kategorie" gebraucht)
   let pool = [];
-  state.selectedKats.forEach(k => { if (KATEGORIEN[k]) pool.push(...KATEGORIEN[k]); });
-  pool.push(...state.customWords);
-  if (!pool.length) pool = ALL_WORDS;
+  state.selectedKats.forEach(k => { if (KATEGORIEN[k]) pool.push(...KATEGORIEN[k].map(w => ({ word: w, category: k }))); });
+  state.customWords.forEach(w => pool.push({ word: w, category: '✏️ Eigene Wörter' }));
+  if (!pool.length) {
+    Object.entries(KATEGORIEN).forEach(([k, words]) => pool.push(...words.map(w => ({ word: w, category: k }))));
+  }
   return pool[Math.floor(Math.random() * pool.length)];
 }
 function genId()   { return Math.random().toString(36).slice(2, 10); }
@@ -138,6 +142,9 @@ const state = reactive({
   playerCount: 5,
   playerNames: Array(5).fill(''),
   imposterCount: 1,
+  impKnowCategory: false,  // Option: Imposter sieht die Wort-Kategorie
+  impKnowPartners: false,  // Option: Imposter kennen einander (bei 2+)
+  startPlayer: '',         // wer die Hinweis-Runde beginnt (lokal)
 
   // Coop
   coop: {
@@ -150,6 +157,9 @@ const state = reactive({
     error: null,
     myRoleIsImposter: null,
     myWord: null,
+    myCategory: null,   // Kategorie-Hinweis für Imposter (Option)
+    myPartners: null,   // Mit-Imposter-Namen (Option, 2+ Imposter)
+    startPlayer: '',    // wer die Hinweis-Runde beginnt
     coopWord: null,
     cardRevealed: false,         // tap-to-reveal
     cardConfirmedUids: [],       // UIDs die ihre Karte bestätigt haben
@@ -367,10 +377,14 @@ function startLocalGame() {
   saveLastNames(names);
   state.lastSavedNames = names;
 
-  const word     = rndWord();
+  const { word, category } = rndWord();
   const shuffled = shuffle(names);
   const impIdx   = new Set(shuffle([...Array(shuffled.length).keys()]).slice(0, state.imposterCount));
-  state.roles    = shuffled.map((name, i) => ({ name, isImposter: impIdx.has(i), word }));
+  state.roles    = decorateImposters(
+    shuffled.map((name, i) => ({ name, isImposter: impIdx.has(i), word })),
+    { knowCategory: state.impKnowCategory, knowPartners: state.impKnowPartners, category },
+  );
+  state.startPlayer  = pickStartPlayer(names);
 
   state.revealIdx    = 0;
   state.revealFlipped = false;
@@ -514,10 +528,14 @@ function nextRound() {
   state.timerSeconds = getTimerSeconds(state.playerCount);
   clearInterval(state.timerInterval);
   const names = state.playerNames.slice(0, state.playerCount).map((n,i) => n.trim() || `Spieler ${i+1}`);
-  const word = rndWord();
+  const { word, category } = rndWord();
   const shuffled = shuffle(names);
   const impIdx = new Set(shuffle([...Array(shuffled.length).keys()]).slice(0, state.imposterCount));
-  state.roles = shuffled.map((name,i) => ({ name, isImposter: impIdx.has(i), word }));
+  state.roles = decorateImposters(
+    shuffled.map((name,i) => ({ name, isImposter: impIdx.has(i), word })),
+    { knowCategory: state.impKnowCategory, knowPartners: state.impKnowPartners, category },
+  );
+  state.startPlayer = pickStartPlayer(names);
   state.screen = 'reveal';
   haptic('success');
 }
@@ -575,11 +593,14 @@ async function createRoom() {
 
 async function startCoopGame() {
   const players  = state.coop.players;
-  const word     = rndWord();
+  const { word, category } = rndWord();
   const impIdx   = new Set(shuffle([...Array(players.length).keys()]).slice(0, state.imposterCount));
-  const assignments = players.map((p, i) => ({
-    uid: p.uid, name: p.name, isImposter: impIdx.has(i), word,
-  }));
+  // Geteilte Logik wie lokal: Optionen (Kategorie/Partner) an die Imposter-Rollen hängen
+  const assignments = decorateImposters(
+    players.map((p, i) => ({ uid: p.uid, name: p.name, isImposter: impIdx.has(i), word })),
+    { knowCategory: state.impKnowCategory, knowPartners: state.impKnowPartners, category },
+  );
+  const startPlayer = pickStartPlayer(players.map(p => p.name));
   // allPlayers VOR dem Senden setzen — Host verarbeitet eigene Nachrichten nicht
   state.coop.allPlayers = assignments.map(a => ({ uid: a.uid, name: a.name, isImposter: a.isImposter }));
   state.coop.cardRevealed = false;
@@ -587,11 +608,16 @@ async function startCoopGame() {
   state.coop.myCardConfirmed = false;
   state.coop.hostUid = state.coop.myUid;
   state.coop.coopWord = word;
-  await Coop.send({ type: Coop.MSG.START, assignments, hostUid: state.coop.myUid });
+  state.coop.startPlayer = startPlayer;
+  await Coop.send({ type: Coop.MSG.START, assignments, hostUid: state.coop.myUid, startPlayer });
 
   // Host sieht auch seine eigene Karte
   const mine = assignments.find(a => a.uid === state.coop.myUid);
-  if (mine) { state.coop.myRoleIsImposter = mine.isImposter; state.coop.myWord = mine.word; state.coop.phase = 'myRole'; }
+  if (mine) {
+    state.coop.myRoleIsImposter = mine.isImposter; state.coop.myWord = mine.word;
+    state.coop.myCategory = mine.category || null; state.coop.myPartners = mine.partners || null;
+    state.coop.phase = 'myRole';
+  }
 }
 
 function showJoinSetup() {
@@ -826,12 +852,15 @@ function handleCoopMessage(msg) {
     if (mine) {
       state.coop.myRoleIsImposter = mine.isImposter;
       state.coop.myWord = mine.word;
+      state.coop.myCategory = mine.category || null;
+      state.coop.myPartners = mine.partners || null;
       if (!mine.isImposter) state.coop.coopWord = mine.word;
       state.coop.allPlayers = msg.assignments.map(a => ({ uid: a.uid, name: a.name, isImposter: a.isImposter }));
       state.coop.cardRevealed = false;
       state.coop.cardConfirmedUids = [];
       state.coop.myCardConfirmed = false;
       state.coop.hostUid = msg.hostUid || null;
+      state.coop.startPlayer = msg.startPlayer || '';
       state.coop.phase = 'myRole';
     }
   }
@@ -1051,6 +1080,7 @@ const App = {
       wbiRestart, wbiSelectMode, wbiShowHostSetup, wbiCreateRoom,
       wbiShowJoinSetup, wbiJoinRoom, wbiStartCoopGame, wbiCancelCoop, wbiToggleReady,
       wbiShareLink, wbiSendGuess, wbiCurrentCard, wbiRemainingCount, wbiGuessedCount,
+      wbiBumpQuestions,
       showHostSetup, createRoom, startCoopGame,
       showJoinSetup, joinRoom, toggleReady, cancelCoop,
       getInviteLink, shareInviteLink,
@@ -1183,6 +1213,8 @@ const App = {
               <div style="font-size:3rem;margin:.4rem 0">🕵️</div>
               <div style="font-size:1.2rem;font-weight:900;color:var(--blood2)">DU BIST DER IMPOSTER!</div>
               <p class="confirm-msg" style="margin:.4rem 0">Du kennst das Wort nicht. Tu so als ob!</p>
+              <div v-if="state.coop.myCategory" class="imp-extra">🗂 Kategorie: <strong>{{ state.coop.myCategory }}</strong></div>
+              <div v-if="state.coop.myPartners?.length" class="imp-extra">🤝 Mit-Imposter: <strong>{{ state.coop.myPartners.join(', ') }}</strong></div>
             </div>
             <div v-else>
               <div style="font-size:3rem;margin:.4rem 0">💬</div>
@@ -1237,6 +1269,7 @@ const App = {
       <div class="timer-screen" style="flex:1">
         <div class="whatsnew-badge" style="margin-bottom:.5rem">💬 DISKUSSION</div>
         <h3 style="margin-bottom:.2rem">Jetzt diskutieren!</h3>
+        <div v-if="state.coop.startPlayer" class="start-player-badge">🎤 <strong>{{ state.coop.startPlayer }}</strong> beginnt mit dem ersten Hinweis</div>
         <p class="timer-subtitle" style="margin-bottom:.8rem">
           Beschreibt das Wort abwechselnd — ohne es direkt zu sagen.<br>Wer verhält sich verdächtig?
         </p>
@@ -1934,8 +1967,14 @@ const App = {
               :class="{'wbi-discuss-player-active': wbiState.discussIdx===idx && wbiState.discussCardVisible}">
               <div class="wbi-discuss-avatar">{{ card.playerName[0].toUpperCase() }}</div>
               <div class="wbi-discuss-name">{{ card.playerName }}</div>
-              <div style="margin-left:auto;font-size:.8rem;color:var(--txt3)">
-                {{ wbiState.discussIdx===idx && wbiState.discussCardVisible ? '🙈 zuklappen' : '👆 meine Karte' }}
+              <!-- Fragen-Zähler: wie viele Ja/Nein-Fragen hat der Spieler schon gestellt? -->
+              <div class="wbi-qcount" @click.stop>
+                <button class="wbi-qbtn" @click="wbiBumpQuestions(card.playerName, -1)">−</button>
+                <span class="wbi-qnum">❓ {{ wbiState.questionCounts[card.playerName] || 0 }}</span>
+                <button class="wbi-qbtn" @click="wbiBumpQuestions(card.playerName, 1)">+</button>
+              </div>
+              <div style="margin-left:.5rem;font-size:.8rem;color:var(--txt3)">
+                {{ wbiState.discussIdx===idx && wbiState.discussCardVisible ? '🙈' : '👆' }}
               </div>
             </div>
 
@@ -2320,6 +2359,22 @@ const App = {
             </div>
           </div>
 
+          <!-- Team-Fortschritt -->
+          <div class="cn-progress">
+            <div class="cn-prog-row">
+              <span>🔴</span>
+              <div class="cn-prog-track"><div class="cn-prog-fill" style="background:#f87171"
+                :style="{width: cnState.redCount ? ((cnState.redCount-cnState.redLeft)/cnState.redCount*100)+'%' : '0%'}"></div></div>
+              <span class="cn-prog-num">{{ cnState.redLeft }}</span>
+            </div>
+            <div class="cn-prog-row">
+              <span>🔵</span>
+              <div class="cn-prog-track"><div class="cn-prog-fill" style="background:#60a5fa"
+                :style="{width: cnState.blueCount ? ((cnState.blueCount-cnState.blueLeft)/cnState.blueCount*100)+'%' : '0%'}"></div></div>
+              <span class="cn-prog-num">{{ cnState.blueLeft }}</span>
+            </div>
+          </div>
+
           <!-- Karten-Grid -->
           <div class="cn-grid">
             <button v-for="(card, idx) in cnState.words" :key="idx"
@@ -2387,6 +2442,10 @@ const App = {
                 <span :style="{color: cnState.blueLeft===0 ? '#4ade80' : '#60a5fa'}">
                   {{ cnState.blueLeft }} übrig
                 </span>
+              </div>
+              <div v-if="cnState.series.red + cnState.series.blue > 1" class="surv-item" style="border-top:1px solid var(--bdr);margin-top:.3rem;padding-top:.5rem">
+                <span>🏆 Serie</span>
+                <span style="font-weight:700">🔴 {{ cnState.series.red }} : {{ cnState.series.blue }} 🔵</span>
               </div>
             </div>
             <button class="btn-start" @click="cnReset();cnCancelCoop()">🔄 Neues Spiel</button>
@@ -2630,6 +2689,18 @@ const App = {
             <div v-if="state.imposterCount >= state.playerCount" style="font-size:.75rem;color:#f59e0b;margin-top:.5rem">
               ⚠ Mehr Imposter als Spieler möglich!
             </div>
+
+            <!-- Optionale Imposter-Hilfen -->
+            <label class="imp-opt">
+              <input type="checkbox" v-model="state.impKnowCategory"/>
+              <span><strong>Imposter sieht die Kategorie</strong><br>
+              <small>Macht es für den Imposter leichter mitzureden</small></span>
+            </label>
+            <label class="imp-opt" v-if="state.imposterCount >= 2">
+              <input type="checkbox" v-model="state.impKnowPartners"/>
+              <span><strong>Imposter kennen einander</strong><br>
+              <small>Beim Aufdecken sehen sie die Namen der Mit-Imposter</small></span>
+            </label>
           </div>
 
           <!-- Kategorien -->
@@ -2768,6 +2839,8 @@ const App = {
               <span class="cfi" style="font-size:3.5rem">🕵️</span>
               <div style="display:inline-block;background:rgba(176,32,32,.25);border:1px solid rgba(176,32,32,.5);border-radius:8px;padding:.3rem .9rem;font-size:.75rem;font-weight:700;color:#f87171;letter-spacing:.08em;margin:.4rem 0">IMPOSTER</div>
               <div class="cfa" style="margin-top:.6rem">Du kennst das Wort nicht.<br>Tu so als ob — lass dich nicht erwischen!</div>
+              <div v-if="revealPlayer?.category" class="imp-extra">🗂 Kategorie: <strong>{{ revealPlayer.category }}</strong></div>
+              <div v-if="revealPlayer?.partners?.length" class="imp-extra">🤝 Mit-Imposter: <strong>{{ revealPlayer.partners.join(', ') }}</strong></div>
               <div class="cfg" style="margin-top:.5rem">Beobachte die anderen und passe dich an 🎭</div>
             </template>
             <template v-else>
@@ -2801,6 +2874,7 @@ const App = {
       <div class="timer-screen">
         <!-- Titel -->
         <div class="timer-title">💬 Jetzt diskutieren!</div>
+        <div v-if="state.startPlayer" class="start-player-badge">🎤 <strong>{{ state.startPlayer }}</strong> beginnt mit dem ersten Hinweis</div>
         <div class="timer-subtitle">Wer verhält sich verdächtig?<br>Redet über das Wort — ohne es zu sagen!</div>
 
         <!-- Ring -->

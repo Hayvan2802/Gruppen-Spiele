@@ -99,12 +99,58 @@ describe('Imposter — Sieglogik (lokal & Coop geteilt)', async () => {
   });
 });
 
+describe('Imposter — Optionen (Kategorie/Partner/Startspieler, geteilt lokal/Coop)', async () => {
+  const { decorateImposters, pickStartPlayer } = await import('../../js/games/imposter-logic.js');
+  const roles = [
+    { name: 'A', isImposter: true, word: 'Hund' },
+    { name: 'B', isImposter: false, word: 'Hund' },
+    { name: 'C', isImposter: true, word: 'Hund' },
+  ];
+
+  test('knowCategory → nur Imposter bekommen die Kategorie', () => {
+    const out = decorateImposters(roles, { knowCategory: true, category: '🐾 Tiere' });
+    assert.equal(out.find(r => r.name === 'A').category, '🐾 Tiere');
+    assert.equal(out.find(r => r.name === 'C').category, '🐾 Tiere');
+    assert.equal(out.find(r => r.name === 'B').category, undefined, 'Dörfler sieht keine Kategorie');
+  });
+
+  test('knowPartners → Imposter sehen die ANDEREN Imposter, nicht sich selbst', () => {
+    const out = decorateImposters(roles, { knowPartners: true });
+    assert.deepEqual(out.find(r => r.name === 'A').partners, ['C']);
+    assert.deepEqual(out.find(r => r.name === 'C').partners, ['A']);
+    assert.equal(out.find(r => r.name === 'B').partners, undefined);
+  });
+
+  test('knowPartners bei nur EINEM Imposter → keine Partner-Info', () => {
+    const solo = [{ name: 'A', isImposter: true, word: 'X' }, { name: 'B', isImposter: false, word: 'X' }];
+    const out = decorateImposters(solo, { knowPartners: true });
+    assert.equal(out.find(r => r.name === 'A').partners, undefined);
+  });
+
+  test('Optionen aus → Rollen bleiben unverändert (keine Extra-Felder)', () => {
+    const out = decorateImposters(roles, {});
+    out.forEach(r => { assert.equal(r.category, undefined); assert.equal(r.partners, undefined); });
+  });
+
+  test('pickStartPlayer liefert immer einen der Spieler (oder leer bei leerer Liste)', () => {
+    const names = ['A', 'B', 'C'];
+    for (let i = 0; i < 20; i++) assert.ok(names.includes(pickStartPlayer(names)));
+    assert.equal(pickStartPlayer([]), '');
+  });
+
+  test('Quell-Check: lokal UND Coop nutzen decorateImposters + pickStartPlayer', () => {
+    const app = readSrc('js/app.js');
+    assert.equal((app.match(/decorateImposters\(/g) || []).length, 3, 'startLocalGame + nextRound + startCoopGame');
+    assert.ok((app.match(/pickStartPlayer\(/g) || []).length >= 3);
+  });
+});
+
 describe('Imposter — Parität lokal↔Coop (Quell-Check)', () => {
   const app = readSrc('js/app.js');
   test('Lokal UND Coop nutzen dieselbe geteilte calcVoteOutcome', () => {
     const calls = (app.match(/calcVoteOutcome\(/g) || []).length;
     assert.equal(calls, 2, 'Erwartet genau 2 Aufrufe: calcResult (lokal) + calcCoopResult (Coop)');
-    assert.ok(/import \{ calcVoteOutcome \} from '\.\/games\/imposter-logic\.js'/.test(app));
+    assert.ok(/import \{ calcVoteOutcome[^}]*\} from '\.\/games\/imposter-logic\.js'/.test(app));
   });
   test('Keine zweite, inline duplizierte Sieglogik mehr im lokalen calcResult', () => {
     // Die Gewinnbedingung darf nur EINMAL (im Coop-Zweig, über destrukturierte Werte) vorkommen
@@ -187,6 +233,21 @@ describe('Codenames — Sieglogik (echte, geteilte Funktionen)', async () => {
     assert.equal(cnState.winReason, 'all-found');
   });
 
+  test('Serien-Punktestand: Sieger bekommt genau 1 Punkt pro Partie (kein Doppelzählen)', () => {
+    setupBoard([CN_TYPE.RED, CN_TYPE.BLUE, CN_TYPE.NEUTRAL], 'red'); // 1 rote Karte
+    cnState.series = { red: 0, blue: 0 };
+    cnRevealCard(0); // rot findet letzte eigene → rot gewinnt
+    assert.equal(cnState.series.red, 1);
+    assert.equal(cnState.series.blue, 0);
+    // Weitere Reveals nach gameover dürfen nichts mehr ändern
+    cnRevealCard(1);
+    assert.equal(cnState.series.red, 1);
+    // Zweite Partie: blau gewinnt via schwarzer Karte
+    setupBoard([CN_TYPE.BLACK, CN_TYPE.RED, CN_TYPE.BLUE], 'red');
+    cnRevealCard(0);
+    assert.deepEqual(cnState.series, { red: 1, blue: 1 });
+  });
+
   test('Hinweis-Historie: sammelt Hinweise mit Team und wird bei Neustart geleert', () => {
     setupBoard([CN_TYPE.RED, CN_TYPE.RED, CN_TYPE.BLUE], 'red');
     cnState.hintHistory = [];
@@ -257,6 +318,16 @@ describe('Wer bin ich — Ergebnis & Punkte (echte Funktionen)', async () => {
     wbiMarkNotGuessed(1);
     // Karte 2 noch offen → keine Ergebnisphase
     assert.notEqual(wbiState.phase, 'result');
+  });
+
+  test('Fragen-Zähler: +1/−1, nie unter 0, Reset bei Spielstart', () => {
+    wbi.wbiBumpQuestions('Alice', 1);
+    wbi.wbiBumpQuestions('Alice', 1);
+    wbi.wbiBumpQuestions('Bob', -1); // startet bei 0 → bleibt 0
+    assert.equal(wbiState.questionCounts['Alice'], 2);
+    assert.equal(wbiState.questionCounts['Bob'], 0);
+    wbiStartLocal();
+    assert.deepEqual(wbiState.questionCounts, {});
   });
 });
 
