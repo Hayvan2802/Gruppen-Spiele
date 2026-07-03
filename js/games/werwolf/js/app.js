@@ -2,7 +2,10 @@
 import { createApp, reactive, computed, watch } from './vue.esm-browser.prod.js';
 import { BUILD, CHANGELOG } from './buildinfo.js';
 import { ROLES, NIGHT_ORDER, DONATE_URL, COOP_MAX_PLAYERS } from './config.js';
-import * as Coop from './coop.js';
+// GETEILTER Coop-Transport der Haupt-App (ein coop.js/firebase.js für alle
+// vier Spiele — funktioniert eingebettet UND standalone, da gleiche Origin).
+import * as Coop from '../../../coop.js';
+import { qrSvg } from '../../../qrcode.js';
 import { log, exportLogToFile } from './debuglog.js';
 import {
   loadSettings, saveSettings, loadSeenVersion, saveSeenVersion,
@@ -956,9 +959,17 @@ async function joinRoom() {
   });
 }
 async function toggleReady() { await Coop.send({ type: Coop.MSG.READY, ready: true }); }
+// Einladungs-QR für die Lobby (leer solange kein Raumcode; niemals werfend)
+function inviteQr() {
+  try { return state.coop.code ? qrSvg(getInviteLink()) : ''; } catch { return ''; }
+}
+
 function getInviteLink() {
   const base = window.location.origin + window.location.pathname;
-  return `${base}?code=${state.coop.code}`;
+  // Eingebettet zeigt die URL auf die Haupt-App → eigener Parameter ?ww=,
+  // damit der Link nicht im Imposter-Join (?code=) landet. Standalone: ?code=.
+  const param = window.__WW_EMBEDDED__ ? 'ww' : 'code';
+  return `${base}?${param}=${state.coop.code}`;
 }
 async function shareInviteLink() {
   const url = getInviteLink();
@@ -995,7 +1006,7 @@ function init() {
 
   // Einladungslink: ?code=XXXXXX → direkt in Coop-Join-Ansicht
   const params = new URLSearchParams(window.location.search);
-  const inviteCode = params.get('code');
+  const inviteCode = params.get('code') || params.get('ww');
   if (inviteCode && /^[0-9]{6}$/.test(inviteCode)) {
     state.gameMode = 'coop';
     state.coop.phase = 'joining';
@@ -1034,7 +1045,7 @@ const App = {
       setTheme, setLang, setUserName, haptic, changePlayerCount, toggleRole, changeRole, selectMode,
       openSeating, closeSeating, selectSeat, moveSeat,
       openGameMenu, closeGameMenu, pauseGame, resumeGame, confirmEndGame,
-      getInviteLink, shareInviteLink,
+      getInviteLink, shareInviteLink, inviteQr,
       startCoopVote, castCoopVote, resolveCoopVote, skipCoopVote,
       sendNightRequest, submitNightAction,
       startLocalGame, revealRole, nextReveal,
@@ -1542,6 +1553,8 @@ const App = {
                     🔗 Link teilen
                   </button>
                 </div>
+                <div v-if="inviteQr()" class="invite-qr" v-html="inviteQr()"></div>
+                <div v-if="inviteQr()" class="invite-qr-hint">📱 Zum Beitreten scannen</div>
 
                 <ul class="lobby-list">
                   <li v-for="p in state.coop.players" :key="p.uid" class="lobby-item">

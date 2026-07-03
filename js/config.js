@@ -1,6 +1,6 @@
 // config.js — Gruppen-Spiele Konfiguration v0.20
 export const DONATE_URL      = '';
-export const COOP_MAX_PLAYERS = 16;
+export const COOP_MAX_PLAYERS = 20; // Werwolf braucht bis zu 20 — gilt als Obergrenze für alle Räume
 export const DEFAULT_SETTINGS = { theme: 'dark', lang: 'de', sound: false };
 
 // Timer-Dauer wird dynamisch in app.js berechnet

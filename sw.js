@@ -24,7 +24,7 @@ const ASSETS = [
   './js/games/werwolf/css/styles.css', './js/games/werwolf/css/styles.shadow.css',
   './js/games/werwolf/js/vue.esm-browser.prod.js',
   './js/games/werwolf/js/app.js', './js/games/werwolf/js/config.js', './js/games/werwolf/js/storage.js',
-  './js/games/werwolf/js/coop.js', './js/games/werwolf/js/firebase.js', './js/games/werwolf/js/debuglog.js',
+  './js/games/werwolf/js/debuglog.js',
   './js/games/werwolf/js/buildinfo.js', './js/games/werwolf/js/i18n/index.js',
   './js/games/werwolf/js/i18n/de.js', './js/games/werwolf/js/i18n/en.js', './js/games/werwolf/js/i18n/tr.js',
   './js/games/werwolf/js/i18n/fr.js', './js/games/werwolf/js/i18n/es.js', './js/games/werwolf/js/i18n/it.js',

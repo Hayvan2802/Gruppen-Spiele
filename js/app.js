@@ -1042,6 +1042,8 @@ function init() {
     cnState.coop.phase = 'joining';
     cnState.coop.codeDraft = cnCode;
   }
+  const wwCode = params.get('ww');
+  if (wwCode && /^[0-9]{6}$/.test(wwCode)) openWerwolf(); // Werwolf-init liest ?ww selbst
   const wbiCode = params.get('wbi');
   if (wbiCode && /^[0-9]{6}$/.test(wbiCode)) {
     state.screen = 'wbi';
