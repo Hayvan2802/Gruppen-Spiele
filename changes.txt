@@ -1,1 +1,3 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+Imposter: Neuer 🎭 Undercover-Modus – der Imposter bekommt ein ähnliches Wort und weiß selbst nicht, dass er der Imposter ist!
+Neue, dezente Sound-Effekte bei Imposter (Aufdecken, Abstimmung, Sieg) – in den Einstellungen einschaltbar.

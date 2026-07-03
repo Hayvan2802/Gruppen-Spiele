@@ -138,6 +138,45 @@ describe('Imposter — Optionen (Kategorie/Partner/Startspieler, geteilt lokal/C
     assert.equal(pickStartPlayer([]), '');
   });
 
+  test('UNDERCOVER: Imposter bekommt das ähnliche Wort + undercover-Flag, keine Hinweise', () => {
+    const out = decorateImposters(roles, {
+      undercoverWord: 'Katze',
+      // absichtlich zusammen mit den Hinweis-Optionen — die müssen ignoriert werden
+      knowCategory: true, category: '🐾 Tiere', knowPartners: true,
+    });
+    const imp = out.find(r => r.name === 'A');
+    assert.equal(imp.word, 'Katze');
+    assert.equal(imp.undercover, true);
+    assert.equal(imp.category, undefined, 'Kategorie-Hinweis würde den Modus verraten');
+    assert.equal(imp.partners, undefined, 'Partner-Hinweis würde den Modus verraten');
+    const villager = out.find(r => r.name === 'B');
+    assert.equal(villager.word, 'Hund');
+    assert.equal(villager.undercover, undefined);
+    assert.equal(imp.isImposter, true, 'Sieglogik bleibt unverändert');
+  });
+
+  test('UNDERCOVER: pickWordPair wählt zwei VERSCHIEDENE Wörter, bevorzugt gleiche Kategorie', async () => {
+    const { pickWordPair } = await import('../../js/games/imposter-logic.js');
+    const pool = [
+      { word: 'Hund', category: 'Tiere' }, { word: 'Katze', category: 'Tiere' },
+      { word: 'Pizza', category: 'Essen' },
+    ];
+    for (let i = 0; i < 30; i++) {
+      const { word, undercoverWord, category } = pickWordPair(pool);
+      assert.notEqual(word, undercoverWord, 'Haupt- und Imposter-Wort müssen sich unterscheiden');
+      const sameCat = pool.filter(e => e.category === category && e.word !== word);
+      if (sameCat.length) {
+        assert.ok(sameCat.some(e => e.word === undercoverWord), 'gleiche Kategorie bevorzugt');
+      }
+    }
+    // Kategorie mit nur 1 Wort → Fallback auf beliebiges anderes Wort
+    const single = [{ word: 'Solo', category: 'X' }, { word: 'Anders', category: 'Y' }];
+    for (let i = 0; i < 10; i++) {
+      const { word, undercoverWord } = pickWordPair(single);
+      assert.notEqual(word, undercoverWord);
+    }
+  });
+
   test('Quell-Check: lokal UND Coop nutzen decorateImposters + pickStartPlayer', () => {
     const app = readSrc('js/app.js');
     assert.equal((app.match(/decorateImposters\(/g) || []).length, 3, 'startLocalGame + nextRound + startCoopGame');

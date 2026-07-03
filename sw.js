@@ -6,7 +6,7 @@ const ASSETS = [
   './js/app.js', './js/buildinfo.js', './js/werwolf-embed.js',
   './js/games/werbinich.js', './js/games/werbinich-words.js',
   './js/games/codenames.js', './js/games/codenames-words.js', './js/games/imposter-logic.js', './js/config.js', './js/storage.js',
-  './js/coop.js', './js/firebase.js', './js/debuglog.js',
+  './js/coop.js', './js/firebase.js', './js/debuglog.js', './js/sound.js',
   './js/i18n/index.js', './js/i18n/de.js', './js/i18n/en.js',
   './js/i18n/tr.js', './js/i18n/fr.js', './js/i18n/es.js',
   './js/i18n/it.js', './js/i18n/pl.js', './js/i18n/ru.js', './js/i18n/ar.js',
