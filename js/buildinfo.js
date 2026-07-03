@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.111';
-export const BUILD_HASH = 'eigener-vanilla-qr-encod';
+export const BUILD      = '0.112';
+export const BUILD_HASH = 'geteilter-coop-transport';
 
 export const CHANGELOG = [
   {
+    version: '0.112',
+    date: '03.07.2026',
+    time: '20:52',
+    changes: [
+    'Werwolf ist jetzt voll integriert: gleicher Multiplayer-Unterbau wie die anderen Spiele, und die Lobby zeigt ebenfalls einen QR-Code zum Beitreten.',
+    ],
+  },
+{
     version: '0.111',
     date: '03.07.2026',
     time: '19:40',

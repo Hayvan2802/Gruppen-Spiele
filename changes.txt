@@ -1,2 +1,1 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
-Werwolf ist jetzt voll integriert: gleicher Multiplayer-Unterbau wie die anderen Spiele, und die Lobby zeigt ebenfalls einen QR-Code zum Beitreten.
