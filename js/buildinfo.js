@@ -1,9 +1,20 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.106';
-export const BUILD_HASH = 'sieg-konfetti-codenames';
+export const BUILD      = '0.107';
+export const BUILD_HASH = 'imposter-optionen-starts';
 
 export const CHANGELOG = [
   {
+    version: '0.107',
+    date: '03.07.2026',
+    time: '09:19',
+    changes: [
+    'Imposter: Die App zeigt jetzt an, wer die Hinweis-Runde beginnt – und neue Optionen lassen Imposter die Kategorie sehen oder einander kennen.',
+    'Wer bin ich: Neuer Fragen-Zähler zeigt, wie viele Ja/Nein-Fragen jeder schon gestellt hat.',
+    'Codenames: Fortschrittsbalken für beide Teams und ein Serien-Punktestand über mehrere Partien.',
+    'Werwolf: Sanfter Übergang zwischen Tag- und Nachtphase.',
+    ],
+  },
+{
     version: '0.106',
     date: '03.07.2026',
     time: '04:15',
