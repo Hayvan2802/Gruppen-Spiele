@@ -51,6 +51,13 @@ Backend-Server (außer Firebase RTDB für den Echtzeit-Multiplayer).
 >   funktioniert. Eigener Service Worker bleibt **deaktiviert**
 >   (`WW_REGISTER_OWN_SW = false`). localStorage kollidiert nicht
 >   (`gs_`- vs. `ww_`-Präfix).
+> - **Geteilter Coop-Transport:** Werwolf nutzt DASSELBE `js/coop.js` +
+>   `js/firebase.js` wie die anderen Spiele (Import `'../../../coop.js'`) —
+>   die früheren eigenen Kopien (inkl. eigenem Firebase-SDK-Klon unter
+>   `werwolf/js/vendor/`) wurden entfernt. Einladung eingebettet über `?ww=CODE`
+>   (Haupt-App öffnet Werwolf, dessen `init()` liest den Code), standalone
+>   weiterhin `?code=`. `COOP_MAX_PLAYERS` (js/config.js) ist auf 20 gesetzt,
+>   weil Werwolf bis zu 20 Spieler erlaubt.
 
 ## Architektur
 
@@ -185,7 +192,9 @@ Beim Start einer neuen Session IMMER zuerst den aktuellen Stand ermitteln — ni
    Gleichstand, WBI-Fragenzähler, WW-Phasenübergang + Jäger-/Hexe-Fixes + Jäger-Animation,
    Sound-Effekte, geräteweiter Benutzername, einheitliche Einstellungsmenüs, PWA-Selbstheilung,
    Coop-/Logik-/E2E-Testsuiten in CI).
-   Noch offen: QR-Code-Einladung, neue Werwolf-Rollen, Coop-Avatare, Phase 4 (gemeinsames
+   Zusätzlich umgesetzt: QR-Code-Einladung (alle 4 Spiele, eigener Encoder js/qrcode.js),
+   Werwolf auf geteilten Coop-Transport umgestellt.
+   Noch offen: neue Werwolf-Rollen, Coop-Avatare, Phase 4 (gemeinsames
    Settings-Modul, i18n-Vervollständigung der hartkodierten Labels, Coop-Reconnect).
 
 ## Ablauf bei jeder Code-Änderung

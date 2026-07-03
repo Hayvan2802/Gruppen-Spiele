@@ -18,7 +18,7 @@
 
 import { test, describe, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = new URL('../../', import.meta.url);
@@ -390,6 +390,38 @@ describe('Wer bin ich — Ergebnis & Punkte (echte Funktionen)', async () => {
     assert.equal(wbiState.questionCounts['Bob'], 0);
     wbiStartLocal();
     assert.deepEqual(wbiState.questionCounts, {});
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// WERWOLF — Integration: geteilter Coop-Transport (wie die anderen drei Spiele)
+// ════════════════════════════════════════════════════════════════════════════
+describe('Werwolf — geteilter Coop-Transport', () => {
+  test('Werwolf importiert das GETEILTE coop.js der Haupt-App (keine eigene Kopie)', () => {
+    const src = readSrc('js/games/werwolf/js/app.js');
+    assert.ok(src.includes("from '../../../coop.js'"), 'Import zeigt auf js/coop.js');
+    assert.ok(!existsSync(fileURLToPath(new URL('js/games/werwolf/js/coop.js', ROOT))), 'Duplikat coop.js entfernt');
+    assert.ok(!existsSync(fileURLToPath(new URL('js/games/werwolf/js/firebase.js', ROOT))), 'Duplikat firebase.js entfernt');
+    assert.ok(!existsSync(fileURLToPath(new URL('js/games/werwolf/js/vendor', ROOT))), 'eigener Firebase-SDK-Klon entfernt');
+  });
+
+  test('Einladung: eingebettet ?ww=, standalone ?code= — Haupt-App öffnet Werwolf bei ?ww=', () => {
+    const ww = readSrc('js/games/werwolf/js/app.js');
+    assert.ok(/__WW_EMBEDDED__ \? 'ww' : 'code'/.test(ww), 'Link-Parameter je Kontext');
+    assert.ok(/params\.get\('code'\) \|\| params\.get\('ww'\)/.test(ww), 'init akzeptiert beide Parameter');
+    const app = readSrc('js/app.js');
+    assert.ok(/params\.get\('ww'\)/.test(app) && /openWerwolf\(\)/.test(app), 'Haupt-App leitet ?ww= zu Werwolf');
+  });
+
+  test('QR-Code in der Werwolf-Lobby (geteilter Generator)', () => {
+    const ww = readSrc('js/games/werwolf/js/app.js');
+    assert.ok(ww.includes("from '../../../qrcode.js'"), 'nutzt geteiltes qrcode.js');
+    assert.ok(/invite-qr/.test(ww), 'Lobby zeigt den QR');
+  });
+
+  test('Geteiltes Spielerlimit deckt Werwolf ab (COOP_MAX_PLAYERS >= 20)', async () => {
+    const { COOP_MAX_PLAYERS } = await import('../../js/config.js');
+    assert.ok(COOP_MAX_PLAYERS >= 20, `Werwolf erlaubt 20 Spieler, Limit ist ${COOP_MAX_PLAYERS}`);
   });
 });
 

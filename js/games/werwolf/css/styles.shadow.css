@@ -395,3 +395,8 @@
 .phase-fade{animation:phaseFade .55s ease;}
 @keyframes phaseFade{0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:none}}
 @media (prefers-reduced-motion: reduce){.phase-fade{animation:none}}
+
+/* ── Einladungs-QR-Code in der Coop-Lobby ───────────────────────────────── */
+.invite-qr{display:flex;justify-content:center;margin:.7rem 0 .2rem;}
+.invite-qr svg{width:150px;height:150px;border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,.35);}
+.invite-qr-hint{text-align:center;font-size:.72rem;color:var(--txt3);margin-bottom:.7rem;}
