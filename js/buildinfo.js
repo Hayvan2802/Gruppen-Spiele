@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.112';
-export const BUILD_HASH = 'geteilter-coop-transport';
+export const BUILD      = '0.113';
+export const BUILD_HASH = 'werwolf-voll-in-die-haup';
 
 export const CHANGELOG = [
   {
+    version: '0.113',
+    date: '04.07.2026',
+    time: '22:16',
+    changes: [
+    'Werwolf ist jetzt nahtlos wie die anderen Spiele in die App eingebaut – schnellerer Wechsel, einheitliches Verhalten.',
+    ],
+  },
+{
     version: '0.112',
     date: '03.07.2026',
     time: '20:52',
