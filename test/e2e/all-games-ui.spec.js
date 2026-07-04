@@ -77,90 +77,69 @@ for (const g of MAIN_GAMES) {
   });
 }
 
-// ── Werwolf (eigene App im Shadow-DOM) ───────────────────────────────────────────
+// ── Werwolf (normale Vue-Komponente derselben App, kein Shadow-DOM) ──────────────
 test.describe('Werwolf', () => {
   test.beforeEach(async ({ page }) => {
     await seedUserName(page, 'Tester');
     await waitForApp(page);
     await openGame(page, 'Werwolf');
-    await expect(page.locator('#ww-host')).toBeVisible({ timeout: 10000 });
-    // Warten bis die Sub-App im Shadow gemountet ist
-    await expect.poll(async () => page.evaluate(() =>
-      !!document.querySelector('#ww-host')?.shadowRoot?.querySelector('.ww-root')
-    ), { timeout: 10000 }).toBe(true);
+    await expect(page.locator('.wwapp .screen')).toBeVisible({ timeout: 10000 });
   });
 
-  test('Werwolf: Home lädt im Shadow-DOM', async ({ page }) => {
-    const ok = await page.evaluate(() =>
-      !!document.querySelector('#ww-host').shadowRoot.querySelector('.screen'));
-    expect(ok).toBe(true);
+  test('Werwolf: Home lädt inline (kein Shadow-DOM)', async ({ page }) => {
+    await expect(page.locator('.wwapp .logo-moon')).toBeVisible();
+    // Kein Shadow-Host mehr im DOM
+    expect(await page.locator('#ww-host').count()).toBe(0);
   });
 
   test('Werwolf: Coop-Setup (Host + Beitreten) vorhanden', async ({ page }) => {
-    const modeCards = await page.evaluate(() =>
-      document.querySelector('#ww-host').shadowRoot.querySelectorAll('.mode-card').length);
-    expect(modeCards).toBeGreaterThanOrEqual(2);
-    // Multiplayer wählen — dann Vue rendern lassen, dann Host/Join lesen
-    await page.evaluate(() => {
-      const sr = document.querySelector('#ww-host').shadowRoot;
-      const coop = [...sr.querySelectorAll('.mode-card')].find(c => /Multiplayer/.test(c.textContent));
-      coop && coop.click();
-    });
-    await page.waitForTimeout(400);
-    const res = await page.evaluate(() => {
-      const sr = document.querySelector('#ww-host').shadowRoot;
-      const btns = [...sr.querySelectorAll('button')].map(b => b.textContent);
-      return { hasHost: btns.some(t => /👑|Host/.test(t)), hasJoin: btns.some(t => /🚪|Beitreten/.test(t)) };
-    });
-    expect(res.hasHost).toBe(true);
-    expect(res.hasJoin).toBe(true);
+    await expect(page.locator('.wwapp .mode-card')).toHaveCount(2);
+    // Multiplayer-Modus (zweite Karte) wählen
+    await page.locator('.wwapp .mode-card').nth(1).click();
+    // Host- und Beitreten-Buttons erscheinen
+    await expect(page.locator('.wwapp').getByRole('button', { name: /Host|👑/ }).first()).toBeVisible();
+    await expect(page.locator('.wwapp').getByRole('button', { name: /Beitreten|🚪/ }).first()).toBeVisible();
   });
 
-  test('Werwolf: Einstellungsmenü konsistent (Benutzername + Theme)', async ({ page }) => {
-    // Statistik-Button darf NICHT (mehr) existieren; Einstellungen öffnen
-    const hasStats = await page.evaluate(() => {
-      const sr = document.querySelector('#ww-host').shadowRoot;
-      const topbar = [...sr.querySelectorAll('.top-bar button, .top-bar a')].map(b => b.textContent);
-      const gear = [...sr.querySelectorAll('button.icon-btn')].find(b => b.textContent.includes('⚙'));
-      if (gear) gear.click();
-      return topbar.some(t => t.includes('📊'));
-    });
-    await page.waitForTimeout(400);
-    const res = await page.evaluate(() => {
-      const sr = document.querySelector('#ww-host').shadowRoot;
-      const d = sr.querySelector('.settings-drawer');
-      const userField = d && d.querySelector('input.ninput[placeholder="Dein Name"]');
-      const themes = d ? [...d.querySelectorAll('.theme-btn')].map(x => x.textContent.trim()) : [];
-      return { drawerOpen: !!d, userVal: userField && userField.value, themes };
-    });
-    expect(hasStats).toBe(false);
-    expect(res.drawerOpen).toBe(true);
-    expect(res.userVal).toBe('Tester');
-    expect(res.themes).toEqual(THEME_LABELS);
+  test('Werwolf: Einstellungsmenü konsistent (Benutzername + Theme, keine Statistik)', async ({ page }) => {
+    // Kein Statistik-Button (📊) in der Werwolf-Topbar
+    await expect(page.locator('.wwapp .top-bar', { hasText: '📊' })).toHaveCount(0);
+    // Werwolf-Zahnrad öffnet die Einstellungen
+    await page.locator('.wwapp .top-bar button.icon-btn').click();
+    const drawer = page.locator('.wwapp .settings-drawer');
+    await expect(drawer).toBeVisible();
+    await expect(drawer.locator('input.ninput[placeholder="Dein Name"]')).toHaveValue('Tester');
+    const themes = await drawer.locator('.theme-btn').allTextContents();
+    expect(themes.map((t) => t.trim())).toEqual(THEME_LABELS);
   });
 });
 
 // ── Dark/Light: Theme der Haupt-App gilt auch fürs eingebettete Werwolf ───────────
+// Werwolf folgt dem Theme reaktiv über das :theme-Prop → Klasse .wwapp.light.
 test('Theme-Wechsel (Hell/Dunkel) gilt konsistent auch für Werwolf', async ({ page }) => {
   await waitForApp(page);
-  // Werwolf einmal öffnen (mounten), dann zurück zur Startseite
-  await openGame(page, 'Werwolf');
-  await expect.poll(async () => page.evaluate(() =>
-    !!document.querySelector('#ww-host')?.shadowRoot?.querySelector('.ww-root')
-  ), { timeout: 10000 }).toBe(true);
-  await page.locator('.back-corner').click();
 
-  const wwLight = () => page.evaluate(() =>
-    document.querySelector('#ww-host').shadowRoot.querySelector('.ww-root').classList.contains('light'));
-
-  // Auf Hell schalten → body UND Werwolf-Root hell
+  // Auf Hell schalten (Haupt-App-Einstellungen) → body hell
   await page.locator('button.icon-btn[title="Einstellungen"]').first().click();
   await page.locator('.settings-drawer .theme-btn', { hasText: 'Hell' }).click();
   await expect(page.locator('body')).toHaveClass(/light/);
-  await expect.poll(wwLight, { timeout: 3000 }).toBe(true);
+  await page.locator('.settings-drawer .drawer-head .icon-btn').click(); // ✕ schließen
+  await expect(page.locator('.settings-drawer')).toBeHidden();
 
-  // Auf Dunkel zurück → beide dunkel
+  // Werwolf öffnen → Wurzel .wwapp trägt ebenfalls .light
+  await openGame(page, 'Werwolf');
+  await expect(page.locator('.wwapp.light')).toBeVisible({ timeout: 10000 });
+
+  // Zurück, auf Dunkel schalten
+  await page.locator('.back-corner').click();
+  await page.locator('button.icon-btn[title="Einstellungen"]').first().click();
   await page.locator('.settings-drawer .theme-btn', { hasText: 'Dunkel' }).click();
   await expect(page.locator('body')).not.toHaveClass(/light/);
-  await expect.poll(wwLight, { timeout: 3000 }).toBe(false);
+  await page.locator('.settings-drawer .drawer-head .icon-btn').click(); // ✕ schließen
+  await expect(page.locator('.settings-drawer')).toBeHidden();
+
+  // Werwolf erneut öffnen → .wwapp NICHT mehr hell
+  await openGame(page, 'Werwolf');
+  await expect(page.locator('.wwapp')).toBeVisible({ timeout: 10000 });
+  await expect(page.locator('.wwapp.light')).toHaveCount(0);
 });

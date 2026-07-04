@@ -407,7 +407,7 @@ describe('Werwolf — geteilter Coop-Transport', () => {
 
   test('Einladung: eingebettet ?ww=, standalone ?code= — Haupt-App öffnet Werwolf bei ?ww=', () => {
     const ww = readSrc('js/games/werwolf/js/app.js');
-    assert.ok(/__WW_EMBEDDED__ \? 'ww' : 'code'/.test(ww), 'Link-Parameter je Kontext');
+    assert.ok(/WW_STANDALONE \? 'code' : 'ww'/.test(ww), 'Link-Parameter je Kontext');
     assert.ok(/params\.get\('code'\) \|\| params\.get\('ww'\)/.test(ww), 'init akzeptiert beide Parameter');
     const app = readSrc('js/app.js');
     assert.ok(/params\.get\('ww'\)/.test(app) && /openWerwolf\(\)/.test(app), 'Haupt-App leitet ?ww= zu Werwolf');
@@ -422,6 +422,45 @@ describe('Werwolf — geteilter Coop-Transport', () => {
   test('Geteiltes Spielerlimit deckt Werwolf ab (COOP_MAX_PLAYERS >= 20)', async () => {
     const { COOP_MAX_PLAYERS } = await import('../../js/config.js');
     assert.ok(COOP_MAX_PLAYERS >= 20, `Werwolf erlaubt 20 Spieler, Limit ist ${COOP_MAX_PLAYERS}`);
+  });
+});
+
+// ── Werwolf: KEIN Architektur-Unterschied mehr zu den anderen drei Spielen ──
+// Werwolf läuft als normale Vue-Komponente in derselben App-Instanz — kein
+// eigenes createApp, kein Shadow-DOM, kein Embed-Glue, dieselbe Vue-Datei.
+describe('Werwolf — voll in die Haupt-App integriert (wie die anderen Spiele)', () => {
+  test('Werwolf teilt die Vue-Instanz der Haupt-App (keine eigene Kopie)', () => {
+    const ww = readSrc('js/games/werwolf/js/app.js');
+    assert.ok(ww.includes("from '../../../vue.esm-browser.prod.js'"), 'importiert das Wurzel-Vue');
+    assert.ok(!existsSync(fileURLToPath(new URL('js/games/werwolf/js/vue.esm-browser.prod.js', ROOT))),
+      'eigene Vue-Kopie entfernt');
+  });
+
+  test('Werwolf exportiert eine Vue-Komponente; die Haupt-App rendert sie inline', () => {
+    const ww = readSrc('js/games/werwolf/js/app.js');
+    assert.ok(/export const WwGame = App;/.test(ww), 'Werwolf exportiert die Komponente WwGame');
+    const app = readSrc('js/app.js');
+    assert.ok(/import \{ WwGame \} from '\.\/games\/werwolf\/js\/app\.js'/.test(app), 'Haupt-App importiert WwGame');
+    assert.ok(/components: \{ WwGame \}/.test(app), 'Haupt-App registriert die Komponente');
+    assert.ok(/<ww-game[\s\S]*?state\.screen==='ww'/.test(app), 'Haupt-App rendert <ww-game> inline');
+  });
+
+  test('Embed-Glue und Shadow-DOM sind vollständig entfernt', () => {
+    assert.ok(!existsSync(fileURLToPath(new URL('js/werwolf-embed.js', ROOT))), 'werwolf-embed.js entfernt');
+    assert.ok(!existsSync(fileURLToPath(new URL('js/games/werwolf/css/styles.shadow.css', ROOT))), 'Shadow-CSS entfernt');
+    const app = readSrc('js/app.js');
+    assert.ok(!/werwolf-embed|ww-host|attachShadow|__WW_EMBEDDED__/.test(app), 'keine Embed-/Shadow-Reste in der Haupt-App');
+    const ww = readSrc('js/games/werwolf/js/app.js');
+    assert.ok(!/__WW_EMBEDDED__|attachShadow|mountWerwolf/.test(ww), 'keine Embed-/Shadow-Reste in Werwolf');
+  });
+
+  test('Werwolf-CSS ist per .wwapp isoliert (statt Shadow-DOM)', () => {
+    const scoped = readSrc('js/games/werwolf/css/styles.scoped.css');
+    assert.ok(/\.wwapp\{/.test(scoped), 'Wurzel-Regel .wwapp vorhanden');
+    assert.ok(/\.wwapp \.modal\{/.test(scoped), 'Klassen unter .wwapp isoliert');
+    assert.ok(!/^body\{/m.test(scoped) && !/^:root\{/m.test(scoped), 'keine globalen Selektoren mehr');
+    const ww = readSrc('js/games/werwolf/js/app.js');
+    assert.ok(/class="wwapp app"/.test(ww), 'Werwolf-Wurzelelement trägt .wwapp');
   });
 });
 
@@ -569,7 +608,7 @@ describe('Werwolf — Jäger (Rache-Schuss)', () => {
 
   test('Jäger-Modal hat die Aufplopp-Animation (UI)', () => {
     assert.ok(/jaeger-modal/.test(src), 'Template nutzt die Animations-Klasse');
-    for (const cssFile of ['js/games/werwolf/css/styles.css', 'js/games/werwolf/css/styles.shadow.css']) {
+    for (const cssFile of ['js/games/werwolf/css/styles.css', 'js/games/werwolf/css/styles.scoped.css']) {
       const css = readSrc(cssFile);
       assert.ok(/@keyframes jaegerPop/.test(css), `${cssFile}: Pop-Animation definiert`);
       assert.ok(/\.jaeger-modal\{animation:jaegerPop/.test(css), `${cssFile}: Modal animiert`);

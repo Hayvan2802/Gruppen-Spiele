@@ -24,40 +24,44 @@ Backend-Server (außer Firebase RTDB für den Echtzeit-Multiplayer).
 | 🕵️ **Imposter** | direkt in `js/app.js` | Lokal (1 Gerät) + Coop |
 | 🧩 **Codenames** | `js/games/codenames.js`, `codenames-words.js` | Lokal + Coop |
 | 🤔 **Wer bin ich?** | `js/games/werbinich.js`, `werbinich-words.js` | Lokal + Coop |
-| 🐺 **Werwolf** | eigenständige Unter-App unter `js/games/werwolf/` | Lokal + Coop |
+| 🐺 **Werwolf** | `js/games/werwolf/js/app.js` (exportiert `WwGame`) + Rollen/i18n unter `js/games/werwolf/` | Lokal + Coop |
 
-> **Werwolf-Integration:** Werwolf ist eine vollständige, eigenständige App
-> (gleiche Architektur wie das Hauptprojekt) und liegt unter `js/games/werwolf/`.
-> Sie wird **nahtlos eingebettet** statt als zweite Seite geladen:
-> `js/werwolf-embed.js` mountet die Werwolf-App als **eigene Vue-Instanz in ein
-> Shadow-DOM**-Element (`#ww-host` im Haupt-Template).
+> **Werwolf-Integration (seit v0.113 KEIN Architektur-Unterschied mehr zu den
+> anderen drei Spielen):** Werwolf läuft als **normale Vue-Komponente derselben
+> App-Instanz** — kein eigenes `createApp`, kein Shadow-DOM, kein Embed-Glue,
+> **dieselbe Vue-Datei** wie die Haupt-App. `js/games/werwolf/js/app.js`
+> exportiert die Komponente `WwGame`; `js/app.js` importiert sie, registriert sie
+> (`components: { WwGame }`) und rendert sie inline: `<ww-game v-if="state.screen==='ww'"
+> :theme=… :lang=…>`. Genau wie Codenames/Wer-bin-ich ein Modul der einen App ist.
 >
-> - **Warum Shadow-DOM:** Beide Apps teilen ~187 gleichnamige CSS-Klassen
->   (`.btn`, `.screen`, `.top-bar` …). Das Shadow-DOM kapselt das Werwolf-CSS
->   komplett ab. Dafür gibt es eine generierte Variante
->   `js/games/werwolf/css/styles.shadow.css`, in der nur die 9 globalen Selektoren
->   (`:root`, `html`, `body`, `body.light` …) auf `.ww-root` umgeschrieben sind
->   (alle Klassen/Keyframes bleiben unverändert, da das Shadow-DOM sie isoliert).
-> - **Nahtlos & schnell:** `state.screen='ww'` blendet den Host ein (kein Reload);
->   nach dem ersten Mounten bleibt die App im Speicher (`v-show`) → Wechsel
->   hin/zurück ist sofort. Werwolf wird zudem nach dem Laden im Hintergrund
->   vorgewärmt (`requestIdleCallback`).
-> - **Zurück:** durchgängiger `←`-Button der Haupt-App (`.ww-back-btn`,
->   `closeWerwolf()`), wie bei den anderen Spielen.
-> - **Anpassungen in `js/games/werwolf/js/app.js`:** `mountWerwolf(el)`/`setWwRoot(el)`
->   exportiert; Theme-Klasse und Toasts gehen auf `wwRoot` (das `.ww-root` im
->   Shadow) statt `document.body`. Auto-Mount nur noch standalone
->   (`if (!window.__WW_EMBEDDED__)`), sodass `/js/games/werwolf/` als Seite weiter
->   funktioniert. Eigener Service Worker bleibt **deaktiviert**
->   (`WW_REGISTER_OWN_SW = false`). localStorage kollidiert nicht
->   (`gs_`- vs. `ww_`-Präfix).
+> - **CSS-Isolation ohne Shadow-DOM:** Beide Apps teilen ~187 gleichnamige Klassen
+>   (`.btn`, `.screen`, `.modal` …). Statt Shadow-DOM ist das Werwolf-CSS per
+>   **Nachfahren-Selektor unter `.wwapp`** gekapselt: `scripts/scope-werwolf-css.mjs`
+>   erzeugt aus `js/games/werwolf/css/styles.css` die eingecheckte Datei
+>   `js/games/werwolf/css/styles.scoped.css` (jede Regel bekommt `.wwapp `
+>   vorangestellt, globale Selektoren `:root`/`html`/`body` werden auf `.wwapp`
+>   umgeschrieben; Keyframes bleiben unangetastet). Das Werwolf-Wurzelelement trägt
+>   `class="wwapp app"`, dadurch gewinnt `.wwapp .btn` (Spezifität 0,2,0) im Teilbaum
+>   gegen die `.btn` (0,1,0) der Haupt-App. **Nach jeder Änderung an `styles.css`
+>   das Skript neu laufen lassen** (`node scripts/scope-werwolf-css.mjs`). Beide
+>   Seiten (Haupt-App-`index.html` und standalone) laden `styles.scoped.css`.
+> - **Geteilte Vue-Instanz:** Werwolf importiert `../../../vue.esm-browser.prod.js`
+>   (das Wurzel-Vue) — die frühere eigene Vue-Kopie wurde entfernt. Nur so
+>   funktioniert die Reaktivität komponentenübergreifend in EINER App-Instanz.
+> - **Theme/Sprache** kommen als Props (`:theme`/`:lang`) von der Haupt-App und
+>   werden reaktiv übernommen; das Theme steuert die Klasse `.wwapp.light` (kein
+>   `document.body`-Toggle mehr). Toasts hängen per `ref` am `.wwapp`-Wurzelelement,
+>   damit sie im `.wwapp`-CSS-Scope liegen.
+> - **Zurück:** durchgängiger `←`-Button der Haupt-App (`closeWerwolf()`). Werwolf
+>   meldet seinen internen Screen per `ww-screen`-CustomEvent → `state.wwScreen`
+>   steuert die Sichtbarkeit des `←`.
+> - **Eigenständige Seite bleibt Fallback:** `/js/games/werwolf/` funktioniert
+>   weiter — dort mountet sich Werwolf selbst (`if (WW_STANDALONE)`, erkannt am
+>   Pfad `/werwolf/`). Einladungslink: eingebettet `?ww=CODE`, standalone `?code=`.
 > - **Geteilter Coop-Transport:** Werwolf nutzt DASSELBE `js/coop.js` +
->   `js/firebase.js` wie die anderen Spiele (Import `'../../../coop.js'`) —
->   die früheren eigenen Kopien (inkl. eigenem Firebase-SDK-Klon unter
->   `werwolf/js/vendor/`) wurden entfernt. Einladung eingebettet über `?ww=CODE`
->   (Haupt-App öffnet Werwolf, dessen `init()` liest den Code), standalone
->   weiterhin `?code=`. `COOP_MAX_PLAYERS` (js/config.js) ist auf 20 gesetzt,
->   weil Werwolf bis zu 20 Spieler erlaubt.
+>   `js/firebase.js` wie die anderen Spiele (Import `'../../../coop.js'`).
+>   `COOP_MAX_PLAYERS` (js/config.js) ist auf 20 gesetzt, weil Werwolf bis zu
+>   20 Spieler erlaubt. localStorage kollidiert nicht (`gs_`- vs. `ww_`-Präfix).
 
 ## Architektur
 
@@ -136,15 +140,18 @@ Gruppen-Spiele/
 │   │   ├── codenames-words.js    # Codenames-Wortlisten (mehrsprachig)
 │   │   ├── werbinich.js          # "Wer bin ich?"-Logik + State
 │   │   ├── werbinich-words.js    # "Wer bin ich?"-Kartendeck
-│   │   └── werwolf/              # 🐺 Eigenständige Werwolf-Unter-App (eigenes
-│   │                             #    index.html, js/, css/ — relative Pfade)
+│   │   └── werwolf/              # 🐺 Werwolf: js/app.js exportiert die Komponente
+│   │                             #    WwGame (in Haupt-App gerendert); Rollen (config.js),
+│   │                             #    i18n, styles.css + generierte styles.scoped.css.
+│   │                             #    index.html = standalone-Fallback.
 │   ├── i18n/
 │   │   ├── index.js              # t(), Locale-Handling, SUPPORTED_LOCALES
 │   │   └── de|en|tr|fr|es|it|pl|ru|ar.js   # Übersetzungen
 │   └── vendor/firebase/          # Eingebundene Firebase-SDK-Module
 ├── icons/                  # PWA-Icons + Spiel-Icons (icons/games/)
 ├── scripts/
-│   └── build.js            # Release-Skript (node scripts/build.js)
+│   ├── build.js            # Release-Skript (node scripts/build.js)
+│   └── scope-werwolf-css.mjs # generiert werwolf/css/styles.scoped.css (.wwapp-Isolation)
 ├── test/
 │   └── unit/
 │       └── imposter.test.js  # Node-Testfälle für Imposter-Logik
@@ -186,14 +193,17 @@ Beim Start einer neuen Session IMMER zuerst den aktuellen Stand ermitteln — ni
    GitHub löscht den Remote-Branch nach dem Squash-Merge — deshalb vor neuer Arbeit immer:
    `git fetch origin main && git checkout -B <branch> origin/main`, veralteten Tracking-Ref
    mit `git update-ref -d refs/remotes/origin/<branch>` entfernen, dann normal pushen.
-4. **Roadmap-Stand** *(bei Meilensteinen mitpflegen!)* — Stand v0.110:
+4. **Roadmap-Stand** *(bei Meilensteinen mitpflegen!)* — Stand v0.113:
    Umgesetzt: Phase 1–3 der Verbesserungs-Roadmap (Sieg-Konfetti, CN-Hinweishistorie/-Balken/-Serie,
    Imposter-Optionen [Startspieler, Kategorie, Partner], 🎭 Undercover-Modus, Stichwahl-Regel bei
    Gleichstand, WBI-Fragenzähler, WW-Phasenübergang + Jäger-/Hexe-Fixes + Jäger-Animation,
    Sound-Effekte, geräteweiter Benutzername, einheitliche Einstellungsmenüs, PWA-Selbstheilung,
    Coop-/Logik-/E2E-Testsuiten in CI).
    Zusätzlich umgesetzt: QR-Code-Einladung (alle 4 Spiele, eigener Encoder js/qrcode.js),
-   Werwolf auf geteilten Coop-Transport umgestellt.
+   Werwolf auf geteilten Coop-Transport umgestellt (v0.112) und **voll in die Haupt-App
+   integriert (v0.113): normale Vue-Komponente derselben Instanz, kein Shadow-DOM/Embed
+   mehr, CSS unter `.wwapp` isoliert** → kein Architektur-Unterschied mehr zwischen allen
+   vier Spielen.
    Noch offen: neue Werwolf-Rollen, Coop-Avatare, Phase 4 (gemeinsames
    Settings-Modul, i18n-Vervollständigung der hartkodierten Labels, Coop-Reconnect).
 
