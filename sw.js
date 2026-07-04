@@ -3,7 +3,7 @@
 const CACHE = 'gruppen-spiele-v0.112';
 const ASSETS = [
   './index.html', './css/styles.css',
-  './js/app.js', './js/buildinfo.js', './js/werwolf-embed.js',
+  './js/app.js', './js/buildinfo.js',
   './js/games/werbinich.js', './js/games/werbinich-words.js',
   './js/games/codenames.js', './js/games/codenames-words.js', './js/games/imposter-logic.js', './js/config.js', './js/storage.js',
   './js/coop.js', './js/firebase.js', './js/debuglog.js', './js/sound.js', './js/qrcode.js',
@@ -16,13 +16,12 @@ const ASSETS = [
   './js/vendor/firebase/firebase-app.js',
   './js/vendor/firebase/firebase-auth.js',
   './js/vendor/firebase/firebase-database.js',
-  // Werwolf-Unter-App: Kern-Assets vorab cachen, damit der erste Klick auf
-  // Werwolf sofort lädt (kein langsames Nachladen eines zweiten Vue-Bundles).
-  // Die Firebase-SDK-Module der Unter-App lädt der Network-First-Handler erst
-  // bei Bedarf (Coop) nach.
+  // Werwolf ist eine eingebettete Komponente der Haupt-App (gleiche Vue-Instanz):
+  // app.js + Domänen-Assets (Rollen, i18n) + die unter .wwapp isolierten Styles.
+  // Kein eigenes Vue-Bundle, kein Shadow-CSS mehr. Die eigenständige Seite
+  // (./js/games/werwolf/) bleibt als Fallback erhalten.
   './js/games/werwolf/', './js/games/werwolf/index.html', './js/games/werwolf/manifest.json',
-  './js/games/werwolf/css/styles.css', './js/games/werwolf/css/styles.shadow.css',
-  './js/games/werwolf/js/vue.esm-browser.prod.js',
+  './js/games/werwolf/css/styles.scoped.css',
   './js/games/werwolf/js/app.js', './js/games/werwolf/js/config.js', './js/games/werwolf/js/storage.js',
   './js/games/werwolf/js/debuglog.js',
   './js/games/werwolf/js/buildinfo.js', './js/games/werwolf/js/i18n/index.js',

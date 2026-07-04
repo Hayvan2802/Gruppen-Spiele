@@ -1,5 +1,9 @@
 // app.js — Werwolf v0.17 (Vue 3, esm-browser)
-import { createApp, reactive, computed, watch } from './vue.esm-browser.prod.js';
+// GETEILTE Vue-Instanz mit der Haupt-App: Werwolf importiert dasselbe Vue wie
+// Gruppen-Spiele (../../../vue…) und wird als NORMALE Vue-Komponente (WwGame)
+// direkt in die Haupt-App gerendert — kein eigenes createApp, kein Shadow-DOM.
+// Nur die eigenständige Seite (/js/games/werwolf/) mountet sich noch selbst.
+import { createApp, reactive, computed, watch, ref, onMounted } from '../../../vue.esm-browser.prod.js';
 import { BUILD, CHANGELOG } from './buildinfo.js';
 import { ROLES, NIGHT_ORDER, DONATE_URL, COOP_MAX_PLAYERS } from './config.js';
 // GETEILTER Coop-Transport der Haupt-App (ein coop.js/firebase.js für alle
@@ -17,11 +21,14 @@ import { t, setLocale, detectLocale, i18nState, SUPPORTED_LOCALES } from './i18n
 const APP_START = Date.now();
 // Kein Splash/Version mehr — Versionskontrolle liegt bei Gruppen-Spiele.
 
-// Wurzel-Element für Theme-Klasse und Toasts.
-// Standalone (/werwolf/) = document.body; eingebettet in Gruppen-Spiele
-// setzt das Embed-Glue hier das .ww-root-Element im Shadow-DOM.
+// Wurzel-Element für Toasts. Wird beim Mounten auf das .wwapp-Element der
+// Komponente gesetzt (siehe onMounted), damit die Toasts im .wwapp-CSS-Scope
+// liegen. Standalone bleibt document.body bis das Element steht.
 let wwRoot = document.body;
-export function setWwRoot(el) { wwRoot = el || document.body; }
+
+// Eigenständige Seite (/js/games/werwolf/) erkennen — dort mountet sich Werwolf
+// selbst und der Einladungslink nutzt ?code=. In der Haupt-App: ?ww=.
+const WW_STANDALONE = /\/werwolf\//.test(location.pathname);
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 const state = reactive({
@@ -178,33 +185,21 @@ function haptic(style = 'light') {
 }
 
 // ─── THEME / LOCALE ──────────────────────────────────────────────────────────
-function applyTheme() {
+// Das Werwolf-CSS ist unter .wwapp isoliert (kein Shadow-DOM mehr). Das Theme
+// (dark/light/auto) steuert daher reaktiv die Klasse .wwapp.light am Wurzel-
+// Element der Komponente — nicht mehr eine DOM-Klasse auf document.body.
+const _mql = window.matchMedia('(prefers-color-scheme: light)');
+const systemLight = ref(_mql.matches);
+_mql.addEventListener('change', () => { systemLight.value = _mql.matches; });
+const isLight = computed(() => {
   const theme = state.settings.theme;
-  let isLight;
-  if (theme === 'auto') {
-    isLight = window.matchMedia('(prefers-color-scheme: light)').matches;
-  } else {
-    isLight = theme === 'light';
-  }
-  wwRoot.classList.toggle('light', isLight);
-}
+  if (theme === 'auto') return systemLight.value;
+  return theme === 'light';
+});
 function setTheme(t) {
   state.settings.theme = t;
   saveSettings(state.settings);
-  applyTheme();
 }
-// Wird von der Haupt-App (Einbettung) aufgerufen, damit Werwolf DERSELBEN
-// Theme-Einstellung folgt wie der Rest der App (inkl. 'auto' = System). Bewusst
-// OHNE saveSettings — die eigenständige Werwolf-App behält ihre eigene Einstellung.
-export function applyThemeFromHost(theme) {
-  if (!theme) return;
-  state.settings.theme = theme;
-  applyTheme();
-}
-// System-Theme-Änderung live erkennen
-window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
-  if (state.settings.theme === 'auto') applyTheme();
-});
 function applyLocale() { setLocale(state.settings.lang); }
 function setLang(id) { state.settings.lang = id; saveSettings(state.settings); applyLocale(); }
 // Geräteweiten Benutzernamen setzen (geteilt mit Gruppen-Spiele) + Coop-Feld übernehmen.
@@ -968,7 +963,7 @@ function getInviteLink() {
   const base = window.location.origin + window.location.pathname;
   // Eingebettet zeigt die URL auf die Haupt-App → eigener Parameter ?ww=,
   // damit der Link nicht im Imposter-Join (?code=) landet. Standalone: ?code=.
-  const param = window.__WW_EMBEDDED__ ? 'ww' : 'code';
+  const param = WW_STANDALONE ? 'code' : 'ww';
   return `${base}?${param}=${state.coop.code}`;
 }
 async function shareInviteLink() {
@@ -1000,7 +995,7 @@ async function cancelCoop() {
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 function init() {
-  applyTheme(); applyLocale();
+  applyLocale();
   // maybeShowWhatsNew() entfällt — Versionshinweise zeigt Gruppen-Spiele.
   if (state.lastSavedNames.length > 0) state.showSavedNamesHint = true;
 
@@ -1019,9 +1014,20 @@ function init() {
 
 // ─── TEMPLATE ────────────────────────────────────────────────────────────────
 const App = {
-  setup() {
+  // Theme + Sprache reicht die Haupt-App als Props durch (wie den anderen Spielen
+  // über den gemeinsamen State). Standalone bleiben sie leer → eigene Settings.
+  props: { theme: String, lang: String },
+  setup(props) {
     // Haupt-App informieren wenn sich der Screen ändert (steuert den ←-Button)
     watch(() => state.screen, s => window.dispatchEvent(new CustomEvent('ww-screen', { detail: s })), { immediate: true });
+
+    // Theme/Sprache der Haupt-App übernehmen (einbahn: Props → Werwolf-State).
+    watch(() => props.theme, v => { if (v) state.settings.theme = v; }, { immediate: true });
+    watch(() => props.lang,  v => { if (v) { state.settings.lang = v; setLocale(v); } }, { immediate: true });
+
+    // Wurzel-Element für Toasts merken + init() genau einmal beim Mounten.
+    const rootEl = ref(null);
+    onMounted(() => { wwRoot = rootEl.value || document.body; init(); });
 
     const stdRoles    = computed(() => Object.values(ROLES).filter(r => r.std));
     const extraRoles  = computed(() => Object.values(ROLES).filter(r => !r.std));
@@ -1036,6 +1042,7 @@ const App = {
     const rrRole   = computed(() => rrPlayer.value ? ROLES[rrPlayer.value.roleId] : null);
 
     return {
+      rootEl, isLight,
       state, BUILD, CHANGELOG, DONATE_URL, SUPPORTED_LOCALES, ROLES,
       stdRoles, extraRoles, alivePlayers, nightRole, nightRoleDef,
       nightTargetList, nightIsDone, roleCountTotal, roleSummary, canStart,
@@ -1062,7 +1069,7 @@ const App = {
     };
   },
   template: `
-  <div class="app" :class="{ rtl: i18nState.rtl }">
+  <div class="wwapp app" ref="rootEl" :class="{ rtl: i18nState.rtl, light: isLight }">
 
     <!-- ── SITZREIHENFOLGE MODAL ── -->
     <div v-if="state.showSeating" class="modal-bg" @click.self="closeSeating">
@@ -1785,19 +1792,16 @@ const App = {
   `,
 };
 
-// Standalone (eigene Seite /werwolf/) mountet sich selbst auf #app.
-// Eingebettet in Gruppen-Spiele setzt das Embed-Glue window.__WW_EMBEDDED__,
-// und das Mounten übernimmt mountWerwolf() in ein Shadow-DOM-Element.
-if (!window.__WW_EMBEDDED__) {
+// Nur als eigenständige Seite (/js/games/werwolf/) mountet sich Werwolf selbst.
+// In Gruppen-Spiele wird die Komponente WwGame direkt in die Haupt-App-Instanz
+// gerendert (kein eigenes createApp, kein Shadow-DOM) — init() läuft dort im
+// onMounted der Komponente.
+if (WW_STANDALONE) {
   createApp(App).mount('#app');
-  init();
 }
 
-// Einstieg für die eingebettete Nutzung in Gruppen-Spiele.
-export function mountWerwolf(el) {
-  createApp(App).mount(el);
-  init();
-}
+// Werwolf als normale Vue-Komponente der Haupt-App (wie die anderen Spiele).
+export const WwGame = App;
 
 // ── SERVICE WORKER — exakt nach Tom's Pattern ────────────────────────────────
 // Kein auto-skipWaiting. Nutzer entscheidet per Banner wann er aktualisiert.

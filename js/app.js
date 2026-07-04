@@ -19,6 +19,9 @@ import {
 } from './games/werbinich.js';
 import { ALL_WORDS, KATEGORIEN, DEFAULT_KATEGORIEN, DONATE_URL, COOP_MAX_PLAYERS } from './config.js';
 import { calcVoteOutcome, decorateImposters, pickStartPlayer, pickWordPair } from './games/imposter-logic.js';
+// Werwolf ist eine normale Vue-Komponente der Haupt-App (gleiche Vue-Instanz,
+// kein Shadow-DOM, kein eigenes createApp) — wie Codenames & Wer bin ich.
+import { WwGame } from './games/werwolf/js/app.js';
 import { playSound, setSoundEnabled } from './sound.js';
 import { qrSvg } from './qrcode.js';
 import * as Coop from './coop.js';
@@ -281,16 +284,12 @@ function checkForUpdate() {
 function applyTheme() {
   const theme = state.settings.theme;
   document.body.classList.remove('light','neon');
-  if (theme === 'neon') { document.body.classList.add('neon'); syncWerwolfTheme(theme); return; }
+  if (theme === 'neon') { document.body.classList.add('neon'); return; }
   const isLight = theme === 'auto'
     ? window.matchMedia('(prefers-color-scheme: light)').matches
     : theme === 'light';
   document.body.classList.toggle('light', isLight);
-  syncWerwolfTheme(theme);
-}
-// Eingebettetes Werwolf demselben Theme folgen lassen (falls schon geladen).
-function syncWerwolfTheme(theme) {
-  import('./werwolf-embed.js').then(m => m.syncWerwolfTheme(theme)).catch(() => {});
+  // Werwolf folgt dem Theme reaktiv über das :theme-Prop der <ww-game>-Komponente.
 }
 window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
   if (state.settings.theme === 'auto') applyTheme();
@@ -336,17 +335,14 @@ function loadLastNamesIntoSetup() {
 }
 function dismissNamesHint() { state.showSavedNamesHint = false; }
 
-// Werwolf ist als eigene Vue-Instanz in einem Shadow-DOM eingebettet
-// (siehe werwolf-embed.js) — nahtlos wie die anderen Spiele, ohne Reload.
-// Werwolf meldet seinen internen Screen per Custom Event → state.wwScreen
-// steuert, ob der ←-Button der Haupt-App sichtbar ist (nur auf Werwolf-Home).
+// Werwolf ist eine normale Vue-Komponente (<ww-game>) in derselben App-Instanz.
+// Sie meldet ihren internen Screen per Custom Event → state.wwScreen steuert, ob
+// der ←-Button der Haupt-App sichtbar ist (nur auf Werwolf-Home).
 window.addEventListener('ww-screen', e => { state.wwScreen = e.detail; });
 
 function openWerwolf() {
   state.screen = 'ww';
   state.wwScreen = 'home';
-  const host = document.getElementById('ww-host');
-  if (host) import('./werwolf-embed.js').then(m => m.ensureWerwolf(host, state.settings.theme));
 }
 function closeWerwolf() { state.screen = 'home'; state.wwScreen = 'home'; }
 
@@ -1111,6 +1107,7 @@ function importBackup() {
 
 // ── Vue App ───────────────────────────────────────────────────────────────────
 const App = {
+  components: { WwGame },
   setup() {
     // Scroll-Sperre für Spielphasen wo nichts gescrollt werden soll
     const noScrollScreens = new Set(['reveal', 'timer', 'postTimer']);
@@ -1182,10 +1179,9 @@ const App = {
   template: `
   <div class="app" :class="{ rtl: i18nState.rtl }">
 
-    <!-- ── WERWOLF: eingebettete Unter-App (eigene Vue-Instanz im Shadow-DOM) ──
-         v-show statt v-if, damit Host + Shadow-DOM erhalten bleiben und der
-         Wechsel hin/zurück ohne Reload sofort ist. -->
-    <div id="ww-host" class="ww-host" v-show="state.screen==='ww'"></div>
+    <!-- ── WERWOLF: normale Vue-Komponente derselben App (wie die anderen Spiele) ──
+         Theme + Sprache folgen als Props der Haupt-App. -->
+    <ww-game v-if="state.screen==='ww'" :theme="state.settings.theme" :lang="state.settings.lang"></ww-game>
     <button v-if="state.screen==='ww' && state.wwScreen==='home'" class="back-corner icon-btn" @click="closeWerwolf" title="Zurück" aria-label="Zurück">←</button>
 
     <!-- Pause-Overlay entfernt — nur gameMenu Modal wird verwendet -->
@@ -3294,14 +3290,3 @@ const App = {
 
 createApp(App).mount('#app');
 init();
-
-// Werwolf im Hintergrund vorwärmen, sobald der Browser idle ist, damit der
-// erste Klick auf Werwolf sofort öffnet (kein spürbarer Ladevorgang).
-(function prewarmWerwolf() {
-  const warm = () => {
-    const host = document.getElementById('ww-host');
-    if (host) import('./werwolf-embed.js').then(m => m.ensureWerwolf(host, state.settings.theme)).catch(() => {});
-  };
-  if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 4000 });
-  else setTimeout(warm, 1500);
-})();
