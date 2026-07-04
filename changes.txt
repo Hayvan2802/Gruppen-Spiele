@@ -1,2 +1,1 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
-Werwolf ist jetzt nahtlos wie die anderen Spiele in die App eingebaut – schnellerer Wechsel, einheitliches Verhalten.
