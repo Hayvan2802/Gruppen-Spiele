@@ -1,2 +1,1 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
-Werwolf-Menüs (Pause, Abstimmung, Anleitung, Beenden) erscheinen jetzt auch auf Englisch statt nur Deutsch.
