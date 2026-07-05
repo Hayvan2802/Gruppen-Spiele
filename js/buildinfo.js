@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.115';
-export const BUILD_HASH = 'eingebettete-overlays-au';
+export const BUILD      = '0.116';
+export const BUILD_HASH = 'farbiges-emoji-abzeichen';
 
 export const CHANGELOG = [
   {
+    version: '0.116',
+    date: '05.07.2026',
+    time: '19:22',
+    changes: [
+    'Coop-Lobbys zeigen jetzt für jeden Spieler einen farbigen Avatar.',
+    ],
+  },
+{
     version: '0.115',
     date: '05.07.2026',
     time: '19:08',

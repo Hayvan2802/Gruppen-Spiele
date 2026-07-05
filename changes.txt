@@ -1,2 +1,1 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
-Coop-Lobbys zeigen jetzt für jeden Spieler einen farbigen Avatar.
