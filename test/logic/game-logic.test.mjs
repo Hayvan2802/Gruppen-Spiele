@@ -440,7 +440,9 @@ describe('Werwolf — voll in die Haupt-App integriert (wie die anderen Spiele)'
     const ww = readSrc('js/games/werwolf/js/app.js');
     assert.ok(/export const WwGame = App;/.test(ww), 'Werwolf exportiert die Komponente WwGame');
     const app = readSrc('js/app.js');
-    assert.ok(/import \{ WwGame \} from '\.\/games\/werwolf\/js\/app\.js'/.test(app), 'Haupt-App importiert WwGame');
+    // Lazy geladen: defineAsyncComponent mit dynamischem import auf das Werwolf-Modul
+    assert.ok(/defineAsyncComponent\(\(\) => import\('\.\/games\/werwolf\/js\/app\.js'\)/.test(app),
+      'Haupt-App lädt WwGame lazy (defineAsyncComponent)');
     assert.ok(/components: \{ WwGame \}/.test(app), 'Haupt-App registriert die Komponente');
     assert.ok(/<ww-game[\s\S]*?state\.screen==='ww'/.test(app), 'Haupt-App rendert <ww-game> inline');
   });
