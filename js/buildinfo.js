@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.116';
-export const BUILD_HASH = 'farbiges-emoji-abzeichen';
+export const BUILD      = '0.117';
+export const BUILD_HASH = 'spieler-nach-verbindungs';
 
 export const CHANGELOG = [
   {
+    version: '0.117',
+    date: '05.07.2026',
+    time: '19:36',
+    changes: [
+    'Coop: Nach kurzem Verbindungsabbruch trittst du automatisch wieder deinem Raum bei.',
+    ],
+  },
+{
     version: '0.116',
     date: '05.07.2026',
     time: '19:22',
