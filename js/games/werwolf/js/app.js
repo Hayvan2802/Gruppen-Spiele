@@ -10,6 +10,7 @@ import { ROLES, NIGHT_ORDER, DONATE_URL, COOP_MAX_PLAYERS } from './config.js';
 // vier Spiele — funktioniert eingebettet UND standalone, da gleiche Origin).
 import * as Coop from '../../../coop.js';
 import { qrSvg } from '../../../qrcode.js';
+import { avatarFor } from '../../../avatar.js';
 import { log, exportLogToFile } from './debuglog.js';
 import {
   loadSettings, saveSettings, loadSeenVersion, saveSeenVersion,
@@ -1051,7 +1052,7 @@ const App = {
     const rrRole   = computed(() => rrPlayer.value ? ROLES[rrPlayer.value.roleId] : null);
 
     return {
-      rootEl, isLight, openSettings,
+      rootEl, isLight, openSettings, avatarFor,
       state, BUILD, CHANGELOG, DONATE_URL, SUPPORTED_LOCALES, ROLES,
       stdRoles, extraRoles, alivePlayers, nightRole, nightRoleDef,
       nightTargetList, nightIsDone, roleCountTotal, roleSummary, canStart,
@@ -1574,7 +1575,7 @@ const App = {
 
                 <ul class="lobby-list">
                   <li v-for="p in state.coop.players" :key="p.uid" class="lobby-item">
-                    <span class="li-icon">{{ p.isHost?'👑':'👤' }}</span>
+                    <span class="coop-avatar" :style="{background: avatarFor(p.name).color}">{{ p.isHost?'👑':avatarFor(p.name).emoji }}</span>
                     <span class="li-name">{{ p.name }}</span>
                     <span class="li-ready" :class="p.isHost?'host':p.ready?'yes':'no'">{{ p.isHost?t('coop.host'):p.ready?t('coop.ready'):t('coop.notReady') }}</span>
                   </li>
