@@ -101,13 +101,15 @@ test.describe('Werwolf', () => {
     await expect(page.locator('.wwapp').getByRole('button', { name: /Beitreten|🚪/ }).first()).toBeVisible();
   });
 
-  test('Werwolf: Einstellungsmenü konsistent (Benutzername + Theme, keine Statistik)', async ({ page }) => {
+  test('Werwolf: ⚙️ öffnet das GEMEINSAME Einstellungsmenü der Haupt-App', async ({ page }) => {
     // Kein Statistik-Button (📊) in der Werwolf-Topbar
     await expect(page.locator('.wwapp .top-bar', { hasText: '📊' })).toHaveCount(0);
-    // Werwolf-Zahnrad öffnet die Einstellungen
+    // Werwolf-Zahnrad öffnet NICHT ein eigenes, sondern das Haupt-App-Menü
     await page.locator('.wwapp .top-bar button.icon-btn').click();
-    const drawer = page.locator('.wwapp .settings-drawer');
+    const drawer = page.locator('.settings-drawer'); // gemeinsames Menü (außerhalb .wwapp)
     await expect(drawer).toBeVisible();
+    // Werwolf hat kein eigenes Settings-Menü mehr geöffnet
+    await expect(page.locator('.wwapp .settings-drawer')).toHaveCount(0);
     await expect(drawer.locator('input.ninput[placeholder="Dein Name"]')).toHaveValue('Tester');
     const themes = await drawer.locator('.theme-btn').allTextContents();
     expect(themes.map((t) => t.trim())).toEqual(THEME_LABELS);

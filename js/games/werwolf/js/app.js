@@ -1016,8 +1016,11 @@ function init() {
 const App = {
   // Theme + Sprache reicht die Haupt-App als Props durch (wie den anderen Spielen
   // über den gemeinsamen State). Standalone bleiben sie leer → eigene Settings.
-  props: { theme: String, lang: String },
-  setup(props) {
+  // embedded=true → das ⚙️-Menü öffnet das GEMEINSAME Settings-Modal der Haupt-App
+  // (Event 'open-settings') statt Werwolfs eigenem; standalone weiterhin eigenes.
+  props: { theme: String, lang: String, embedded: Boolean },
+  emits: ['open-settings'],
+  setup(props, { emit }) {
     // Haupt-App informieren wenn sich der Screen ändert (steuert den ←-Button)
     watch(() => state.screen, s => window.dispatchEvent(new CustomEvent('ww-screen', { detail: s })), { immediate: true });
 
@@ -1028,6 +1031,12 @@ const App = {
     // Wurzel-Element für Toasts merken + init() genau einmal beim Mounten.
     const rootEl = ref(null);
     onMounted(() => { wwRoot = rootEl.value || document.body; init(); });
+
+    // ⚙️ Einstellungen: eingebettet → gemeinsames Menü der Haupt-App öffnen.
+    const openSettings = () => {
+      if (props.embedded) emit('open-settings');
+      else state.showSettingsModal = true;
+    };
 
     const stdRoles    = computed(() => Object.values(ROLES).filter(r => r.std));
     const extraRoles  = computed(() => Object.values(ROLES).filter(r => !r.std));
@@ -1042,7 +1051,7 @@ const App = {
     const rrRole   = computed(() => rrPlayer.value ? ROLES[rrPlayer.value.roleId] : null);
 
     return {
-      rootEl, isLight,
+      rootEl, isLight, openSettings,
       state, BUILD, CHANGELOG, DONATE_URL, SUPPORTED_LOCALES, ROLES,
       stdRoles, extraRoles, alivePlayers, nightRole, nightRoleDef,
       nightTargetList, nightIsDone, roleCountTotal, roleSummary, canStart,
@@ -1126,7 +1135,7 @@ const App = {
         <button class="btn btn-primary" style="margin-bottom:.6rem" @click="closeGameMenu">▶ Fortsetzen</button>
         <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="openRoleReveal(null);state.gameMenu.active=false">🃏 Karten anzeigen</button>
         <div style="height:1px;background:var(--bdr);margin:.4rem 0 .9rem"></div>
-        <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="state.showSettingsModal=true;state.gameMenu.active=false">⚙️ Einstellungen</button>
+        <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="state.gameMenu.active=false;openSettings()">⚙️ Einstellungen</button>
         <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="state.showWwRules=true;state.gameMenu.active=false">❓ Anleitung</button>
         <div style="height:1px;background:var(--bdr);margin:.4rem 0 .9rem"></div>
         <button class="btn btn-ghost" style="color:#e07070;border-color:#e07070" @click="state.gameEndConfirm=true;state.gameMenu.active=false">
@@ -1417,7 +1426,7 @@ const App = {
     <div v-if="state.screen==='home'" class="screen">
       <div class="top-bar">
         <a v-if="DONATE_URL" class="home-donate-btn icon-btn" :href="DONATE_URL" target="_blank" rel="noopener">☕ <span class="home-donate-heart">❤</span></a>
-        <button class="icon-btn" @click="state.showSettingsModal=true">⚙️</button>
+        <button class="icon-btn" @click="openSettings()">⚙️</button>
       </div>
       <div style="max-width:680px;margin:0 auto;padding:0 1.4rem 4rem">
         <div class="logo">
@@ -1633,7 +1642,7 @@ const App = {
 
     <!-- ═══ REVEAL ═══ -->
     <div v-if="state.screen==='reveal'" class="screen">
-      <div class="top-bar"><button class="icon-btn" @click="state.showSettingsModal=true">⚙️</button></div>
+      <div class="top-bar"><button class="icon-btn" @click="openSettings()">⚙️</button></div>
       <div class="reveal-inner">
         <div class="rev-head"><div class="for">{{ t('reveal.for') }}</div><div class="pname">{{ revealPlayer?.name }}</div></div>
         <div class="rev-card" :class="[state.revealFlipped?'flipped':'', state.revealFlipped?(revealRole2?.team==='wolf'?'wc':revealRole2?.team==='dorf'?'dc':'sc'):'']">
@@ -1769,7 +1778,7 @@ const App = {
 
     <!-- ═══ RESULT ═══ -->
     <div v-if="state.screen==='result'" class="screen">
-      <div class="top-bar"><button class="icon-btn" @click="state.showSettingsModal=true">⚙️</button></div>
+      <div class="top-bar"><button class="icon-btn" @click="openSettings()">⚙️</button></div>
       <div class="confetti" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
       <div class="go-inner">
         <div class="wicon">{{ state.winner==='wolf'?'🐺':state.winner==='dorf'?'🏡':state.winner==='lovers'?'💘':'🔪' }}</div>

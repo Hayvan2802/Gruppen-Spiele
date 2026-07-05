@@ -1,6 +1,6 @@
 // app.js — Gruppen-Spiele v0.0.5 (Vue 3, esm-browser)
 // Portiert vom Werwolf-Projekt — nur Imposter-Spiellogik
-import { createApp, reactive, computed, watchEffect } from './vue.esm-browser.prod.js';
+import { createApp, reactive, computed, watchEffect, defineAsyncComponent } from './vue.esm-browser.prod.js';
 import { BUILD, CHANGELOG } from './buildinfo.js';
 import {
   cnState, cnSelectMode, cnStartLocal, cnGiveHint, cnRevealCard, cnPassTurn, cnReset,
@@ -21,7 +21,9 @@ import { ALL_WORDS, KATEGORIEN, DEFAULT_KATEGORIEN, DONATE_URL, COOP_MAX_PLAYERS
 import { calcVoteOutcome, decorateImposters, pickStartPlayer, pickWordPair } from './games/imposter-logic.js';
 // Werwolf ist eine normale Vue-Komponente der Haupt-App (gleiche Vue-Instanz,
 // kein Shadow-DOM, kein eigenes createApp) — wie Codenames & Wer bin ich.
-import { WwGame } from './games/werwolf/js/app.js';
+// Lazy geladen: das Werwolf-Modul (+ Rollen/i18n) lädt erst beim ersten Öffnen,
+// nicht schon beim App-Start.
+const WwGame = defineAsyncComponent(() => import('./games/werwolf/js/app.js').then(m => m.WwGame));
 import { playSound, setSoundEnabled } from './sound.js';
 import { qrSvg } from './qrcode.js';
 import * as Coop from './coop.js';
@@ -1181,7 +1183,8 @@ const App = {
 
     <!-- ── WERWOLF: normale Vue-Komponente derselben App (wie die anderen Spiele) ──
          Theme + Sprache folgen als Props der Haupt-App. -->
-    <ww-game v-if="state.screen==='ww'" :theme="state.settings.theme" :lang="state.settings.lang"></ww-game>
+    <ww-game v-if="state.screen==='ww'" :theme="state.settings.theme" :lang="state.settings.lang"
+      :embedded="true" @open-settings="state.showSettingsModal=true"></ww-game>
     <button v-if="state.screen==='ww' && state.wwScreen==='home'" class="back-corner icon-btn" @click="closeWerwolf" title="Zurück" aria-label="Zurück">←</button>
 
     <!-- Pause-Overlay entfernt — nur gameMenu Modal wird verwendet -->
