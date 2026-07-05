@@ -464,6 +464,26 @@ describe('Werwolf — voll in die Haupt-App integriert (wie die anderen Spiele)'
     const ww = readSrc('js/games/werwolf/js/app.js');
     assert.ok(/class="wwapp app"/.test(ww), 'Werwolf-Wurzelelement trägt .wwapp');
   });
+
+  test('Werwolf-Overlays sind i18n-entkoppelt (keine hartkodierten deutschen Texte)', () => {
+    const ww = readSrc('js/games/werwolf/js/app.js');
+    // Zuvor hartkodierte Strings dürfen nicht mehr als Literal im Template stehen
+    for (const lit of ['PAUSIERT', 'Wen hinrichten?', 'Spiel wirklich beenden?',
+        'Live-Abstimmung', 'Warte auf Host', 'Niemanden hinrichten']) {
+      assert.ok(!ww.includes('>' + lit) && !ww.includes(lit + '<') && !ww.includes(lit + '</'),
+        `hartkodiert entfernt: ${lit}`);
+    }
+    // Die neuen Keys existieren in der Referenz (de) UND in en
+    for (const file of ['de', 'en']) {
+      const src = readSrc(`js/games/werwolf/js/i18n/${file}.js`);
+      for (const key of ['wwmenu', 'wwrules', 'wwvote', 'wwnight']) {
+        assert.ok(new RegExp(`${key}:\\s*\\{`).test(src), `${file}.js hat ${key}`);
+      }
+    }
+    // Template nutzt die neuen Keys
+    assert.ok(/t\('wwmenu\.resume'\)/.test(ww) && /t\('wwvote\.title'\)/.test(ww) && /t\('wwrules\.s1t'\)/.test(ww),
+      'Template referenziert die neuen i18n-Keys');
+  });
 });
 
 // ════════════════════════════════════════════════════════════════════════════

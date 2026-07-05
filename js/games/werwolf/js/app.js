@@ -1118,10 +1118,10 @@ const App = {
     <div v-if="state.gamePaused" class="modal-bg" style="z-index:500">
       <div class="modal" style="text-align:center">
         <div style="font-size:3rem;margin-bottom:.8rem">🌙</div>
-        <h3 style="font-family:Cinzel,serif;color:var(--gold);margin-bottom:.5rem">PAUSIERT</h3>
-        <p class="confirm-msg">Das Spiel ist pausiert. Tippe Fortsetzen wenn alle bereit sind.</p>
-        <button class="btn btn-primary" @click="resumeGame">▶ Fortsetzen</button>
-        <button class="btn btn-ghost btn-sm" @click="state.gamePaused=false;state.gameEndConfirm=true">Spiel beenden</button>
+        <h3 style="font-family:Cinzel,serif;color:var(--gold);margin-bottom:.5rem">{{ t('wwmenu.pauseTitle') }}</h3>
+        <p class="confirm-msg">{{ t('wwmenu.pauseMsg') }}</p>
+        <button class="btn btn-primary" @click="resumeGame">▶ {{ t('wwmenu.resume') }}</button>
+        <button class="btn btn-ghost btn-sm" @click="state.gamePaused=false;state.gameEndConfirm=true">{{ t('wwmenu.endGame') }}</button>
       </div>
     </div>
 
@@ -1129,17 +1129,17 @@ const App = {
     <div v-if="state.gameMenu.active" class="modal-bg" @click.self="closeGameMenu">
       <div class="modal">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.1rem">
-          <span style="font-family:'Cinzel',serif;font-size:.9rem;letter-spacing:.15em;color:var(--gold)">SPIELMENÜ</span>
+          <span style="font-family:'Cinzel',serif;font-size:.9rem;letter-spacing:.15em;color:var(--gold)">{{ t('wwmenu.menuTitle') }}</span>
           <button class="icon-btn" @click="closeGameMenu">✕</button>
         </div>
-        <button class="btn btn-primary" style="margin-bottom:.6rem" @click="closeGameMenu">▶ Fortsetzen</button>
-        <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="openRoleReveal(null);state.gameMenu.active=false">🃏 Karten anzeigen</button>
+        <button class="btn btn-primary" style="margin-bottom:.6rem" @click="closeGameMenu">▶ {{ t('wwmenu.resume') }}</button>
+        <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="openRoleReveal(null);state.gameMenu.active=false">🃏 {{ t('wwmenu.cards') }}</button>
         <div style="height:1px;background:var(--bdr);margin:.4rem 0 .9rem"></div>
-        <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="state.gameMenu.active=false;openSettings()">⚙️ Einstellungen</button>
-        <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="state.showWwRules=true;state.gameMenu.active=false">❓ Anleitung</button>
+        <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="state.gameMenu.active=false;openSettings()">⚙️ {{ t('wwmenu.settings') }}</button>
+        <button class="btn btn-ghost" style="margin-bottom:.6rem" @click="state.showWwRules=true;state.gameMenu.active=false">❓ {{ t('wwmenu.rules') }}</button>
         <div style="height:1px;background:var(--bdr);margin:.4rem 0 .9rem"></div>
         <button class="btn btn-ghost" style="color:#e07070;border-color:#e07070" @click="state.gameEndConfirm=true;state.gameMenu.active=false">
-          🚪 Spiel beenden
+          🚪 {{ t('wwmenu.endGame') }}
         </button>
       </div>
     </div>
@@ -1147,14 +1147,14 @@ const App = {
     <!-- ── SPIEL BEENDEN BESTÄTIGUNG ── -->
     <div v-if="state.gameEndConfirm" class="modal-bg" style="z-index:510">
       <div class="modal">
-        <div class="whatsnew-badge" style="background:#8b1a1a">⚠ Beenden</div>
-        <h3>Spiel wirklich beenden?</h3>
-        <p class="confirm-msg">Der aktuelle Spielstand geht verloren. Alle Rollen werden aufgedeckt.</p>
+        <div class="whatsnew-badge" style="background:#8b1a1a">⚠ {{ t('wwmenu.endBadge') }}</div>
+        <h3>{{ t('wwmenu.endTitle') }}</h3>
+        <p class="confirm-msg">{{ t('wwmenu.endMsg') }}</p>
         <button class="btn btn-ghost" style="color:#e07070;border-color:#e07070;margin-bottom:.6rem" @click="confirmEndGame">
-          Ja, Spiel beenden
+          {{ t('wwmenu.endYes') }}
         </button>
         <button class="btn btn-primary" @click="state.gameEndConfirm=false;state.gamePaused=false;state.gameMenu.active=false">
-          Nein, weiterspielen
+          {{ t('wwmenu.endNo') }}
         </button>
       </div>
     </div>
@@ -1163,17 +1163,17 @@ const App = {
     <div v-if="state.showWwRules" class="modal-bg" @click.self="state.showWwRules=false" style="z-index:520">
       <div class="modal" style="max-height:85vh;overflow-y:auto">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-          <span style="font-family:'Cinzel',serif;font-size:.9rem;letter-spacing:.15em;color:var(--gold)">ANLEITUNG</span>
+          <span style="font-family:'Cinzel',serif;font-size:.9rem;letter-spacing:.15em;color:var(--gold)">{{ t('wwrules.title') }}</span>
           <button class="icon-btn" @click="state.showWwRules=false">✕</button>
         </div>
         <div class="rules-section">
-          <div class="rules-step">1️⃣ <strong>Rollen verteilen</strong><br>Jeder Spieler bekommt heimlich eine Rolle: Dorfbewohner, Werwolf, Seherin, Hexe oder andere Sonderrollen.</div>
-          <div class="rules-step">🌙 <strong>Nachtphase</strong><br>Alle schließen die Augen. Der Spielleiter weckt die Werwölfe — sie wählen ein Opfer. Dann kommen Seherin und Hexe dran.</div>
-          <div class="rules-step">☀️ <strong>Tagphase</strong><br>Das Dorf diskutiert, wer ein Werwolf sein könnte. Am Ende stimmt das Dorf ab und eliminiert einen Spieler.</div>
-          <div class="rules-step">🔁 <strong>Rundenablauf</strong><br>Nacht und Tag wechseln sich ab bis das Dorf alle Werwölfe gefunden hat — oder die Werwölfe in der Mehrheit sind.</div>
-          <div class="rules-step">🏆 <strong>Wer gewinnt?</strong><br>Das Dorf gewinnt wenn alle Werwölfe eliminiert sind. Die Werwölfe gewinnen wenn sie gleich viele oder mehr Spieler sind als das Dorf.</div>
+          <div class="rules-step">1️⃣ <strong>{{ t('wwrules.s1t') }}</strong><br>{{ t('wwrules.s1') }}</div>
+          <div class="rules-step">🌙 <strong>{{ t('wwrules.s2t') }}</strong><br>{{ t('wwrules.s2') }}</div>
+          <div class="rules-step">☀️ <strong>{{ t('wwrules.s3t') }}</strong><br>{{ t('wwrules.s3') }}</div>
+          <div class="rules-step">🔁 <strong>{{ t('wwrules.s4t') }}</strong><br>{{ t('wwrules.s4') }}</div>
+          <div class="rules-step">🏆 <strong>{{ t('wwrules.s5t') }}</strong><br>{{ t('wwrules.s5') }}</div>
         </div>
-        <button class="btn btn-primary" style="margin-top:.8rem" @click="state.showWwRules=false">Verstanden ✓</button>
+        <button class="btn btn-primary" style="margin-top:.8rem" @click="state.showWwRules=false">{{ t('wwrules.ok') }} ✓</button>
       </div>
     </div>
 
@@ -1181,7 +1181,7 @@ const App = {
     <div v-if="state.jaegerModal.active" class="modal-bg">
       <div class="modal jaeger-modal">
         <div class="jaeger-shot-icon">🏹</div>
-        <div class="whatsnew-badge">🏹 Jäger</div>
+        <div class="whatsnew-badge">🏹 {{ t('role.jaeger.name') }}</div>
         <h3>{{ t('jaeger.title') }}</h3>
         <p class="confirm-msg">{{ t('jaeger.sub') }}</p>
         <div class="abtns" style="margin-bottom:1rem">
@@ -1197,9 +1197,9 @@ const App = {
     <!-- ── COOP ABSTIMMUNG (Gast-Ansicht) ── -->
     <div v-if="state.coopVote.active && !state.coop.isHost" class="modal-bg" style="z-index:400">
       <div class="modal">
-        <div class="whatsnew-badge">☀️ Abstimmung</div>
-        <h3>Wen hinrichten?</h3>
-        <p class="confirm-msg">Wähle einen Spieler zur Hinrichtung.</p>
+        <div class="whatsnew-badge">☀️ {{ t('wwvote.badge') }}</div>
+        <h3>{{ t('wwvote.title') }}</h3>
+        <p class="confirm-msg">{{ t('wwvote.sub') }}</p>
         <div v-if="!state.coopVote.myVote">
           <div class="abtns" style="margin-bottom:1rem">
             <button v-for="c in state.coopVote.candidates" :key="c.name"
@@ -1207,14 +1207,14 @@ const App = {
               {{ ROLES[c.roleId]?.icon }} {{ c.name }}
             </button>
           </div>
-          <button class="btn btn-ghost btn-sm" @click="castCoopVote(null)">Enthalten</button>
+          <button class="btn btn-ghost btn-sm" @click="castCoopVote(null)">{{ t('wwvote.abstain') }}</button>
         </div>
         <div v-else style="text-align:center;padding:1rem">
           <div style="font-size:1.5rem">✓</div>
           <p style="color:var(--txt2);font-size:.85rem;margin-top:.4rem">
-            Stimme abgegeben für <strong>{{ state.coopVote.myVote }}</strong>
+            {{ t('wwvote.castFor') }} <strong>{{ state.coopVote.myVote }}</strong>
           </p>
-          <p style="color:var(--txt3);font-size:.78rem;margin-top:.3rem">Warte auf Host…</p>
+          <p style="color:var(--txt3);font-size:.78rem;margin-top:.3rem">{{ t('wwvote.waitHost') }}</p>
         </div>
       </div>
     </div>
@@ -1222,8 +1222,8 @@ const App = {
     <!-- ── COOP ABSTIMMUNG (Host-Ansicht: Live-Stimmen) ── -->
     <div v-if="state.coopVote.active && state.coop.isHost" class="modal-bg" style="z-index:400">
       <div class="modal">
-        <div class="whatsnew-badge">☀️ Live-Abstimmung</div>
-        <h3>Stimmen</h3>
+        <div class="whatsnew-badge">☀️ {{ t('wwvote.liveBadge') }}</div>
+        <h3>{{ t('wwvote.votesTitle') }}</h3>
         <div class="vote-results">
           <div v-for="c in state.coopVote.candidates" :key="c.name" class="vote-row">
             <span class="vote-name">{{ ROLES[c.roleId]?.icon }} {{ c.name }}</span>
@@ -1233,15 +1233,15 @@ const App = {
             <span class="vote-count">{{ state.coopVote.votes[c.name] || 0 }}</span>
           </div>
         </div>
-        <button class="btn btn-primary" style="margin-top:1rem" @click="resolveCoopVote">Auswerten</button>
-        <button class="btn btn-ghost btn-sm" @click="skipCoopVote">Niemanden hinrichten</button>
+        <button class="btn btn-primary" style="margin-top:1rem" @click="resolveCoopVote">{{ t('wwvote.evaluate') }}</button>
+        <button class="btn btn-ghost btn-sm" @click="skipCoopVote">{{ t('game.skipExec') }}</button>
       </div>
     </div>
 
     <!-- ── COOP NACHTAKTION (Gast mit Nacht-Rolle) ── -->
     <div v-if="state.coopNight.active" class="modal-bg" style="z-index:400">
       <div class="modal">
-        <div class="whatsnew-badge">🌙 Nacht</div>
+        <div class="whatsnew-badge">🌙 {{ t('wwnight.badge') }}</div>
         <h3>{{ ROLES[state.coopNight.roleId]?.icon }} {{ roleName(state.coopNight.roleId) }}</h3>
         <p class="confirm-msg">{{ roleAbility(state.coopNight.roleId) }}</p>
         <div class="abtns" style="margin-bottom:1rem">
@@ -1250,7 +1250,7 @@ const App = {
             👤 {{ name }}
           </button>
         </div>
-        <button class="btn btn-ghost btn-sm" @click="submitNightAction(null)">Überspringen</button>
+        <button class="btn btn-ghost btn-sm" @click="submitNightAction(null)">{{ t('game.skip') }}</button>
       </div>
     </div>
 
