@@ -1,1 +1,2 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
+Coop: Nach kurzem Verbindungsabbruch trittst du automatisch wieder deinem Raum bei.

@@ -15,7 +15,7 @@
 
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { __reset, __store, __disconnect } from './fake-firebase.mjs';
+import { __reset, __store, __disconnect, __setConnected } from './fake-firebase.mjs';
 
 // Jeder Client ist eine EIGENE coop.js-Modulinstanz (per ?c=-Cache-Buster),
 // mit eigenem module-scope-State (fb/roomCode/…) — wie ein echtes Gerät.
@@ -124,6 +124,43 @@ test('Verbindungsabbruch: onDisconnect entfernt den Spieler und meldet ihn ab', 
   await settle();
   assert.ok(host.leaves.includes(g1.uid), 'Host muss den abgebrochenen Gast als weg sehen');
   assert.equal(__store().root.rooms.GGG777.players[g1.uid], undefined);
+});
+
+test('Reconnect: Gast trägt sich nach Verbindungsrückkehr automatisch wieder ein', async () => {
+  const host = await makeClient(), g1 = await makeClient();
+  await host.host('RC1234', 'Host');
+  await g1.join('RC1234', 'Gast1');
+  await settle();
+  const guestPath = `rooms/RC1234/players/${g1.uid}`;
+
+  // Abbruch: Verbindung weg + onDisconnect entfernt den Gast
+  __setConnected(false);
+  await __disconnect(guestPath);
+  await settle();
+  assert.equal(__store().root.rooms.RC1234.players[g1.uid], undefined, 'Gast ist während des Abbruchs weg');
+  assert.ok(host.leaves.includes(g1.uid), 'Host sieht den Abbruch');
+
+  // Verbindung kehrt zurück → Gast trägt sich selbst wieder ein
+  __setConnected(true);
+  await settle();
+  assert.ok(__store().root.rooms.RC1234.players[g1.uid], 'Gast ist nach Reconnect wieder im Raum');
+  assert.equal(__store().root.rooms.RC1234.players[g1.uid].name, 'Gast1', 'mit gleichem Namen');
+  // Host bekommt den Wiedereintritt als onChildAdded gemeldet
+  assert.ok(host.joins.some(j => j.id === g1.uid && j.val.name === 'Gast1'), 'Host sieht den Wiedereintritt');
+});
+
+test('onConnection meldet der UI Abbruch und Rückkehr', async () => {
+  const events = [];
+  const host = await makeClient();
+  await host.Coop.hostGame({
+    code: 'RC2222', name: 'Host',
+    onOpen: () => {}, onError: () => {}, onJoin: () => {}, onLeave: () => {}, onMessage: () => {},
+    onConnection: (c) => events.push(c),
+  });
+  await settle();
+  __setConnected(false); await settle();
+  __setConnected(true);  await settle();
+  assert.ok(events.includes(false) && events.includes(true), 'UI erhält beide Übergänge');
 });
 
 // ── 2. Fehlerfälle ──────────────────────────────────────────────────────────────

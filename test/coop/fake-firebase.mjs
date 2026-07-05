@@ -12,7 +12,7 @@
 // um. Weil alle Clients dasselbe Fake-Modul laden, teilen sie sich `store` — jeder
 // coop.js-Instanz bekommt aber per ensureFirebase() eine EIGENE uid.
 
-const store = { root: {}, listeners: [], svClock: 1_000_000, onDisc: new Map() };
+const store = { root: {}, listeners: [], svClock: 1_000_000, onDisc: new Map(), connected: true };
 let uidCounter = 0;
 
 // ── Pfad-Helfer ──────────────────────────────────────────────────────────────
@@ -121,6 +121,14 @@ function onChildAdded({ path }, cb) { fireExisting(path, cb); return register(pa
 function onChildChanged({ path }, cb) { return register(path, 'changed', cb); }
 function onChildRemoved({ path }, cb) { return register(path, 'removed', cb); }
 
+// onValue: coop.js beobachtet damit `.info/connected` (Verbindungsstatus). Feuert
+// den aktuellen Wert sofort und danach bei jeder __setConnected-Änderung.
+function onValue({ path }, cb) {
+  const val = path === '.info/connected' ? store.connected : getNode(path);
+  queueMicrotask(() => cb({ val: () => val }));
+  return register(path, 'value', cb);
+}
+
 // onDisconnect registriert eine Aktion für den VERBINDUNGSABBRUCH — sie darf
 // jetzt NICHT ausgeführt werden (echtes Firebase feuert sie erst beim Disconnect).
 function onDisconnect({ path }) {
@@ -137,16 +145,25 @@ export function ensureFirebase() {
   return Promise.resolve({
     db: store, uid: `uid-${++uidCounter}`,
     ref, get, set, push, remove,
-    onChildAdded, onChildChanged, onChildRemoved,
+    onChildAdded, onChildChanged, onChildRemoved, onValue,
     onDisconnect, serverTimestamp,
   });
 }
 
 // Test-Hilfen
-export function __reset() { store.root = {}; store.listeners = []; store.svClock = 1_000_000; store.onDisc = new Map(); uidCounter = 0; }
+export function __reset() { store.root = {}; store.listeners = []; store.svClock = 1_000_000; store.onDisc = new Map(); store.connected = true; uidCounter = 0; }
 export function __store() { return store; }
 // Verbindungsabbruch simulieren: registrierte onDisconnect-Aktion für path ausführen
 export function __disconnect(path) {
   if (store.onDisc.get(path) === 'remove') { store.onDisc.delete(path); return remove({ path }); }
   return Promise.resolve();
+}
+// Verbindungsstatus umschalten (feuert `.info/connected`-onValue-Listener).
+export function __setConnected(b) {
+  store.connected = b;
+  for (const l of store.listeners.slice()) {
+    if (l.path === '.info/connected' && l.type === 'value') {
+      queueMicrotask(() => { if (store.listeners.includes(l)) l.cb({ val: () => b }); });
+    }
+  }
 }

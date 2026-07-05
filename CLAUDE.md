@@ -193,7 +193,7 @@ Beim Start einer neuen Session IMMER zuerst den aktuellen Stand ermitteln — ni
    GitHub löscht den Remote-Branch nach dem Squash-Merge — deshalb vor neuer Arbeit immer:
    `git fetch origin main && git checkout -B <branch> origin/main`, veralteten Tracking-Ref
    mit `git update-ref -d refs/remotes/origin/<branch>` entfernen, dann normal pushen.
-4. **Roadmap-Stand** *(bei Meilensteinen mitpflegen!)* — Stand v0.113:
+4. **Roadmap-Stand** *(bei Meilensteinen mitpflegen!)* — Stand v0.117:
    Umgesetzt: Phase 1–3 der Verbesserungs-Roadmap (Sieg-Konfetti, CN-Hinweishistorie/-Balken/-Serie,
    Imposter-Optionen [Startspieler, Kategorie, Partner], 🎭 Undercover-Modus, Stichwahl-Regel bei
    Gleichstand, WBI-Fragenzähler, WW-Phasenübergang + Jäger-/Hexe-Fixes + Jäger-Animation,
@@ -204,8 +204,17 @@ Beim Start einer neuen Session IMMER zuerst den aktuellen Stand ermitteln — ni
    integriert (v0.113): normale Vue-Komponente derselben Instanz, kein Shadow-DOM/Embed
    mehr, CSS unter `.wwapp` isoliert** → kein Architektur-Unterschied mehr zwischen allen
    vier Spielen.
-   Noch offen: neue Werwolf-Rollen, Coop-Avatare, Phase 4 (gemeinsames
-   Settings-Modul, i18n-Vervollständigung der hartkodierten Labels, Coop-Reconnect).
+   Weiter umgesetzt (v0.114–v0.117): Werwolf lazy geladen + gemeinsames
+   Settings-Modul (⚙️ im Werwolf öffnet das Haupt-App-Menü), Werwolf-Overlays
+   (Pause/Menü/Beenden/Anleitung/Jäger/Coop-Abstimmung/Nacht) i18n-entkoppelt
+   (de+en real, restliche Sprachen erben de), Coop-Avatare (js/avatar.js:
+   deterministisches Emoji+Farbe pro Spieler in allen Lobbys), Coop-Reconnect
+   auf Transport-Ebene (coop.js beobachtet `.info/connected` und trägt den
+   Spieler nach einem Abbruch automatisch wieder ein; onConnection-Callback).
+   Noch offen: neue Werwolf-Rollen; **echte** Übersetzungen der Stub-Sprachen
+   (tr/fr/es/it/pl/ru/ar sind sowohl Haupt-App als auch Werwolf nur
+   `export default de`); voller Coop-Reconnect mit Mid-Game-State-Restore pro
+   Spiel (Host sendet wiederkehrendem Gast den aktuellen Spielstand).
 
 ## Ablauf bei jeder Code-Änderung
 

@@ -10,6 +10,13 @@ let myPlayerRef = null;
 let unsubJoin = null;
 let unsubLeave = null;
 let unsubEvents = null;
+// Reconnect: Nutzdaten des eigenen Spieler-Eintrags merken, um ihn nach einem
+// Verbindungsabbruch automatisch wieder einzutragen (onDisconnect entfernt ihn
+// serverseitig). onConnectionCb meldet der UI optional den Verbindungsstatus.
+let myPlayerData = null;
+let unsubConn = null;
+let wasConnected = true;
+let onConnectionCb = null;
 
 export function isAvailable() { return typeof window !== 'undefined' && typeof fetch !== 'undefined'; }
 
@@ -59,9 +66,30 @@ function attachListeners(f, code, { onJoin, onLeave, onMessage }) {
   });
 }
 
+// ─── RECONNECT ────────────────────────────────────────────────────────────────
+// Firebase-eigenes `.info/connected` beobachten. Kehrt die Verbindung nach einem
+// Abbruch zurück, ist der eigene Spieler-Eintrag evtl. per onDisconnect entfernt
+// worden — dann tragen wir uns automatisch wieder ein und stellen onDisconnect
+// erneut scharf. Für den iCloud-Private-Relay-Fall (WebSocket-Blips) wichtig.
+function watchConnection(f) {
+  unsubConn && unsubConn();
+  wasConnected = true;
+  const connRef = f.ref(f.db, '.info/connected');
+  unsubConn = f.onValue(connRef, (snap) => {
+    const connected = snap.val() === true;
+    if (connected && !wasConnected && roomCode && myPlayerRef && myPlayerData) {
+      log('coop', 'Reconnect erkannt — Spieler wird wieder eingetragen');
+      f.set(myPlayerRef, { ...myPlayerData, joinedAt: f.serverTimestamp() }).catch(() => {});
+      f.onDisconnect(myPlayerRef).remove();
+    }
+    wasConnected = connected;
+    onConnectionCb && onConnectionCb(connected);
+  });
+}
+
 // ─── HOST ─────────────────────────────────────────────────────────────────────
 // players/$uid braucht name + role + joinedAt (RTDB-Rules validieren das)
-export async function hostGame({ code, name, onOpen, onError, onJoin, onLeave, onMessage }) {
+export async function hostGame({ code, name, onOpen, onError, onJoin, onLeave, onMessage, onConnection }) {
   try {
     const f = await ensureDb();
     log('coop', `Hoste Raum ${code}…`);
@@ -84,9 +112,12 @@ export async function hostGame({ code, name, onOpen, onError, onJoin, onLeave, o
       hostId: f.uid, createdAt: f.serverTimestamp(), status: 'open'
     });
     myPlayerRef = f.ref(f.db, `rooms/${code}/players/${f.uid}`);
-    await f.set(myPlayerRef, { name, color: '#c9a84c', role: 'host', joinedAt: f.serverTimestamp() });
+    myPlayerData = { name, color: '#c9a84c', role: 'host' };
+    onConnectionCb = onConnection || null;
+    await f.set(myPlayerRef, { ...myPlayerData, joinedAt: f.serverTimestamp() });
     f.onDisconnect(myPlayerRef).remove();
     attachListeners(f, code, { onJoin, onLeave, onMessage });
+    watchConnection(f);
     log('coop', `Raum ${code} gehostet`, { uid: f.uid });
     onOpen && onOpen(f.uid);
   } catch (e) {
@@ -96,7 +127,7 @@ export async function hostGame({ code, name, onOpen, onError, onJoin, onLeave, o
 }
 
 // ─── GAST ─────────────────────────────────────────────────────────────────────
-export async function joinGame({ code, name, onOpen, onError, onMessage, onClose }) {
+export async function joinGame({ code, name, onOpen, onError, onMessage, onClose, onConnection }) {
   try {
     const f = await ensureDb();
     log('coop', `Trete Raum ${code} bei…`);
@@ -112,9 +143,12 @@ export async function joinGame({ code, name, onOpen, onError, onMessage, onClose
     }
     roomCode = code;
     myPlayerRef = f.ref(f.db, `rooms/${code}/players/${f.uid}`);
-    await f.set(myPlayerRef, { name, color: '#6b7fd4', role: 'guest', joinedAt: f.serverTimestamp() });
+    myPlayerData = { name, color: '#6b7fd4', role: 'guest' };
+    onConnectionCb = onConnection || null;
+    await f.set(myPlayerRef, { ...myPlayerData, joinedAt: f.serverTimestamp() });
     f.onDisconnect(myPlayerRef).remove();
     attachListeners(f, code, { onJoin: null, onLeave: (id) => onClose && onClose(id), onMessage });
+    watchConnection(f);
     log('coop', `Raum ${code} beigetreten`, { uid: f.uid });
     onOpen && onOpen(f.uid);
   } catch (e) {
@@ -141,8 +175,10 @@ export async function leave() {
   unsubJoin && unsubJoin();
   unsubLeave && unsubLeave();
   unsubEvents && unsubEvents();
-  unsubJoin = unsubLeave = unsubEvents = null;
-  roomCode = null; myPlayerRef = null;
+  unsubConn && unsubConn();
+  unsubJoin = unsubLeave = unsubEvents = unsubConn = null;
+  roomCode = null; myPlayerRef = null; myPlayerData = null;
+  onConnectionCb = null; wasConnected = true;
   if (!f || !playerRef) return;
   try {
     await f.onDisconnect(playerRef).cancel();
