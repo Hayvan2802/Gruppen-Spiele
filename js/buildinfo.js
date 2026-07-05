@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.114';
-export const BUILD_HASH = 'gemeinsames-settings-men';
+export const BUILD      = '0.115';
+export const BUILD_HASH = 'eingebettete-overlays-au';
 
 export const CHANGELOG = [
   {
+    version: '0.115',
+    date: '05.07.2026',
+    time: '19:08',
+    changes: [
+    'Werwolf-Menüs (Pause, Abstimmung, Anleitung, Beenden) erscheinen jetzt auch auf Englisch statt nur Deutsch.',
+    ],
+  },
+{
     version: '0.114',
     date: '05.07.2026',
     time: '18:49',
