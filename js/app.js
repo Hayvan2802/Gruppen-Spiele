@@ -26,6 +26,7 @@ import { calcVoteOutcome, decorateImposters, pickStartPlayer, pickWordPair } fro
 const WwGame = defineAsyncComponent(() => import('./games/werwolf/js/app.js').then(m => m.WwGame));
 import { playSound, setSoundEnabled } from './sound.js';
 import { qrSvg } from './qrcode.js';
+import { avatarFor } from './avatar.js';
 import * as Coop from './coop.js';
 import { log, exportLogToFile, logDeviceSnapshot, installGlobalErrorHandlers, installJankDetector } from './debuglog.js';
 import {
@@ -1146,6 +1147,7 @@ const App = {
       state, BUILD, CHANGELOG, DONATE_URL, SUPPORTED_LOCALES,
       timerPct, revealPlayer, currentVoter, voteOptions, imposters, maxImposterOptions, getTimerSeconds,
       impInviteQr, cnInviteQr, wbiInviteQr,
+      avatarFor,
       newChangelogs,
       t, i18nState,
       setTheme, setLang, setUserName, setSound,
@@ -1866,7 +1868,7 @@ const App = {
               <div class="coop-hint">Spieler in der Lobby</div>
               <ul class="lobby-list">
                 <li v-for="p in wbiState.coop.players" :key="p.uid" class="lobby-item">
-                  <span class="li-icon">{{ p.isHost ? '👑' : '👤' }}</span>
+                  <span class="coop-avatar" :style="{background: avatarFor(p.name).color}">{{ p.isHost ? '👑' : avatarFor(p.name).emoji }}</span>
                   <span class="li-name">{{ p.name }}</span>
                   <span class="li-ready" :class="p.isHost ? 'host' : p.ready ? 'yes' : 'no'">
                     {{ p.isHost ? 'Host' : p.ready ? '✓ Bereit' : 'Wartet…' }}
@@ -1899,7 +1901,7 @@ const App = {
               <div class="coop-hint">Lobby ({{ wbiState.coop.lobbyPlayers.length }} Spieler)</div>
               <ul class="lobby-list" v-if="wbiState.coop.lobbyPlayers.length">
                 <li v-for="p in wbiState.coop.lobbyPlayers" :key="p.uid" class="lobby-item">
-                  <span class="li-icon">{{ p.isHost ? '👑' : '👤' }}</span>
+                  <span class="coop-avatar" :style="{background: avatarFor(p.name).color}">{{ p.isHost ? '👑' : avatarFor(p.name).emoji }}</span>
                   <span class="li-name">{{ p.name }}</span>
                   <span class="li-ready" :class="p.isHost ? 'host' : p.ready ? 'yes' : 'no'">
                     {{ p.isHost ? 'Host' : p.ready ? '✓ Bereit' : 'Wartet…' }}
@@ -2292,7 +2294,7 @@ const App = {
               </div>
               <!-- Spielerliste mit Rollenvergabe durch Host -->
               <div v-for="p in cnState.coop.players" :key="p.uid" class="cn-lobby-player">
-                <span class="li-icon">{{ p.isHost ? '👑' : '👤' }}</span>
+                <span class="coop-avatar" :style="{background: avatarFor(p.name).color}">{{ p.isHost ? '👑' : avatarFor(p.name).emoji }}</span>
                 <span class="li-name" style="flex:1">{{ p.name }}</span>
                 <!-- Host: Rollenvergabe -->
                 <div v-if="cnState.coop.isHost" style="display:flex;gap:.3rem">
@@ -2363,7 +2365,7 @@ const App = {
               <div class="coop-hint">Lobby ({{ cnState.coop.lobbyPlayers.length }} Spieler)</div>
               <div v-if="cnState.coop.lobbyPlayers.length">
                 <div v-for="p in cnState.coop.lobbyPlayers" :key="p.uid" class="cn-lobby-player">
-                  <span class="li-icon">{{ p.isHost ? '👑' : '👤' }}</span>
+                  <span class="coop-avatar" :style="{background: avatarFor(p.name).color}">{{ p.isHost ? '👑' : avatarFor(p.name).emoji }}</span>
                   <span class="li-name" style="flex:1">{{ p.name }}</span>
                   <span v-if="p.role" class="li-ready yes" style="font-size:.72rem">
                     {{ p.role==='spymaster-red'?'🔴 Spym.':p.role==='spymaster-blue'?'🔵 Spym.':p.role==='operative-red'?'🔴 Op.':'🔵 Op.' }}
@@ -2691,7 +2693,7 @@ const App = {
             <div class="coop-hint">{{ t('coop.waiting') }}</div>
             <ul class="lobby-list">
               <li v-for="p in state.coop.players" :key="p.uid" class="lobby-item">
-                <span class="li-icon">{{ p.isHost ? '👑' : '👤' }}</span>
+                <span class="coop-avatar" :style="{background: avatarFor(p.name).color}">{{ p.isHost ? '👑' : avatarFor(p.name).emoji }}</span>
                 <span class="li-name">{{ p.name }}</span>
                 <span class="li-ready" :class="p.isHost ? 'host' : p.ready ? 'yes' : 'no'">
                   {{ p.isHost ? t('coop.host') : p.ready ? t('coop.readyDone') : t('coop.notReady') }}
@@ -2734,7 +2736,7 @@ const App = {
             <div class="coop-hint">Lobby ({{ state.coop.lobbyPlayers.length }} Spieler)</div>
             <ul class="lobby-list" v-if="state.coop.lobbyPlayers.length">
               <li v-for="p in state.coop.lobbyPlayers" :key="p.uid" class="lobby-item">
-                <span class="li-icon">{{ p.isHost ? '👑' : '👤' }}</span>
+                <span class="coop-avatar" :style="{background: avatarFor(p.name).color}">{{ p.isHost ? '👑' : avatarFor(p.name).emoji }}</span>
                 <span class="li-name">{{ p.name }}</span>
                 <span class="li-ready" :class="p.isHost ? 'host' : p.ready ? 'yes' : 'no'">
                   {{ p.isHost ? 'Host' : p.ready ? '✓ Bereit' : 'Wartet…' }}

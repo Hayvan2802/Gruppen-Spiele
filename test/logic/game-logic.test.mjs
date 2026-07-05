@@ -637,3 +637,43 @@ describe('Werwolf — Jäger (Rache-Schuss)', () => {
     }
   });
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// COOP-AVATARE — deterministischer Emoji+Farbe-Avatar aus Name/uid
+// ════════════════════════════════════════════════════════════════════════════
+describe('Coop-Avatare (js/avatar.js)', () => {
+  test('deterministisch: gleicher Schlüssel → gleicher Avatar', async () => {
+    const { avatarFor } = await import('../../js/avatar.js');
+    const a = avatarFor('Anna'), b = avatarFor('Anna');
+    assert.deepEqual(a, b, 'identischer Name liefert identischen Avatar');
+    assert.ok(typeof a.emoji === 'string' && a.emoji.length > 0, 'Emoji gesetzt');
+    assert.ok(/^#[0-9a-f]{6}$/i.test(a.color), 'Farbe ist ein Hex-Wert');
+  });
+
+  test('verteilt: verschiedene Namen liefern gemischte Avatare', async () => {
+    const { avatarFor } = await import('../../js/avatar.js');
+    const names = ['Anna', 'Ben', 'Chris', 'Dana', 'Emil', 'Finn', 'Greta', 'Hana'];
+    const combos = new Set(names.map(n => avatarFor(n).emoji + avatarFor(n).color));
+    assert.ok(combos.size >= 5, `genug Variation (${combos.size} von ${names.length})`);
+  });
+
+  test('robust gegen leere/null-Schlüssel', async () => {
+    const { avatarFor } = await import('../../js/avatar.js');
+    for (const k of [null, undefined, '']) {
+      const a = avatarFor(k);
+      assert.ok(a.emoji && a.color, 'liefert immer einen gültigen Avatar');
+    }
+  });
+
+  test('alle vier Spiele + Werwolf zeigen Avatare in den Lobbys', () => {
+    const app = readSrc('js/app.js');
+    const ww = readSrc('js/games/werwolf/js/app.js');
+    // Import + Nutzung im Template
+    assert.ok(/from '\.\/avatar\.js'/.test(app), 'Haupt-App importiert avatarFor');
+    assert.ok(/from '\.\.\/\.\.\/\.\.\/avatar\.js'/.test(ww), 'Werwolf importiert avatarFor');
+    assert.ok(!/class="li-icon">\{\{ p\.isHost \? '👑' : '👤'/.test(app), 'alte li-icon-Avatare ersetzt (Haupt-App)');
+    // coop-avatar in allen Lobby-Listen (6 in der Haupt-App, 1 in Werwolf)
+    assert.ok((app.match(/coop-avatar/g) || []).length >= 6, 'Haupt-App: coop-avatar in allen Lobbys');
+    assert.ok(/coop-avatar/.test(ww), 'Werwolf: coop-avatar in der Lobby');
+  });
+});
