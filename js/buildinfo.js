@@ -1,9 +1,17 @@
 // Auto-generiert — nicht manuell bearbeiten!
-export const BUILD      = '0.113';
-export const BUILD_HASH = 'werwolf-voll-in-die-haup';
+export const BUILD      = '0.114';
+export const BUILD_HASH = 'gemeinsames-settings-men';
 
 export const CHANGELOG = [
   {
+    version: '0.114',
+    date: '05.07.2026',
+    time: '18:49',
+    changes: [
+    'Werwolf nutzt jetzt dasselbe Einstellungsmenü wie die anderen Spiele und lädt schneller.',
+    ],
+  },
+{
     version: '0.113',
     date: '04.07.2026',
     time: '22:16',
