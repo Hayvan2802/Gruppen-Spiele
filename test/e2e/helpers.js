@@ -22,3 +22,73 @@ export async function waitForApp(page) {
 export async function openGame(page, name) {
   await page.locator('.game-select-card', { hasText: name }).click();
 }
+
+// ── Gemeinsame Ablauf-Helfer für die Voll-Durchlauf-Tests (Handy-Simulation) ──
+
+// Imposter/„Wer bin ich?": Setup-Spielernamen ausfüllen. Gibt die Namen zurück.
+export async function fillPlayerNames(page, names) {
+  const inputs = page.locator('.ninput');
+  const count = await inputs.count();
+  const used = [];
+  for (let i = 0; i < count; i++) {
+    const name = names[i] || ('Spieler ' + (i + 1));
+    await inputs.nth(i).fill(name);
+    used.push(name);
+  }
+  return used;
+}
+
+// Imposter: alle Reveal-Karten der Reihe nach aufdecken und weiterklicken,
+// bis der Timer-Screen erscheint (letzter Button = „Diskussion starten").
+// Als kleine Zustandsmaschine umgesetzt, damit Flip-Animationen/Übergänge
+// zwischen den Spielern nicht zu Race-Conditions führen.
+export async function completeImposterReveal(page) {
+  await page.locator('.rev-card').waitFor({ state: 'visible' });
+  for (let guard = 0; guard < 40; guard++) {
+    if (await page.locator('.timer-skip-btn').isVisible().catch(() => false)) return;
+    const next = page.locator('.btn-next-reveal');
+    if (await next.isVisible().catch(() => false)) {
+      await next.click();                        // Weiter / Diskussion starten
+    } else if (await page.locator('.rev-card .card-back').isVisible().catch(() => false)) {
+      await page.locator('.rev-card').click();   // Karte aufdecken
+    } else {
+      await page.waitForTimeout(100);            // Übergang abwarten
+    }
+  }
+  throw new Error('Imposter-Reveal nicht abgeschlossen (Timer-Screen nicht erreicht)');
+}
+
+// Imposter: die (mehrrundige) Abstimmung komplett durchspielen, bis der
+// terminale Ergebnis-Screen erreicht ist. Deckt alle Zwischenzustände ab:
+// Abstimmung, Zwischenergebnis (Imposter noch da → weiter), Gerät-weitergeben
+// und Stichwahl bei Gleichstand. Es wird immer der erste Kandidat gewählt;
+// dadurch fliegen nach und nach Spieler raus, bis das Spiel eindeutig endet
+// (Dorf gewinnt oder Imposter erreicht Gleichstand). Der Ergebnis-Screen ist
+// am eindeutigen `.confetti`-Element erkennbar (nur dort im DOM).
+export async function completeImposterVoting(page) {
+  for (let guard = 0; guard < 80; guard++) {
+    if (await page.locator('.confetti').count() > 0) return;    // Ergebnis-Screen
+    const option = page.locator('.voting-option').first();
+    if (await option.isVisible().catch(() => false)) {
+      await option.click();
+      const confirm = page.locator('.voting-confirm-btn');
+      if (await confirm.isEnabled().catch(() => false)) await confirm.click();
+      continue;
+    }
+    const cont = page.locator('button', { hasText: /Weiter →/ });            // Zwischenergebnis
+    if (await cont.isVisible().catch(() => false)) { await cont.click(); continue; }
+    const startVote = page.locator('button', { hasText: /Abstimmung starten/ }); // Pause
+    if (await startVote.isVisible().catch(() => false)) { await startVote.click(); continue; }
+    const runoff = page.locator('button', { hasText: /Stichwahl starten/ });  // Gleichstand
+    if (await runoff.isVisible().catch(() => false)) { await runoff.click(); continue; }
+    await page.waitForTimeout(100);
+  }
+  throw new Error('Imposter-Abstimmung nicht terminiert (Ergebnis-Screen nicht erreicht)');
+}
+
+// Wechselt ein Spiel (Imposter/Codenames/Wer bin ich?) in den Multiplayer-Modus.
+// Die zweite Modus-Karte ist „Multiplayer" (coop).
+export async function switchToMultiplayer(page) {
+  await page.locator('.mode-card').first().waitFor({ state: 'visible' });
+  await page.locator('.mode-card').nth(1).click();
+}

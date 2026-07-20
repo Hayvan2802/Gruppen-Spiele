@@ -38,3 +38,44 @@ test('Zurück-Button erscheint und führt zur Spielauswahl', async ({ page }) =>
   await page.locator('.back-corner').click();
   await expect(page.locator('.game-select-card', { hasText: 'Werwolf' })).toBeVisible();
 });
+
+test('Start ist ohne Rollen-Konfiguration deaktiviert', async ({ page }) => {
+  // Standardmäßig sind keine Rollen gewählt → Start disabled + Warnhinweis
+  await expect(page.locator('.wwapp .btn-start')).toBeDisabled();
+  await expect(page.locator('.wwapp .swarn')).toBeVisible();
+});
+
+test('Voller Ablauf: Rollen wählen → Start → Reveal → Spielscreen', async ({ page }) => {
+  // 1) Rollen konfigurieren: 1 Wolf + 7 Dorfbewohner = 8 Spieler
+  await page.locator('.wwapp .rcard', { hasText: 'Werwolf' }).first().click();
+  const dorf = page.locator('.wwapp .rcard', { hasText: 'Dorfbewohner' }).first();
+  await dorf.click(); // → 1
+  for (let k = 0; k < 6; k++) {
+    await dorf.locator('.mbtn').nth(1).click(); // „+" bis 7
+  }
+
+  // Start jetzt aktiv
+  const start = page.locator('.wwapp .btn-start');
+  await expect(start).toBeEnabled();
+  await start.click();
+
+  // 2) Rollen-Reveal: alle Karten aufdecken
+  await expect(page.locator('.wwapp .rev-card')).toBeVisible();
+  for (let i = 0; i < 8; i++) {
+    if (await page.locator('.wwapp .rev-card .card-back').isVisible().catch(() => false)) {
+      await page.locator('.wwapp .rev-card .card-back').click();
+    }
+    const next = page.locator('.wwapp .btn-nxt');
+    if (await next.isVisible().catch(() => false)) {
+      await next.click();
+    } else {
+      break;
+    }
+  }
+
+  // 3) Spielscreen Nacht 1 erreicht
+  await expect(page.locator('.wwapp .game-inner')).toBeVisible();
+  await expect(page.locator('.wwapp .phase-badge')).toContainText(/Nacht/);
+  // „Nachtphase beginnen"-Button vorhanden
+  await expect(page.locator('.wwapp .nseq .bpri')).toBeVisible();
+});
