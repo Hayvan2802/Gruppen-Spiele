@@ -1,12 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Die App wird auf zwei Handy-Formfaktoren getestet: einem Android- und einem
-// iPhone-Geräteprofil (Viewport, User-Agent, Device-Pixel-Ratio, Touch). Beide
-// laufen auf der Chromium-Engine — das ist die einzige im CI installierte Engine
-// (WebKit/Safari-Download ist dort nicht freigegeben). Für das iPhone-Profil wird
-// deshalb `defaultBrowserType` bewusst auf 'chromium' überschrieben (das iPhone-
-// Descriptor würde sonst WebKit verlangen). Getestet werden damit Layout, Maße
-// und Touch-Verhalten auf beiden Formfaktoren.
+// Die App wird auf zwei echten Handy-Engines getestet:
+//  - Android (Pixel 7)      → Chromium/Blink
+//  - iPhone  (iPhone 14)    → WebKit (echte Safari-Engine)
+// Damit werden Layout, Maße, Touch UND Safari-spezifisches Rendering abgedeckt.
+// Beide Engines müssen installiert sein (`npx playwright install chromium webkit`);
+// die CI installiert beide (siehe .github/workflows/test.yml).
 export default defineConfig({
   testDir: './test/e2e',
   fullyParallel: false,
@@ -24,8 +23,8 @@ export default defineConfig({
       use: { ...devices['Pixel 7'] },
     },
     {
-      name: 'iPhone (14)',
-      use: { ...devices['iPhone 14'], defaultBrowserType: 'chromium' },
+      name: 'iPhone (Safari/WebKit)',
+      use: { ...devices['iPhone 14'] },
     },
   ],
   webServer: {

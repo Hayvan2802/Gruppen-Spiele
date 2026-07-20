@@ -32,6 +32,6 @@ jobs:
       - name: Abhängigkeiten installieren
         run: npm install
       - name: Playwright-Browser installieren
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
       - name: E2E-Tests
         run: npm run test:e2e
