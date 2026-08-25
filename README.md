@@ -37,13 +37,12 @@ Gruppen-Spiele/
 │   ├── debuglog.js         # Lokales Diagnoseprotokoll
 │   ├── coop.js             # Firebase RTDB Raum-Transport
 │   ├── firebase.js         # Firebase Lazy-Init (anonyme Auth)
-│   ├── werwolf-embed.js    # Werwolf als Shadow-DOM-Embed
 │   ├── games/
 │   │   ├── codenames.js        # Codenames-Logik & State
 │   │   ├── codenames-words.js  # Codenames-Wortlisten (mehrsprachig)
 │   │   ├── werbinich.js        # "Wer bin ich?"-Logik & State
 │   │   ├── werbinich-words.js  # "Wer bin ich?"-Kartendeck
-│   │   └── werwolf/            # 🐺 Eigenständige Werwolf-Unter-App (Shadow DOM)
+│   │   └── werwolf/            # 🐺 Vue-Komponente + eigenständiger Fallback
 │   ├── i18n/
 │   │   ├── index.js            # t(), Locale-Handling, SUPPORTED_LOCALES
 │   │   └── de|en|tr|fr|es|it|pl|ru|ar.js
@@ -51,8 +50,9 @@ Gruppen-Spiele/
 ├── scripts/
 │   └── build.mjs           # Release-Skript (Version bumpen, buildinfo.js + sw.js)
 └── test/
-    ├── unit/
-    │   └── imposter.test.js    # Node:test Unit-Tests
+    ├── unit/                    # Imposter-Unit-Tests
+    ├── coop/                    # Offline- und Live-Tests des Coop-Transports
+    ├── logic/                   # Spiellogik- und Modus-Paritätstests
     └── e2e/
         ├── helpers.js          # waitForApp()-Helper
         ├── app.spec.js         # Navigation & Spielauswahl
@@ -96,4 +96,4 @@ node scripts/build.mjs
 
 ---
 
-*Entwickelt mit Claude – Anthropic AI*
+*Offen für Beiträge und Verbesserungen.*

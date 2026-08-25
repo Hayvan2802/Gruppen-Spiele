@@ -47,8 +47,8 @@ for (const g of MAIN_GAMES) {
 
     test(`${g.title}: Coop-Setup (Host + Beitreten) mit vorbelegtem Namen`, async ({ page }) => {
       await openGame(page, g.card);
-      // Multiplayer-Modus wählen (:visible, da das vorgewärmte Werwolf im Shadow-DOM
-      // ebenfalls .mode-card besitzt — Playwright durchdringt Shadow-DOM).
+      // Multiplayer-Modus wählen (:visible hält den Locator auch bei parallel im DOM
+      // vorhandenen, aber ausgeblendeten Spielansichten eindeutig).
       await page.locator('.mode-card:visible', { hasText: 'Multiplayer' }).click();
 
       // ── Host-Setup ──

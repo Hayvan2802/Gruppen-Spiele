@@ -1,7 +1,7 @@
-# CLAUDE.md
+# AGENTS.md
 
-Diese Datei gibt Claude Code (claude.ai/code) einen Überblick über das Repository
-und Hinweise zum Arbeiten in diesem Projekt.
+Diese Datei gibt Coding-Agents einen Überblick über das Repository und Hinweise
+zum Arbeiten in diesem Projekt.
 
 ## Projektüberblick
 
@@ -189,7 +189,7 @@ Beim Start einer neuen Session IMMER zuerst den aktuellen Stand ermitteln — ni
 2. **Offene Arbeit:** offene PRs prüfen (`mcp__github__list_pull_requests`, state=open).
    Ein offener `release/vX.Y`-PR heißt: Schritt 4 (Release) läuft noch — erst zu Ende
    bringen (CI abwarten → squash-mergen), bevor Neues begonnen wird.
-3. **Arbeits-Branch:** Entwicklung läuft auf dem in der Aufgabe genannten `claude/…`-Branch.
+3. **Arbeits-Branch:** Entwicklung läuft auf dem in der Aufgabe genannten Arbeits-Branch.
    GitHub löscht den Remote-Branch nach dem Squash-Merge — deshalb vor neuer Arbeit immer:
    `git fetch origin main && git checkout -B <branch> origin/main`, veralteten Tracking-Ref
    mit `git update-ref -d refs/remotes/origin/<branch>` entfernen, dann normal pushen.
@@ -343,15 +343,6 @@ startet Kommentare). `node scripts/build.mjs` liest sie, schreibt den Eintrag in
   `sw.js` aufnehmen.
 - Neue UI-Strings in **allen** `js/i18n/*.js`-Dateien pflegen.
 
-### Git-Autor
-
-Vor dem ersten Commit in jeder Session immer setzen:
-
-```bash
-git config user.email "noreply@anthropic.com"
-git config user.name "Claude"
-```
-
 ### Changelog-Regeln
 
 - Niemals in `changes.txt` oder Commit-Messages erwähnen, dass Ideen aus
@@ -363,7 +354,6 @@ git config user.name "Claude"
 
 | Problem | Lösung |
 |---------|--------|
-| Stop-Hook „Unverified commits" | `git config user.email "noreply@anthropic.com"` setzen, neuen Commit erstellen |
 | Stop-Hook „uncommitted changes" | `git restore .release-counter` (Artefakt vom Build-Skript) |
 | `enable_pr_auto_merge` Rate-Limit | `mcp__github__merge_pull_request` (squash) direkt aufrufen |
 | Nutzer sieht alte Version | Service Worker cached alte Shell → Einstellungen → „🔄 Prüfen", oder Browser-Speicher löschen |
