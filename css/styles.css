@@ -1482,15 +1482,6 @@ body.neon .btn-start {
 .cn-role-mini-active-red  { background: rgba(248,113,113,.25); border-color: #f87171 !important; }
 .cn-role-mini-active-blue { background: rgba(96,165,250,.25);  border-color: #60a5fa !important; }
 
-/* ── Werwolf-Einbettung (Shadow-DOM-Host + Zurück-Button) ───────────────────── */
-/* Host füllt den Bildschirm und überlagert die Haupt-App, während Werwolf
-   aktiv ist. Das Werwolf-CSS lebt isoliert im Shadow-DOM dieses Elements. */
-.ww-host {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  background: #0d0a14; /* verhindert Durchscheinen während des Ladens */
-}
 /* Einheitlicher Zurück-Button für ALLE Spiele: immer oben links in der Ecke.
    Fix positioniert (aus dem Top-Bar-Fluss gelöst), an der Top-Bar-Polsterung
    ausgerichtet, über dem Inhalt (z-index 60 > Top-Bar 50), aber unter Modals
