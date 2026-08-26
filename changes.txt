@@ -1,2 +1,3 @@
 # Changelog-Zeilen für den nächsten Release (eine pro Zeile)
 Die Projekt-Dokumentation ist jetzt aktuell, übersichtlicher und unabhängig vom verwendeten Coding-Assistenten.
+Codenames wählt die Begriffe jetzt gleichmäßiger und schneller aus; doppelte Karten bei „Wer bin ich?“ wurden bereinigt.

@@ -93,9 +93,18 @@ export const CN_WORDS = {
 // Standard: Deutsch
 export const CN_DEFAULT_LANG = 'de';
 
-// 25 zufällige Wörter für ein Spiel holen
-export function getCNWords(lang = 'de', count = 25) {
+// Zufällige Wörter ohne Verzerrung auswählen. Der partielle Fisher-Yates-Lauf
+// mischt nur so viele Positionen wie tatsächlich benötigt werden. Das spart bei
+// großen Wortlisten Arbeit und gibt jedem Wort dieselbe Auswahlchance.
+export function getCNWords(lang = 'de', count = 25, random = Math.random) {
   const pool = CN_WORDS[lang] || CN_WORDS['de'];
-  const shuffled = [...pool].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, Math.min(count, shuffled.length));
+  const words = [...pool];
+  const wanted = Math.max(0, Math.min(Math.trunc(Number(count)) || 0, words.length));
+
+  for (let i = 0; i < wanted; i++) {
+    const j = i + Math.floor(random() * (words.length - i));
+    [words[i], words[j]] = [words[j], words[i]];
+  }
+
+  return words.slice(0, wanted);
 }

@@ -73,7 +73,7 @@ export const WBI_KATEGORIEN = {
     'Eiffelturm', 'Colosseum', 'Chinesische Mauer', 'Taj Mahal',
     'Machu Picchu', 'Niagara-Fälle', 'Grand Canyon', 'Sahara',
     'Amazonas', 'Himalaya', 'Ayers Rock', 'Big Ben', 'Freiheitsstatue',
-    'Eifelturm', 'Brandenburger Tor', 'Oktoberfest', 'Venedig',
+    'Brandenburger Tor', 'Oktoberfest', 'Venedig',
     'Las Vegas', 'Dubai', 'Tokio', 'New York', 'Paris', 'Rio de Janeiro',
     'Malediven', 'Island', 'Antarktis', 'Mond', 'Mars',
   ],
